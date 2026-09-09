@@ -1,7 +1,7 @@
 {
   "ui_version": "2026-09-09",
   "ui_url": "https://raw.githubusercontent.com/EricKOR1/dashboardO/main/index.html",
-  "app_version": "1.0.0",
+  "app_version": "1.0.1",
   "app_url": "https://github.com/EricKOR1/dashboard/releases/latest/download/MyDashboard.zip",
   "page_url": "https://github.com/EricKOR1/dashboard/releases",
   "notes": "교사 연락처 위젯이 추가되었습니다."
