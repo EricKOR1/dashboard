@@ -1906,8 +1906,10 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-09-09";
-function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag"); if(vt) vt.textContent=`화면 버전 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`; Object.keys(WIDGETS).forEach(type=>{ const d=WIDGETS[type]; const c=el("div","pcard",`<div class="pi">${d.icon}</div><div><div class="pt">${d.title}</div><div class="pd">${d.desc}</div></div>`); c.onclick=()=>addWidget(type); p.appendChild(c); }); }
+const APP_VER="2026-09-09.3";
+function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
+  if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`;
+    if(hasApi("get_versions")){ window.pywebview.api.get_versions().then(v=>{ if(v&&v.app&&vt.isConnected) vt.textContent=`화면 ${APP_VER} · 프로그램 ${v.app} · 위젯 ${Object.keys(WIDGETS).length}개`; }).catch(()=>{}); } } Object.keys(WIDGETS).forEach(type=>{ const d=WIDGETS[type]; const c=el("div","pcard",`<div class="pi">${d.icon}</div><div><div class="pt">${d.title}</div><div class="pd">${d.desc}</div></div>`); c.onclick=()=>addWidget(type); p.appendChild(c); }); }
 function openSheet(){ $("#scrim").classList.add("on"); }
 function closeSheet(){ $("#scrim").classList.remove("on"); }
 $("#addBtn").onclick=openSheet; $("#scrim").onclick=e=>{ if(e.target===$("#scrim")) closeSheet(); };
