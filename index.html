@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Dashboard</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+<link rel="stylesheet" as="style" crossorigin
+  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<style>
+  :root{
+    --bg:#F3EFE6; --bg-soft:#FBF9F2;
+    --card:#FFFFFF; --card-2:#F6F1E7;
+    --border:#E8E1D0; --border-strong:#D7CDB6;
+    --text:#231D12; --muted:#7F7666; --faint:#AEA48F;
+    --accent:#B88923; --accent-2:#9A7115; --accent-soft:rgba(184,137,35,.12);
+    --accent-ink:#2A2005;
+    --teal:#2E9E92; --danger:#D25A50; --good:#3F9E55;
+    --dot:rgba(70,56,28,.06);
+    --radius:20px; --radius-sm:12px;
+    --shadow:0 1px 2px rgba(56,44,20,.05), 0 14px 34px -20px rgba(56,44,20,.18);
+    --shadow-lift:0 5px 12px rgba(56,44,20,.08), 0 26px 52px -18px rgba(56,44,20,.22);
+    --ease:cubic-bezier(.25,.6,.3,1);
+  }
+  [data-theme="dark"]{
+    --bg:#181510; --bg-soft:#201B14;
+    --card:#231E15; --card-2:#2C2618;
+    --border:#342D1E; --border-strong:#48402C;
+    --text:#F2EDE2; --muted:#A79D8B; --faint:#746B59;
+    --accent:#E7BD54; --accent-2:#D2A539; --accent-soft:rgba(231,189,84,.15);
+    --accent-ink:#241C05;
+    --teal:#7FD6CC; --danger:#E5736B; --good:#86C98B;
+    --dot:rgba(255,240,219,.05);
+    --shadow:0 2px 4px rgba(0,0,0,.25), 0 18px 40px -20px rgba(0,0,0,.5);
+    --shadow-lift:0 6px 14px rgba(0,0,0,.3), 0 26px 52px -16px rgba(0,0,0,.55);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%; margin:0;}
+  body{
+    color:var(--text);
+    background:
+      radial-gradient(1100px 460px at 12% -8%, rgba(214,171,74,.14), transparent 60%),
+      radial-gradient(900px 420px at 96% -4%, rgba(46,158,146,.07), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    font-feature-settings:"tnum"; -webkit-font-smoothing:antialiased;
+    overflow-x:hidden; min-height:100vh;
+  }
+
+  /* ===== 테두리 없는 창의 상단 (창 이동 손잡이 + 창 버튼) ===== */
+  #titlebar{
+    position:fixed; top:0; left:0; right:0; height:42px; z-index:1000;
+    display:none; align-items:center; justify-content:space-between;
+    padding:0 12px 0 18px; user-select:none;
+  }
+  body.app #titlebar{display:flex;}
+  #titlebar .tb-title{font-size:12.5px; font-weight:600; color:var(--faint); letter-spacing:.3px; display:flex; align-items:center; gap:8px;}
+  #titlebar .tb-title .dotmark{width:13px; height:13px; border-radius:4px; background:linear-gradient(135deg,var(--accent),var(--accent-2));}
+  .tb-controls{display:flex; gap:4px;}
+  .wbtn{
+    width:34px; height:28px; border-radius:9px; background:transparent; color:var(--muted);
+    font-size:14px; display:grid; place-items:center; transition:background .13s var(--ease), color .13s var(--ease);
+  }
+  .wbtn:hover{background:var(--card-2); color:var(--text);}
+  .wbtn.close:hover{background:rgba(210,90,80,.14); color:var(--danger);}
+
+  .wrap{position:relative; z-index:1; max-width:none; margin:0; padding:24px 30px 80px;}
+  body.app .wrap{padding-top:54px;}
+
+  /* ===== 상단 인사 ===== */
+  header.top{display:flex; align-items:flex-end; justify-content:space-between; gap:18px; margin-bottom:20px; flex-wrap:wrap;}
+  .hello{display:flex; flex-direction:column; gap:5px;}
+  .greet{font-size:26px; font-weight:800; color:var(--text); letter-spacing:-.6px;}
+  .today{font-size:26px; font-weight:800; letter-spacing:-.6px;}
+  .today .dim{color:var(--muted); font-weight:600;}
+  .actions{display:flex; gap:9px; align-items:center;}
+
+  button{font-family:inherit; cursor:pointer; border:none;}
+  .btn{
+    display:inline-flex; align-items:center; gap:8px; height:42px; padding:0 16px;
+    border-radius:var(--radius-sm); background:var(--card); color:var(--text);
+    border:1px solid var(--border); font-size:13.5px; font-weight:600;
+    box-shadow:0 1px 2px rgba(56,44,20,.05);
+    transition:border-color .14s var(--ease), box-shadow .14s var(--ease), transform .14s var(--ease);
+  }
+  .btn:hover{border-color:var(--border-strong); transform:translateY(-1px); box-shadow:var(--shadow);}
+  .btn:active{transform:translateY(0); box-shadow:0 1px 2px rgba(56,44,20,.05);}
+  .btn.icon{width:42px; padding:0; justify-content:center; font-size:17px;}
+  .btn.primary{background:linear-gradient(135deg,#D7AC45,var(--accent)); color:var(--accent-ink); border:none; box-shadow:0 10px 22px -10px rgba(184,137,35,.55);}
+  .btn.primary:hover{filter:brightness(1.04);}
+
+  /* ===== 자유 배치 보드 ===== */
+  .board{
+    position:relative; min-height:60vh;
+    background-image:radial-gradient(var(--dot) 1.3px, transparent 1.3px);
+    background-size:26px 26px; border-radius:18px;
+  }
+  .card{
+    position:absolute; background:var(--card); border:1px solid var(--border);
+    border-radius:var(--radius); padding:16px 16px 14px; box-shadow:var(--shadow);
+    display:flex; flex-direction:column;
+    transition:box-shadow .16s var(--ease), border-color .16s var(--ease);
+    animation:pop .18s var(--ease) both; overflow:hidden;
+  }
+  .card:hover{border-color:var(--border-strong); box-shadow:var(--shadow-lift);}
+  .card.moving,.card.sizing{transition:none; box-shadow:var(--shadow-lift); border-color:var(--accent);}
+  @keyframes pop{from{opacity:0; transform:scale(.99);}}
+  .card .head{display:flex; align-items:center; gap:8px; margin-bottom:11px; cursor:grab; flex:none;}
+  .card.moving .head{cursor:grabbing;}
+  .card .head .ttl{display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700;}
+  .card .head .ttl .ico{font-size:15px;}
+  .card .head .sp{flex:1;}
+  .hact{width:27px; height:27px; border-radius:9px; display:grid; place-items:center; background:transparent; color:var(--faint); font-size:13px; opacity:.45; transition:opacity .13s var(--ease), background .13s var(--ease), color .13s var(--ease);}
+  .card:hover .hact{opacity:1;}
+  .hact:hover{background:var(--card-2); color:var(--text);}
+  .hact.del:hover{color:var(--danger);}
+  .card .body{flex:1; overflow:auto; min-height:0; margin:-2px; padding:2px;}
+
+  /* 카드 크기조절 손잡이 */
+  .rsz{position:absolute; right:3px; bottom:3px; width:18px; height:18px; cursor:nwse-resize; opacity:0; transition:opacity .13s;}
+  .card:hover .rsz{opacity:.55;}
+  .rsz:hover{opacity:1;}
+  .rsz::after{content:""; position:absolute; right:3px; bottom:3px; width:9px; height:9px;
+    border-right:2px solid var(--muted); border-bottom:2px solid var(--muted); border-radius:0 0 3px 0;}
+
+  /* 창 크기조절 손잡이 (오른쪽 아래) */
+  #winResize{position:fixed; right:0; bottom:0; width:20px; height:20px; z-index:900; cursor:nwse-resize; display:none;}
+  body.app #winResize{display:block;}
+  #winResize::after{content:""; position:absolute; right:4px; bottom:4px; width:8px; height:8px; border-right:2px solid var(--faint); border-bottom:2px solid var(--faint);}
+
+  /* 공통 폼 */
+  input,textarea,select{font-family:inherit; color:var(--text); background:var(--bg-soft); border:1px solid var(--border); border-radius:11px; padding:10px 12px; font-size:14px; outline:none; width:100%; transition:border-color .13s var(--ease), box-shadow .13s var(--ease), background .13s var(--ease);}
+  input::placeholder,textarea::placeholder{color:var(--faint);}
+  input:focus,textarea:focus,select:focus{border-color:var(--accent); background:var(--card); box-shadow:0 0 0 3px var(--accent-soft);}
+  .row{display:flex; gap:8px;}
+  .mini{height:38px; padding:0 13px; border-radius:11px; font-size:13px; font-weight:600; background:var(--card); color:var(--text); border:1px solid var(--border); display:inline-flex; align-items:center; gap:6px; transition:border-color .13s var(--ease), background .13s var(--ease); white-space:nowrap;}
+  .mini:hover{border-color:var(--border-strong);}
+  .mini.go{background:var(--accent-soft); color:var(--accent-2); border-color:transparent; font-weight:700;}
+  .mini.go:hover{background:rgba(184,137,35,.2);}
+  .empty{color:var(--muted); font-size:13px; line-height:1.6; padding:6px 2px;}
+
+  .clock .time{font-size:50px; font-weight:800; letter-spacing:-1.5px; line-height:1; font-variant-numeric:tabular-nums;}
+  .clock .time .sec{font-size:22px; font-weight:600; color:var(--accent); vertical-align:super; margin-left:4px;}
+  .clock .sub{margin-top:10px; color:var(--muted); font-size:13.5px;}
+
+  .wx .now{display:flex; align-items:center; gap:13px;}
+  .wx .emoji{font-size:44px; line-height:1;}
+  .wx .temp{font-size:40px; font-weight:800; letter-spacing:-1.5px;}
+  .wx .temp small{font-size:17px; color:var(--muted); font-weight:600;}
+  .wx .desc{color:var(--muted); font-size:13px;}
+  .wx .wxloc{cursor:pointer; display:inline-block; transition:color .13s;}
+  .wx .wxloc:hover{color:var(--accent);}
+  .wx .meta{display:flex; gap:14px; margin-top:11px; color:var(--muted); font-size:12.5px; flex-wrap:wrap;}
+  .wx .meta b{color:var(--text); font-weight:700;}
+  .wx .fc{display:flex; gap:7px; margin-top:13px;}
+  .wx .fc .d{flex:1; text-align:center; background:var(--card-2); border:1px solid var(--border); border-radius:12px; padding:8px 3px;}
+  .wx .fc .d .dn{font-size:11.5px; color:var(--muted);}
+  .wx .fc .d .de{font-size:19px; margin:3px 0;}
+  .wx .fc .d .dt{font-size:11.5px; font-weight:700;}
+  .wx .fc .d .dt .lo{color:var(--muted); font-weight:500;}
+  .wx .fc .d .dp{font-size:10.5px; color:var(--teal); font-weight:700; margin-top:2px;}
+  .wx .wsrc{font-size:10.5px; color:var(--faint); margin-top:8px;}
+  .wx .hrs{display:flex; gap:4px; margin-top:11px; overflow-x:auto; padding-bottom:4px; scrollbar-width:thin;}
+  .wx .hrs .h{flex:none; width:47px; text-align:center; padding:7px 2px; border-radius:11px; background:var(--card-2); border:1px solid var(--border);}
+  .wx .hrs .h[data-hnow]{border-color:var(--accent); background:var(--accent-soft);}
+  .wx .hrs .hh{font-size:10.5px; color:var(--muted); font-weight:700;}
+  .wx .hrs .he{font-size:16px; margin:3px 0 1px;}
+  .wx .hrs .ht{font-size:13px; font-weight:800;}
+  .wx .hrs .hp{font-size:10px; color:var(--faint); margin-top:2px; font-weight:700;}
+  .wx .hrs .hp.wet{color:var(--teal);}
+  .wx .air{display:flex; gap:14px; margin-top:9px; flex-wrap:wrap;}
+  .wx .air .ai{display:flex; align-items:center; gap:5px; font-size:12.5px; color:var(--muted);}
+  .wx .air .ai b{color:var(--text); font-weight:700;}
+  .wx .air .ai em{color:var(--faint); font-style:normal; font-size:11px;}
+  .wx .air .dotg{width:8px; height:8px; border-radius:50%; flex:none;}
+  .dotg.g1{background:#3F9E55;} .dotg.g2{background:#4C93D8;} .dotg.g3{background:#E0A23B;} .dotg.g4{background:#D25A50;}
+
+  .quote .q-body{display:flex; flex-direction:column; justify-content:center; min-height:70px; padding:4px 2px;}
+  .quote .q-t{font-size:15.5px; line-height:1.6; font-weight:600; word-break:keep-all;}
+  .quote .q-a{margin-top:9px; font-size:12.5px; color:var(--accent-2); font-weight:700;}
+  .quote .q-foot{margin-top:10px;}
+
+  .dict .dict-body{margin-top:10px;}
+  .dict .dmodes{display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px;}
+  .dict .dmode{font-size:11.5px; padding:5px 10px; border:1px solid var(--border); background:var(--card); color:var(--muted); border-radius:999px; cursor:pointer; transition:border-color .12s, color .12s, background .12s;}
+  .dict .dmode:hover{border-color:var(--accent); color:var(--text);}
+  .dict .dmode.on{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+  .dict .tr-main{font-size:20px; font-weight:800; margin-top:8px; word-break:break-word; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .dict .tr-read{font-size:13.5px; color:var(--accent-2); font-weight:700; margin-top:6px;}
+  .dict .d-word{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .dict .spk{width:26px; height:26px; border-radius:8px; border:1px solid var(--border); background:var(--card-2); color:var(--muted); font-size:12px; cursor:pointer; flex:none; transition:border-color .12s, color .12s;}
+  .dict .spk:hover{border-color:var(--accent); color:var(--text);}
+  .dict .tr-alts{margin-top:12px; padding-top:8px; border-top:1px solid var(--border);}
+  .dict .tr-lbl{font-size:11px; font-weight:700; color:var(--accent-2); margin-bottom:4px;}
+  .dict .tr-alt{font-size:13.5px; padding:3px 0; color:var(--muted);}
+  .dict .d-more{font-size:11.5px; color:var(--accent-2); font-weight:700; margin-top:4px; cursor:pointer;}
+  .dict .d-more:hover{text-decoration:underline;}
+  .dict .d-src{font-size:10.5px; color:var(--faint); margin-top:10px;}
+  .dict .dset{margin-bottom:10px; padding:10px; background:var(--card-2); border:1px solid var(--border); border-radius:12px; display:flex; flex-direction:column; gap:8px;}
+  .dict .dset .setrow{display:flex; align-items:center; gap:8px;}
+  .dict .dset .setrow span{flex:none; width:74px; font-size:11.5px; color:var(--muted); font-weight:700;}
+  .dict .dset .setnote{font-size:11px; color:var(--faint); line-height:1.5;}
+
+  .encyc .ency-body{margin-top:10px;}
+  .encyc .e-head{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+  .encyc .e-img{width:64px; height:64px; object-fit:cover; border-radius:10px; border:1px solid var(--border); flex:none;}
+  .encyc .e-title{font-size:17px; font-weight:800; word-break:break-word;}
+  .encyc .e-text{font-size:13.5px; line-height:1.65; word-break:break-word; white-space:pre-wrap;}
+  .encyc .e-foot{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .encyc .e-src{font-size:10.5px; color:var(--faint);}
+
+  .roster .rcount{font-size:10.5px; color:var(--faint); margin:6px 2px 4px;}
+  .roster .rbody{overflow:auto;}
+  .roster .rhead{font-size:11px; font-weight:700; color:var(--accent-2); margin:4px 2px 6px;}
+  .roster .rrow{padding:8px 9px; border-radius:10px; background:var(--card-2); border:1px solid var(--border); margin-bottom:5px;}
+  .roster .rn{font-size:14.5px; font-weight:800;}
+  .roster .rc{font-size:12.5px; color:var(--muted); margin-top:2px;}
+  .roster .rp{font-size:11.5px; color:var(--accent-2); margin-top:4px;}
+  .ctc .cphone{font-size:15px; font-weight:800; color:var(--accent-2); margin:3px 0 6px;}
+  .ctc .cline{display:flex; gap:8px; font-size:12px; line-height:1.5; margin-top:2px;}
+  .ctc .cline span{flex:none; width:42px; color:var(--muted); font-weight:700;}
+  .ctc .cline b{font-weight:600; word-break:break-word;}
+  .roster .rset{margin-bottom:10px; padding:10px; background:var(--card-2); border:1px solid var(--border); border-radius:12px; display:flex; flex-direction:column; gap:8px;}
+  .roster .rset .setrow{display:flex; gap:8px; align-items:center;}
+  .roster .rset .setrow span{flex:none; width:36px; font-size:11.5px; color:var(--muted); font-weight:700;}
+  .roster .rset .rfile{font-size:12px; word-break:break-all;}
+  .roster .rchk{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); cursor:pointer;}
+  .roster .rchk input{width:auto;}
+  .roster .setnote{font-size:11px; color:var(--faint); line-height:1.5;}
+  .roster .rup{display:flex; gap:6px; flex-wrap:wrap;}
+  .roster .mini.up{position:relative; overflow:hidden; cursor:pointer;}
+  .roster .mini.up input[type=file]{position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;}
+  .roster .rdrop{border:2px dashed var(--border-strong); border-radius:14px; padding:20px 14px; text-align:center; transition:border-color .14s, background .14s;}
+  .roster .rdrop.over{border-color:var(--accent); background:var(--accent-soft);}
+  .roster .rd-i{font-size:30px; line-height:1;}
+  .roster .rd-t{font-size:12.5px; color:var(--muted); margin:8px 0 12px;}
+  .roster .rdrop .rup{justify-content:center;}
+  .tt2 .ttabs{display:flex; gap:6px; margin-bottom:8px;}
+  .tt2 .ttabs button{flex:1; padding:7px 0; font-size:12.5px; font-weight:700; border:1px solid var(--border); background:var(--card); color:var(--muted); border-radius:10px; cursor:pointer; transition:background .13s,color .13s,border-color .13s;}
+  .tt2 .ttabs button.on{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+  .tt2 .ttgrid{overflow:auto;}
+  table.tt{width:100%; border-collapse:collapse; table-layout:fixed;}
+  table.tt th{font-size:10.5px; color:var(--muted); font-weight:700; padding:4px 0; border-bottom:1px solid var(--border);}
+  table.tt th.pn{width:20px; color:var(--faint);}
+  table.tt th.now{color:var(--accent-2);}
+  table.tt td{border:1px solid var(--border); border-radius:0; padding:3px 2px; text-align:center; vertical-align:middle; height:34px;}
+  table.tt td.now{background:var(--accent-soft);}
+  table.tt td .s{font-size:11px; font-weight:700; line-height:1.25; word-break:break-all;}
+  table.tt td .t{font-size:9.5px; color:var(--faint); line-height:1.2; margin-top:1px; word-break:break-all;}
+  .tt2 .ttsum{font-size:11px; color:var(--faint); margin-top:8px; text-align:right;}
+  .dict .d-word{font-size:18px; font-weight:800;}
+  .dict .d-word .d-ph{font-size:13px; font-weight:500; color:var(--muted); margin-left:6px;}
+  .dict .d-mean{margin-top:10px; padding-top:8px; border-top:1px solid var(--border);}
+  .dict .d-pos{display:inline-block; font-size:11px; font-weight:700; color:var(--accent-2); background:var(--accent-soft); padding:2px 8px; border-radius:999px; margin-bottom:4px;}
+  .dict .d-def{font-size:13.5px; line-height:1.5;}
+  .dict .d-ex{font-size:12.5px; color:var(--muted); margin-top:3px; font-style:italic;}
+
+  .hist .hist-body{overflow:auto;}
+  .hist .hist-note{font-size:11px; color:var(--faint); margin-bottom:6px;}
+  .hist .hrow{display:flex; gap:10px; padding:7px 4px; border-bottom:1px solid var(--border);}
+  .hist .hrow:last-child{border-bottom:none;}
+  .hist .hrow.hlink{cursor:pointer; border-radius:8px; transition:background .11s;}
+  .hist .hrow.hlink:hover{background:var(--card-2);}
+  .hist .hyr{flex:none; width:44px; font-size:13px; font-weight:800; color:var(--accent-2);}
+  .hist .htx{font-size:13px; line-height:1.45; word-break:break-word;}
+
+  .country .ctry-body{margin-top:10px;}
+  .country .c-head{display:flex; align-items:center; gap:12px; margin-bottom:12px;}
+  .country .c-flag{width:52px; height:auto; border-radius:6px; border:1px solid var(--border);}
+  .country .c-flagem{font-size:46px; line-height:1;}
+  .country .c-name{font-size:18px; font-weight:800;}
+  .country .c-en{font-size:12.5px; color:var(--muted);}
+  .country .c-rows{display:flex; flex-direction:column; gap:6px;}
+  .country .c-r{display:flex; gap:10px; font-size:13.5px; padding:6px 8px; background:var(--card-2); border:1px solid var(--border); border-radius:10px;}
+  .country .c-r span{flex:none; width:44px; color:var(--muted); font-weight:700; font-size:12px; align-self:center;}
+  .country .c-r b{font-weight:700; word-break:break-word;}
+
+  .ac-pop{position:fixed; z-index:10001; background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-lift); padding:4px; max-height:262px; overflow:auto;}
+  .ac-item{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border-radius:8px; cursor:pointer; font-size:13.5px;}
+  .ac-item:hover, .ac-item.on{background:var(--card-2);}
+  .ac-item .ac-l{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .ac-item .ac-s{font-size:11.5px; color:var(--faint); flex:none;}
+
+  .todo .list{display:flex; flex-direction:column; gap:2px; margin-top:6px;}
+  .todo .ttabs{display:flex; gap:6px; margin-bottom:8px;}
+  .todo .ttabs button{flex:1; padding:7px 0; font-size:12.5px; font-weight:700; border:1px solid var(--border); background:var(--card); color:var(--muted); border-radius:10px; cursor:pointer; transition:background .13s, color .13s, border-color .13s;}
+  .todo .ttabs button.on{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+  .todo .t-add{margin-bottom:4px;}
+  .todo .t-add input[type=date]{font-size:12.5px; padding:8px 8px;}
+  .todo .tw{flex:1; min-width:0; display:flex; align-items:center; gap:8px;}
+  .todo .tdate{flex:none; font-size:12.5px; font-weight:800; color:var(--accent-2); background:var(--accent-soft); padding:4px 9px; border-radius:8px; cursor:pointer; transition:filter .12s; white-space:nowrap;}
+  .todo .tdate:hover{filter:brightness(.94); text-decoration:underline;}
+  .todo .tcal{display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-bottom:8px;}
+  .todo .tcal .cal-w{font-size:10.5px; text-align:center; color:var(--faint); padding:3px 0; font-weight:700;}
+  .todo .tcal .cal-w.sun{color:#E5544B;} .todo .tcal .cal-w.sat{color:#3D7DE0;}
+  .todo .tcal .cal-d{position:relative; font-size:12px; text-align:center; padding:7px 0 9px; border-radius:8px; cursor:pointer; transition:background .1s;}
+  .todo .tcal .cal-d:hover{background:var(--card-2);}
+  .todo .tcal .cal-d.today{border:1px solid var(--accent);}
+  .todo .tcal .cal-d.sel{background:var(--accent); color:var(--accent-ink); font-weight:800;}
+  .todo .tcal .cal-d.sun{color:#E5544B;} .todo .tcal .cal-d.sat{color:#3D7DE0;}
+  .todo .tcal .cal-d.sel.sun, .todo .tcal .cal-d.sel.sat{color:var(--accent-ink);}
+  .todo .tcal .cdot{position:absolute; left:50%; bottom:3px; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; background:var(--accent-2);}
+  .todo .tcal .cal-d.sel .cdot{background:var(--accent-ink);}
+  .todo .tsel-h{font-size:12.5px; font-weight:800; color:var(--accent-2); margin:8px 2px 6px;}
+  .todo .ndate{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;}
+  .todo .ndate span{font-size:12.5px; font-weight:700; flex:1; text-align:center;}
+  .todo .ndate button{width:26px; height:26px; border:1px solid var(--border); background:var(--card); border-radius:8px; cursor:pointer; color:var(--text);}
+  .ti{display:flex; align-items:center; gap:10px; padding:8px 6px; border-radius:10px; transition:background .11s;}
+  .ti:hover{background:var(--card-2);}
+  .ti .box{width:22px; height:22px; border-radius:7px; border:2px solid var(--border-strong); flex:none; cursor:pointer; display:grid; place-items:center; transition:border-color .13s var(--ease), background .13s var(--ease);}
+  .ti .box:hover{border-color:var(--accent);}
+  .ti.done .box{background:var(--accent); border-color:var(--accent);}
+  .ti .box svg{width:13px; height:13px; opacity:0; transform:scale(.5); transition:.13s;}
+  .ti.done .box svg{opacity:1; transform:scale(1);}
+  .ti .tx{flex:1; font-size:14px; line-height:1.4; word-break:break-word; cursor:pointer; padding:2px 0;}
+  .ti.done .tx{color:var(--faint); text-decoration:line-through;}
+  .ti .x{opacity:0; color:var(--faint); font-size:13px; cursor:pointer; padding:2px 5px; border-radius:7px;}
+  .ti:hover .x{opacity:.7;}
+  .ti .x:hover{opacity:1; color:var(--danger); background:var(--card-2);}
+  .donehdr{font-size:11px; font-weight:700; color:var(--faint); letter-spacing:.4px; margin:12px 4px 2px; cursor:pointer; display:flex; align-items:center; gap:5px; user-select:none;}
+  .donehdr:hover{color:var(--muted);}
+  .donehdr .chev{display:inline-block; transition:transform .13s var(--ease);}
+  .donehdr.open .chev{transform:rotate(90deg);}
+
+  .ti[data-rid], .dday .item[data-rid], .stk .sq[data-rid], .links a[data-rid], .apps .ic[data-rid]{cursor:grab;}
+  .lift{cursor:grabbing; background:var(--card); border:1px solid var(--accent); border-radius:12px; box-shadow:var(--shadow-lift);}
+  .dnd-ph{border-radius:12px; background:var(--accent-soft); border:1px dashed var(--accent); box-sizing:border-box;}
+
+  .meal .datebar{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+  .meal .datebar .dd{font-size:13px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .meal .nav{display:flex; gap:6px; flex:none;}
+  .meal .nav button{width:30px; height:30px; border-radius:9px; background:var(--card); border:1px solid var(--border); color:var(--text); font-size:13px; transition:border-color .13s;}
+  .meal .nav button:hover{border-color:var(--border-strong);}
+  .meal .block{margin-top:8px;}
+  .meal .block .bt{font-size:12px; font-weight:700; color:var(--accent-2); margin-bottom:4px;}
+  .meal .dishes{display:flex; flex-wrap:wrap; gap:6px;}
+  .meal .dishes span{font-size:13px; background:var(--card-2); border:1px solid var(--border); border-radius:9px; padding:5px 9px;}
+
+  .neis .ntabs{display:flex; gap:6px; margin-bottom:8px;}
+  .neis .ntabs button{flex:1; padding:7px 0; font-size:12.5px; font-weight:700; border:1px solid var(--border); background:var(--card); color:var(--muted); border-radius:10px; cursor:pointer; transition:background .13s, color .13s, border-color .13s;}
+  .neis .ntabs button.on{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+  .neis .ndate{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;}
+  .neis .ndate:empty{display:none;}
+  .neis .ndate span{font-size:12.5px; font-weight:700; flex:1; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .neis .ndate button{width:26px; height:26px; border:1px solid var(--border); background:var(--card); border-radius:8px; cursor:pointer; color:var(--text); transition:border-color .13s;}
+  .neis .ndate button:hover{border-color:var(--border-strong);}
+  .neis .nbody{overflow:auto;}
+  .neis .schlist{display:flex; flex-direction:column; gap:4px;}
+  .neis .sch{display:flex; align-items:center; gap:10px; padding:7px 9px; border-radius:10px; background:var(--card-2); border:1px solid var(--border);}
+  .neis .sch.today{border-color:var(--accent); background:var(--accent-soft);}
+  .neis .sch-d{flex:none; width:46px; font-size:12.5px; font-weight:800; color:var(--accent-2); display:flex; flex-direction:column; line-height:1.2;}
+  .neis .sch-d small{font-size:10px; color:var(--faint); font-weight:600;}
+  .neis .sch-e{font-size:13px; word-break:break-word;}
+  .neis .tt{display:flex; flex-direction:column; gap:4px;}
+  .neis .tt-row{display:flex; align-items:center; gap:10px; padding:7px 9px; border-radius:10px; background:var(--card-2); border:1px solid var(--border);}
+  .neis .tt-p{flex:none; width:42px; font-size:12px; font-weight:800; color:var(--accent-2);}
+  .neis .tt-s{font-size:13.5px; word-break:break-word;}
+  .neis .neis-set{margin-top:10px; display:flex; flex-direction:column; gap:8px;}
+  .neis .setrow{display:flex; align-items:center; gap:8px;}
+  .neis .setrow span{flex:none; width:48px; font-size:12px; color:var(--muted); font-weight:700;}
+  .neis .setrow b{font-size:13px; font-weight:700;}
+  .neis .setrow input{flex:1;}
+  .neis .setnote{font-size:11.5px; color:var(--faint); line-height:1.5;}
+  .cal-trigger{cursor:pointer; border-radius:7px; padding:2px 8px; transition:background .12s;}
+  .cal-trigger:hover{background:var(--card-2);}
+  .calpop{position:fixed; z-index:10000; width:244px; background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow-lift); padding:12px;}
+  #printArea{display:none;}
+  #printArea h1{font-size:20px; margin:0 0 14px;}
+  #printArea .pt-list{list-style:none; padding:0; margin:0;}
+  #printArea .pt-list li{font-size:14px; padding:6px 2px; border-bottom:1px solid #e6e6e6;}
+  #printArea .pt-done{color:#888;}
+  #printArea .pt-memo{font-size:14px; line-height:1.7; white-space:pre-wrap; word-break:break-word;}
+  @media print{
+    body.printing > *{display:none !important;}
+    body.printing > #printArea{display:block !important; position:absolute; left:0; top:0; width:100%; padding:24px; color:#000; background:#fff;}
+  }
+  .calpop .cal-h{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+  .calpop .cal-h span{font-size:13px; font-weight:700;}
+  .calpop .cal-h button{width:26px; height:26px; border:1px solid var(--border); background:var(--card-2); border-radius:8px; cursor:pointer; color:var(--text);}
+  .calpop .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px;}
+  .calpop .cal-w{font-size:10.5px; text-align:center; color:var(--faint); padding:3px 0; font-weight:700;}
+  .calpop .cal-d{font-size:12px; text-align:center; padding:6px 0; border-radius:8px; cursor:pointer; transition:background .1s;}
+  .calpop .cal-d:hover{background:var(--card-2);}
+  .calpop .cal-d.today{border:1px solid var(--accent);}
+  .calpop .cal-d.sel{background:var(--accent); color:var(--accent-ink); font-weight:800;}
+  .calpop .cal-w.sun{color:#E5544B;} .calpop .cal-w.sat{color:#3D7DE0;}
+  .calpop .cal-d.sun{color:#E5544B;} .calpop .cal-d.sat{color:#3D7DE0;}
+  .calpop .cal-d.sel.sun, .calpop .cal-d.sel.sat{color:var(--accent-ink);}
+  .sresult{display:flex; flex-direction:column; gap:6px; margin-top:8px;}
+  .sresult .si{padding:9px 11px; border:1px solid var(--border); border-radius:11px; cursor:pointer; background:var(--card); transition:border-color .12s, background .12s;}
+  .sresult .si:hover{border-color:var(--accent); background:var(--card-2);}
+  .sresult .si .sn{font-size:13.5px; font-weight:600;}
+  .sresult .si .sr{font-size:12px; color:var(--muted);}
+
+  .dday .item{display:flex; align-items:center; gap:10px; padding:9px 4px; border-bottom:1px solid var(--border);}
+  .dday .item:last-child{border-bottom:none;}
+  .dday .item .nm{flex:1; font-size:14px;}
+  .dday .item .nm small{display:block; color:var(--faint); font-size:11.5px;}
+  .dday .item .dv{font-size:17px; font-weight:800; letter-spacing:-.5px;}
+  .dday .item .dv.soon{color:var(--accent-2);}
+  .dday .item .dv.past{color:var(--faint);}
+  .dday .item .x{opacity:0; color:var(--faint); cursor:pointer; padding:2px 5px;}
+  .dday .item:hover .x{opacity:.7;}
+  .dday .item .x:hover{color:var(--danger);}
+
+  .links .ls{display:flex; flex-wrap:wrap; gap:8px;}
+  .links a{display:inline-flex; align-items:center; gap:7px; text-decoration:none; color:var(--text); background:var(--card); border:1px solid var(--border); border-radius:11px; padding:8px 11px; font-size:13px; font-weight:600; transition:border-color .13s, transform .13s, box-shadow .13s;}
+  .links a:hover{border-color:var(--accent); transform:translateY(-1px); box-shadow:0 6px 14px -8px rgba(56,44,20,.25);}
+  .links a .fav{width:16px; height:16px; border-radius:5px; background:var(--accent-soft); color:var(--accent-2); display:grid; place-items:center; font-size:10px; font-weight:800;}
+  .links a .rx{opacity:0; color:var(--faint); margin-left:2px;}
+  .links a:hover .rx{opacity:.8;}
+
+  .tedit{height:24px; padding:2px 7px; font-size:12.5px; font-weight:700; width:130px; border-radius:8px;}
+
+  .memo{height:100%;}
+  .card .body.memo{overflow:hidden;}
+  .memo-view{height:100%; overflow:auto; white-space:pre-wrap; word-break:break-word; line-height:1.55; font-size:14px; padding:2px; cursor:text;}
+  .memo-view a{color:var(--accent-2); text-decoration:underline; word-break:break-all; cursor:pointer;}
+  .memo-view a:hover{text-decoration:none;}
+  .memo-view .memo-empty{color:var(--faint);}
+  .memo-edit{width:100%; height:100%; min-height:90px; resize:none; line-height:1.55; border-radius:12px;}
+
+  .apps .grid-ic{display:flex; flex-wrap:wrap; gap:12px;}
+  .apps .ic{width:64px; cursor:pointer; text-align:center; position:relative;}
+  .apps .ic-img{position:relative; width:52px; height:52px; margin:0 auto; border-radius:15px; background:var(--card-2); border:1px solid var(--border); display:grid; place-items:center; overflow:hidden; transition:border-color .14s var(--ease), transform .14s var(--ease), box-shadow .14s var(--ease);}
+  .apps .ic:hover .ic-img{border-color:var(--accent); transform:translateY(-2px); box-shadow:0 8px 16px -8px rgba(56,44,20,.3);}
+  .apps .ic-img img{width:30px; height:30px; object-fit:contain;}
+  .apps .ic-fb{position:absolute; inset:0; display:grid; place-items:center; font-size:21px; font-weight:800; color:var(--accent-2);}
+  .apps .ic-emoji{position:absolute; inset:0; display:grid; place-items:center; font-size:26px; line-height:1;}
+  .quickpick{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;}
+  .quickpick .qp{font-size:11.5px; padding:4px 9px; border:1px solid var(--border); background:var(--card); color:var(--muted); border-radius:999px; cursor:pointer; transition:border-color .12s, color .12s;}
+  .quickpick .qp:hover{border-color:var(--accent); color:var(--text);}
+  .fpick{display:flex; gap:6px; margin-bottom:8px;}
+  .fpick .mini{flex:1; justify-content:center;}
+  .fconfirm{margin-bottom:10px; padding:10px; background:var(--card-2); border:1px solid var(--border); border-radius:12px;}
+  .fconfirm .fc-path{font-size:12px; color:var(--muted); margin-bottom:8px; word-break:break-all; line-height:1.4;}
+  .fconfirm .fc-p{color:var(--text);}
+
+  .news .news-src{display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px;}
+  .news .nsrc{font-size:11.5px; padding:5px 10px; border:1px solid var(--border); background:var(--card); color:var(--muted); border-radius:999px; cursor:pointer; transition:border-color .12s, color .12s, background .12s;}
+  .news .nsrc:hover{border-color:var(--accent); color:var(--text);}
+  .news .nsrc.on{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+  .news .news-list{overflow:auto; display:flex; flex-direction:column;}
+  .news .nitem{padding:8px 6px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .11s; border-radius:8px;}
+  .news .nitem:last-child{border-bottom:none;}
+  .news .nitem:hover{background:var(--card-2);}
+  .news .ntitle{font-size:13px; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+  .apps .ic-nm{font-size:11.5px; margin-top:6px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .nm-edit{font-size:12px; padding:2px 6px; height:24px; border-radius:7px; width:120px;}
+  .apps .nm-edit{width:60px; text-align:center; margin-top:4px; font-size:11px;}
+  .links .nm-edit{width:96px;}
+  .apps .ic-x{position:absolute; top:-5px; right:0; width:18px; height:18px; border-radius:50%; background:var(--card); border:1px solid var(--border); color:var(--faint); font-size:10px; display:grid; place-items:center; opacity:0; transition:opacity .12s, color .12s, border-color .12s;}
+  .apps .ic:hover .ic-x{opacity:1;}
+  .apps .ic-x:hover{color:var(--danger); border-color:var(--danger);}
+
+  .stk .stk-list{margin-top:6px;}
+  .stk .sq{display:flex; align-items:center; gap:10px; padding:9px 4px; border-bottom:1px solid var(--border);}
+  .stk .sq:last-child{border-bottom:none;}
+  .stk .sq-l{flex:1; min-width:0;}
+  .stk .sq-n{font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .stk .sq-s{font-size:11px; color:var(--faint);}
+  .stk .sq-r{text-align:right; flex:none;}
+  .stk .sq-p{font-size:14px; font-weight:700; font-variant-numeric:tabular-nums;}
+  .stk .sq-c{font-size:11.5px; font-weight:700; margin-top:2px; font-variant-numeric:tabular-nums;}
+  .stk .sq-c.up{color:#E5544B;}
+  .stk .sq-c.down{color:#3D7DE0;}
+  .stk .sq-na{font-size:12px; color:var(--faint);}
+  .stk .sq-x{opacity:0; color:var(--faint); cursor:pointer; padding:2px 5px;}
+  .stk .sq:hover .sq-x{opacity:.7;}
+  .stk .sq-x:hover{color:var(--danger);}
+  .stk .sq-cvt{font-size:11px; color:var(--faint); margin-top:2px;}
+
+  .drag-h{flex:none; cursor:grab; color:var(--faint); opacity:0; font-size:13px; line-height:1; padding:0 2px; touch-action:none; user-select:none; align-self:center;}
+  .ti:hover .drag-h, .dday .item:hover .drag-h, .stk .sq:hover .drag-h, .links a:hover .drag-h, .apps .ic:hover .drag-h{opacity:.5;}
+  .drag-h:hover{opacity:1;}
+  .dragging{opacity:.55;}
+  .apps .ic .drag-h{position:absolute; top:-3px; left:-2px; background:var(--bg-soft); border-radius:6px; padding:1px 3px; z-index:2;}
+
+  .scrim{position:fixed; inset:0; z-index:2000; background:rgba(40,32,16,.32); display:none; align-items:center; justify-content:center; padding:22px; animation:fade .16s var(--ease);}
+  .scrim.on{display:flex;}
+  @keyframes fade{from{opacity:0;}}
+  .sheet{width:min(720px,100%); max-height:84vh; overflow:auto; background:var(--card); border:1px solid var(--border); border-radius:24px; padding:24px; box-shadow:var(--shadow-lift); animation:pop .18s var(--ease) both;}
+  .sheet h2{margin:0 0 4px; font-size:19px;}
+  .sheet p.s{margin:0 0 18px; color:var(--muted); font-size:13.5px; line-height:1.6;}
+  .palette{display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px;}
+  .pcard{display:flex; gap:12px; align-items:flex-start; padding:15px; border:1px solid var(--border); border-radius:16px; background:var(--bg-soft); cursor:pointer; transition:border-color .14s var(--ease), transform .14s var(--ease), background .14s var(--ease), box-shadow .14s var(--ease);}
+  .pcard:hover{border-color:var(--accent); transform:translateY(-2px); background:var(--card); box-shadow:0 10px 22px -12px rgba(56,44,20,.28);}
+  .pcard .pi{font-size:23px; line-height:1;}
+  .pcard .pt{font-size:14.5px; font-weight:700;}
+  .pcard .pd{font-size:12.5px; color:var(--muted); margin-top:3px; line-height:1.45;}
+
+
+
+  #updBar{position:fixed; right:18px; bottom:18px; z-index:2600; display:flex; align-items:center; gap:11px; width:330px; padding:14px 15px; background:var(--card); border:1px solid var(--accent); border-radius:16px; box-shadow:var(--shadow-lift); opacity:0; transform:translateY(14px); transition:opacity .22s var(--ease), transform .22s var(--ease);}
+  #updBar.on{opacity:1; transform:translateY(0);}
+  #updBar .ub-i{font-size:20px; flex:none;}
+  #updBar .ub-b{flex:1; min-width:0;}
+  #updBar .ub-t{font-size:13.5px; font-weight:800;}
+  #updBar .ub-s{font-size:11.5px; color:var(--muted); margin-top:3px; line-height:1.45;}
+  #updBar .ub-go{flex:none; height:32px; padding:0 14px; border-radius:10px; background:var(--accent); color:var(--accent-ink); font-size:12.5px; font-weight:800; cursor:pointer; border:none;}
+  #updBar .ub-go:disabled{opacity:.6; cursor:default;}
+  #updBar .ub-x{flex:none; font-size:11px; color:var(--faint); cursor:pointer; padding:2px 4px;}
+  #updBar .ub-x:hover{color:var(--danger);}
+  #noticeWrap{position:fixed; right:18px; bottom:18px; z-index:2400; display:flex; flex-direction:column; gap:9px; align-items:flex-end; pointer-events:none;}
+  .notice{display:flex; align-items:flex-start; gap:10px; width:272px; padding:12px 13px; background:var(--card); border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:14px; box-shadow:var(--shadow-lift); opacity:0; transform:translateX(18px); transition:opacity .22s var(--ease), transform .22s var(--ease); pointer-events:auto;}
+  .notice.on{opacity:1; transform:translateX(0);}
+  .notice .nt-i{font-size:16px; line-height:1.2; flex:none;}
+  .notice .nt-b{flex:1; min-width:0;}
+  .notice .nt-f{font-size:10.5px; font-weight:700; color:var(--accent-2); margin-bottom:3px;}
+  .notice .nt-t{font-size:13px; line-height:1.45; word-break:break-word;}
+  .notice .nt-x{flex:none; font-size:11px; color:var(--faint); cursor:pointer; padding:2px 4px; border-radius:6px;}
+  .notice .nt-x:hover{color:var(--danger); background:var(--card-2);}
+  .vertag{display:inline-block; margin-left:6px; padding:2px 8px; border-radius:999px; background:var(--accent-soft); color:var(--accent-2); font-size:11px; font-weight:700;}
+  .toast{position:fixed; z-index:2200; left:50%; bottom:30px; transform:translateX(-50%) translateY(16px); background:var(--text); border:none; color:var(--bg); padding:12px 18px; border-radius:13px; font-size:13.5px; font-weight:600; box-shadow:var(--shadow-lift); opacity:0; pointer-events:none; transition:opacity .2s var(--ease), transform .2s var(--ease);}
+  .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  .spin{display:inline-block; width:16px; height:16px; border:2px solid var(--border-strong); border-top-color:var(--accent); border-radius:50%; animation:sp .7s linear infinite; vertical-align:-3px;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+
+  ::-webkit-scrollbar{width:8px; height:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--border-strong); border-radius:8px;}
+  ::-webkit-scrollbar-thumb:hover{background:var(--faint);}
+  ::-webkit-scrollbar-track{background:transparent;}
+</style>
+</head>
+<body>
+  <div id="titlebar" class="pywebview-drag-region">
+    <div class="tb-title pywebview-drag-region"><span class="dotmark pywebview-drag-region"></span> My Dashboard</div>
+    <div class="tb-controls">
+      <button class="wbtn" id="winMin" title="최소화">—</button>
+      <button class="wbtn" id="winMax" title="최대화">▢</button>
+      <button class="wbtn close" id="winClose" title="닫기">✕</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <header class="top">
+      <div class="hello">
+        <div class="greet" id="greet">반가워요</div>
+      </div>
+      <div class="actions">
+        <button class="btn icon" id="themeBtn" title="밝게/어둡게">🌙</button>
+        <button class="btn primary" id="addBtn">＋ 위젯 추가</button>
+      </div>
+    </header>
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="scrim" id="scrim">
+    <div class="sheet">
+      <h2>위젯 추가</h2>
+      <p class="s">원하는 위젯을 골라 보드에 올리세요. 카드 제목줄을 끌면 자유롭게 옮기고, 오른쪽 아래 모서리를 끌면 크기를 바꿀 수 있어요. <span id="verTag" class="vertag"></span></p>
+      <div class="palette" id="palette"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div id="winResize" title="창 크기 조절"></div>
+
+<script>
+/* ===== 저장 / 불러오기 ===== */
+let state = { theme:"dark", widgets:[] };
+let booted = false, maxZ = 1;
+
+function hasApi(n){ return !!(window.pywebview && window.pywebview.api && window.pywebview.api[n]); }
+async function persist(){
+  if(!_ready) return;
+  state.savedAt = Date.now();
+  const data = JSON.stringify(state);
+  try{ localStorage.setItem("dash.state", data); }catch(e){}
+  if(hasApi("save_state")){ try{ await window.pywebview.api.save_state(data); }catch(e){} }
+}
+async function loadState(){
+  let py=null, ls=null;
+  if(hasApi("load_state")){ try{ const r=await window.pywebview.api.load_state(); if(r) py=r; }catch(e){} }
+  try{ ls=localStorage.getItem("dash.state"); }catch(e){}
+  const parse=(d)=>{ try{ const p=JSON.parse(d); return (p&&p.widgets)?p:null; }catch(e){ return null; } };
+  const pp=parse(py), pl=parse(ls);
+  let chosen=null;
+  if(pp&&pl){ chosen = ((pl.savedAt||0) > (pp.savedAt||0)) ? pl : pp; }
+  else { chosen = pp||pl; }
+  if(chosen) state=chosen;
+}
+async function httpGet(url){
+  if(hasApi("http_get")){
+    const res=await window.pywebview.api.http_get(url);
+    if(res&&res.ok) return res.text;
+    throw new Error((res&&res.error)||"요청 실패");
+  }
+  const r=await fetch(url); if(!r.ok) throw new Error("HTTP "+r.status); return await r.text();
+}
+function openLink(url){ if(hasApi("open_url")) window.pywebview.api.open_url(url); else window.open(url,"_blank"); }
+async function openPath(path){ if(!hasApi("open_path")){ toast("이 기능은 설치형(exe)에서만 동작해요"); return; } try{ const r=await window.pywebview.api.open_path(path); if(r&&!r.ok){ toast(r.error==="notfound"?"경로를 찾을 수 없어요":"열지 못했어요"); } }catch(e){ toast("열지 못했어요"); } }
+
+function printContent(title, html){
+  let area=document.getElementById("printArea");
+  if(!area){ area=document.createElement("div"); area.id="printArea"; document.body.appendChild(area); }
+  area.innerHTML=html;
+  document.body.classList.add("printing");
+  const done=()=>{ document.body.classList.remove("printing"); window.removeEventListener("afterprint",done); };
+  window.addEventListener("afterprint",done);
+  setTimeout(()=>{ try{ window.print(); }catch(e){ done(); } },60);
+}
+
+let _calPop=null;
+function closeCalendar(){ if(_calPop){ _calPop.remove(); _calPop=null; document.removeEventListener("pointerdown",_calOutside,true); document.removeEventListener("keydown",_calEsc,true); } }
+function _calOutside(e){ if(_calPop && !_calPop.contains(e.target)) closeCalendar(); }
+function _calEsc(e){ if(e.key==="Escape") closeCalendar(); }
+function openCalendar(anchor, initial, onPick){
+  closeCalendar();
+  const pop=el("div","calpop"); _calPop=pop;
+  const view=new Date(initial.getFullYear(), initial.getMonth(), 1);
+  const z=n=>String(n).padStart(2,"0");
+  const render=()=>{
+    const y=view.getFullYear(), m=view.getMonth(), dim=new Date(y,m+1,0).getDate(), startDow=new Date(y,m,1).getDay();
+    const days=["일","월","화","수","목","금","토"]; const todayY=ymd(new Date()), selY=ymd(initial);
+    let h=`<div class="cal-h"><button data-pm>‹</button><span>${y}년 ${m+1}월</span><button data-nm>›</button></div><div class="cal-grid">`;
+    days.forEach((d,i)=>h+=`<div class="cal-w${i===0?' sun':i===6?' sat':''}">${d}</div>`);
+    for(let i=0;i<startDow;i++) h+=`<div></div>`;
+    for(let dn=1; dn<=dim; dn++){ const ds=`${y}${z(m+1)}${z(dn)}`, dow=new Date(y,m,dn).getDay(); const cl=["cal-d"]; if(ds===todayY)cl.push("today"); if(ds===selY)cl.push("sel"); if(dow===0)cl.push("sun"); if(dow===6)cl.push("sat"); h+=`<div class="${cl.join(' ')}" data-d="${dn}">${dn}</div>`; }
+    h+=`</div>`; pop.innerHTML=h;
+    $("[data-pm]",pop).onclick=()=>{ view.setMonth(view.getMonth()-1); render(); };
+    $("[data-nm]",pop).onclick=()=>{ view.setMonth(view.getMonth()+1); render(); };
+    [...pop.querySelectorAll("[data-d]")].forEach(c=>c.onclick=()=>{ const picked=new Date(view.getFullYear(), view.getMonth(), +c.dataset.d); closeCalendar(); onPick(picked); });
+  };
+  render(); document.body.appendChild(pop);
+  const r=anchor.getBoundingClientRect();
+  let left=Math.max(8, Math.min(r.left+r.width/2-pop.offsetWidth/2, window.innerWidth-pop.offsetWidth-8));
+  let top=r.bottom+6; if(top+pop.offsetHeight>window.innerHeight-8) top=Math.max(8, r.top-pop.offsetHeight-6);
+  pop.style.left=left+"px"; pop.style.top=top+"px";
+  setTimeout(()=>{ document.addEventListener("pointerdown",_calOutside,true); document.addEventListener("keydown",_calEsc,true); },0);
+}
+
+/* ===== 유틸 ===== */
+const $=(s,r=document)=>r.querySelector(s);
+const el=(t,c,h)=>{const e=document.createElement(t); if(c)e.className=c; if(h!=null)e.innerHTML=h; return e;};
+const uid=()=>Math.random().toString(36).slice(2,9);
+const pad=n=>String(n).padStart(2,"0");
+const ymd=d=>`${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+const isoOf=s=>`${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const snap=v=>Math.round(v/8)*8;
+let toastTimer=null;
+function toast(m){const t=$("#toast"); t.textContent=m; t.classList.add("on"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("on"),1700);}
+
+/* ===== 위젯 정의 (시계/날씨/할일/급식/디데이/바로가기) ===== */
+const WIDGETS = {
+  clock:{ title:"시계", icon:"🕑", desc:"현재 시각과 오늘 날짜를 큼직하게.",
+    mount(b){ b.classList.add("clock"); b.innerHTML=`<div class="time" data-clock-time>00:00<span class="sec">00</span></div><div class="sub" data-clock-date>—</div>`; tickClock(); } },
+
+  weather:{ title:"날씨", icon:"⛅", desc:"오늘 날씨와 3일 예보. 도시 변경 가능.", settings:true,
+    defaultCfg:()=>({name:"서울",lat:37.5665,lon:126.9780}),
+    mount(b,w){ b.classList.add("wx"); b.innerHTML=`<div data-wx-main><span class="spin"></span> 날씨 불러오는 중…</div>`; this.load(b,w);
+      if(w._timer) clearInterval(w._timer); w._timer=setInterval(()=>{ if(!document.body.contains(b)){ clearInterval(w._timer); w._timer=null; return; } this.load(b,w); }, 900000); },
+    openSettings(b,w){
+      const old=$(".wxset",b); if(old){ old.remove(); return; }
+      const box=el("div","wxset"); box.style.marginBottom="4px";
+      box.innerHTML=`<div class="row"><input placeholder="지역 (예: 포항, 강남, Tokyo)" data-q value="${w.config.name||''}"><button class="mini go" data-find>검색</button></div><div class="sresult" data-res></div>`;
+      b.insertBefore(box, b.firstChild);
+      const q=$("[data-q]",box), res=$("[data-res]",box);
+      const pick=(name,lat,lon)=>{ w.config={name:name,lat:lat,lon:lon}; persist(); box.remove(); this.load(b,w); toast(`${name} 날씨로 변경`); };
+      const find=async()=>{const name=q.value.trim(); if(!name)return; res.innerHTML=`<div class="empty"><span class="spin"></span> 검색 중…</div>`;
+        const kr=krPlaceMatch(name);
+        if(kr.length){ res.innerHTML=""; kr.forEach(p=>{ const it=el("div","si",`<div class="sn">${p.n}</div><div class="sr">${p.r}</div>`); it.onclick=()=>pick(p.n,p.lat,p.lon); res.appendChild(it); }); return; }
+        try{ const d=JSON.parse(await httpGet(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=10&language=ko&format=json`)); res.innerHTML="";
+          if(!d.results||!d.results.length){res.innerHTML=`<div class="empty">검색 결과가 없어요. 시·군·구 이름으로 다시 시도해 보세요.</div>`; return;}
+          d.results.forEach(r=>{const it=el("div","si",`<div class="sn">${r.name}</div><div class="sr">${[r.admin2,r.admin1,r.country].filter(Boolean).join(" · ")}</div>`);
+            it.onclick=()=>pick(r.name,r.latitude,r.longitude); res.appendChild(it);});
+        }catch(e){res.innerHTML=`<div class="empty">검색 실패. 인터넷 연결을 확인하세요.</div>`;} };
+      $("[data-find]",box).onclick=find;
+      attachAutocomplete(q,{ min:1, source:async(qv)=>{ const out=krPlaceMatch(qv).map(p=>({label:p.n, sub:p.r, value:p}));
+          if(out.length>=5) return out;
+          try{ const d=JSON.parse(await httpGet(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(qv)}&count=6&language=ko&format=json`)); (d.results||[]).forEach(r=>{ out.push({label:r.name, sub:[r.admin1,r.country].filter(Boolean).join(" · "), value:{n:r.name,lat:r.latitude,lon:r.longitude}}); }); }catch(e){}
+          return out.slice(0,8); },
+        onPick:(p)=>pick(p.n,p.lat,p.lon), onEnter:find });
+      q.focus();
+    },
+    async load(b,w){
+      const main=$("[data-wx-main]",b)||b; main.innerHTML=`<span class="spin"></span> 날씨 불러오는 중…`;
+      try{
+        const c=w.config;
+        const base=`https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}`
+          +`&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,is_day`
+          +`&hourly=temperature_2m,precipitation_probability,weather_code`
+          +`&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max`
+          +`&wind_speed_unit=ms&timezone=auto&forecast_days=4`;
+        const inKR = c.lat>=33 && c.lat<=38.8 && c.lon>=124.5 && c.lon<=132.2;
+        const tries = inKR ? [base+"&models=kma_seamless", base] : [base];
+        let data=null, usedKma=false;
+        for(let i=0;i<tries.length;i++){ try{ const j=JSON.parse(await httpGet(tries[i])); if(j&&j.current&&j.current.temperature_2m!=null&&j.daily&&j.daily.temperature_2m_max&&j.daily.temperature_2m_max[0]!=null){ data=j; usedKma=(inKR&&i===0); break; } }catch(e){} }
+        if(!data) throw new Error("no data");
+        const cur=data.current, dy=data.daily; const wc=wcode(cur.weather_code, cur.is_day);
+        const days=["일","월","화","수","목","금","토"]; let fc="";
+        for(let i=1;i<Math.min(4,dy.time.length);i++){const dd=new Date(dy.time[i]+"T00:00"); const wi=wcode(dy.weather_code[i]);
+          const pp=dy.precipitation_probability_max?dy.precipitation_probability_max[i]:null;
+          fc+=`<div class="d"><div class="dn">${days[dd.getDay()]}</div><div class="de">${wi.e}</div><div class="dt">${Math.round(dy.temperature_2m_max[i])}°<span class="lo"> / ${Math.round(dy.temperature_2m_min[i])}°</span></div>${(pp!=null&&pp>0)?`<div class="dp">☔ ${pp}%</div>`:""}</div>`;}
+        const tmax=dy.temperature_2m_max?Math.round(dy.temperature_2m_max[0]):null, tmin=dy.temperature_2m_min?Math.round(dy.temperature_2m_min[0]):null;
+        const rain=dy.precipitation_probability_max?dy.precipitation_probability_max[0]:null;
+        let hr="";
+        const hy=data.hourly;
+        if(hy&&hy.time&&hy.time.length){
+          const nowH=(cur.time||"").slice(0,13);
+          let s=hy.time.findIndex(t=>t.slice(0,13)>=nowH); if(s<0) s=0;
+          for(let i=s;i<Math.min(s+12,hy.time.length);i++){
+            const t=hy.time[i], hh=+t.slice(11,13); const wi=wcode(hy.weather_code?hy.weather_code[i]:0, (hh>=6&&hh<19)?1:0);
+            const pp=hy.precipitation_probability?hy.precipitation_probability[i]:null;
+            hr+=`<div class="h"${i===s?' data-hnow="1"':''}><div class="hh">${i===s?"지금":hh+"시"}</div><div class="he">${wi.e}</div><div class="ht">${Math.round(hy.temperature_2m[i])}°</div><div class="hp${(pp!=null&&pp>=30)?' wet':''}">${pp!=null?pp+"%":"-"}</div></div>`;
+          }
+        }
+        main.innerHTML=`<div class="now"><div class="emoji">${wc.e}</div><div><div class="temp">${Math.round(cur.temperature_2m)}<small>°C</small></div><div class="desc wxloc" title="지역 변경">📍 ${c.name} · ${wc.k}</div></div></div>
+          <div class="meta"><span>체감 <b>${Math.round(cur.apparent_temperature)}°</b></span>${(tmax!=null)?`<span>최고·최저 <b>${tmax}° / ${tmin}°</b></span>`:""}<span>습도 <b>${cur.relative_humidity_2m}%</b></span><span>바람 <b>${cur.wind_speed_10m.toFixed(1)}㎧</b></span>${(rain!=null)?`<span>강수확률 <b>${rain}%</b></span>`:""}</div><div class="air" data-air></div>${hr?`<div class="hrs">${hr}</div>`:""}<div class="fc">${fc}</div><div class="wsrc">${usedKma?"기상청(KMA) 모델 · 1.5km":"글로벌 모델"} · ${new Date().getHours()}시 ${pad(new Date().getMinutes())}분 기준</div>`;
+        const lc=$(".wxloc",main); if(lc) lc.onclick=()=>this.openSettings(b,w);
+        this.loadAir(main,c);
+      }catch(e){ main.innerHTML=`<div class="empty">날씨를 불러오지 못했어요. 설정(⚙)에서 도시를 다시 선택해 보세요.</div>`; }
+    },
+    async loadAir(main,c){ const box=$("[data-air]",main); if(!box)return;
+      try{
+        const d=JSON.parse(await httpGet(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${c.lat}&longitude=${c.lon}&current=pm10,pm2_5&timezone=auto`));
+        const cur=d.current; if(!cur){ box.style.display="none"; return; }
+        const pm10=Math.round(cur.pm10), pm25=Math.round(cur.pm2_5);
+        const g10=this.airGrade(pm10,[30,80,150]), g25=this.airGrade(pm25,[15,35,75]);
+        box.innerHTML=`<span class="ai"><i class="dotg ${g10.c}"></i>미세먼지 <b>${g10.t}</b> <em>${pm10}</em></span><span class="ai"><i class="dotg ${g25.c}"></i>초미세 <b>${g25.t}</b> <em>${pm25}</em></span>`;
+      }catch(e){ box.style.display="none"; } },
+    airGrade(v,[a,b,c]){ if(v<=a)return {t:"좋음",c:"g1"}; if(v<=b)return {t:"보통",c:"g2"}; if(v<=c)return {t:"나쁨",c:"g3"}; return {t:"매우나쁨",c:"g4"}; } },
+
+  todo:{ title:"할 일", icon:"✓", desc:"날짜별 할 일. 목록·달력 모드.",
+    defaultCfg:()=>({items:[],tab:"list",sel:null,moff:0}),
+    mount(b,w){ b.classList.add("todo"); if(!w.config.tab) w.config.tab="list";
+      b.innerHTML=`<div class="ttabs" data-tabs><button data-t="list">목록</button><button data-t="cal">달력</button></div><div class="tbody" data-body></div>`;
+      [...b.querySelectorAll("[data-t]")].forEach(btn=>{ btn.className=(w.config.tab===btn.dataset.t?"on":""); btn.onclick=()=>{ w.config.tab=btn.dataset.t; persist(); this.mount(b,w); }; });
+      if(w.config.tab==="cal") this.drawCal(b,w); else this.drawList(b,w); },
+    addRow(b,w,fixedDate){ const wrap=el("div","row t-add");
+      wrap.innerHTML=`<input type="date" data-d style="flex:1"><input placeholder="할 일 입력 후 Enter" data-in style="flex:1.6">`;
+      const di=$("[data-d]",wrap), inp=$("[data-in]",wrap);
+      di.value = fixedDate || isoOf(ymd(new Date()));
+      const add=()=>{ const t=inp.value.trim(); if(!t) return; if(!di.value){ toast("날짜를 선택하세요"); di.focus(); return; }
+        w.config.items.push({id:uid(),text:t,done:false,date:di.value.replace(/-/g,"")}); inp.value=""; persist(); if(w.config.tab==="cal") this.drawCal(b,w); else this.drawList(b,w); };
+      inp.addEventListener("keydown",e=>{ if(e.key==="Enter") add(); });
+      return wrap; },
+    make(b,w,it,drag,showDate){ const row=el("div","ti"+(it.done?" done":"")); row.innerHTML=`<div class="box"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#241c05" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="tw"><div class="tx"></div></div><div class="x">✕</div>`;
+      if(drag) row.dataset.rid=it.id;
+      const tx=$(".tx",row); tx.textContent=it.text; tx.title="클릭: 완료 / 더블클릭: 수정";
+      if(showDate&&it.date){ const dt=el("div","tdate"); const dow=["일","월","화","수","목","금","토"][new Date(+it.date.slice(0,4),+it.date.slice(4,6)-1,+it.date.slice(6,8)).getDay()]; dt.textContent=`${+it.date.slice(4,6)}/${+it.date.slice(6,8)}(${dow})`; dt.title="클릭하면 날짜 변경";
+        dt.onpointerdown=e=>e.stopPropagation();
+        dt.onclick=e=>{ e.stopPropagation(); const cur=new Date(+it.date.slice(0,4),+it.date.slice(4,6)-1,+it.date.slice(6,8));
+          openCalendar(dt, cur, picked=>{ it.date=ymd(picked); persist(); if(w.config.tab==="cal") this.drawCal(b,w); else this.drawList(b,w); toast("날짜 변경됨"); }); };
+        $(".tw",row).insertBefore(dt, $(".tx",row)); }
+      const redraw=()=>{ if(w.config.tab==="cal") this.drawCal(b,w); else this.drawList(b,w); };
+      const toggle=()=>{ const a=w.config.items, i=a.indexOf(it); if(i<0) return;
+        if(!it.done){ let prev=null; for(let k=i-1;k>=0;k--){ if(!a[k].done){ prev=a[k].id; break; } } it._prevId=prev; it.done=true; w.config.showDone=false; a.splice(i,1); a.push(it); }
+        else { it.done=false; a.splice(i,1); let at; if(it._prevId){ const pi=a.findIndex(x=>x.id===it._prevId && !x.done); at = pi>=0 ? pi+1 : a.findIndex(x=>x.done); } else { at=0; } if(at<0) at=a.length; a.splice(at,0,it); it._prevId=null; }
+        persist(); redraw(); };
+      const startEdit=()=>{ const ed=el("input"); ed.className="tedit"; ed.value=it.text; ed.style.width="100%"; ed.style.fontWeight="400"; ed.onpointerdown=e=>e.stopPropagation(); tx.replaceWith(ed); ed.focus(); ed.select(); let fin=false; const done2=(save)=>{ if(fin)return; fin=true; if(save){ const v=ed.value.trim(); if(v) it.text=v; } persist(); redraw(); }; ed.addEventListener("keydown",e=>{ if(e.key==="Enter"){done2(true);} else if(e.key==="Escape"){done2(false);} }); ed.addEventListener("blur",()=>done2(true)); };
+      $(".box",row).onclick=toggle; $(".x",row).onclick=()=>{ w.config.items=w.config.items.filter(x=>x.id!==it.id); persist(); redraw(); };
+      let ctimer=null;
+      tx.addEventListener("click",()=>{ if(ctimer) return; ctimer=setTimeout(()=>{ ctimer=null; toggle(); },210); });
+      tx.addEventListener("dblclick",()=>{ if(ctimer){ clearTimeout(ctimer); ctimer=null; } startEdit(); });
+      return row; },
+    drawList(b,w){ const body=$("[data-body]",b); body.innerHTML=""; body.appendChild(this.addRow(b,w));
+      const list=el("div","list"); body.appendChild(list); const items=w.config.items;
+      if(!items.length){ list.innerHTML=`<div class="empty">아직 할 일이 없어요. 날짜를 고르고 입력해 보세요.</div>`; return; }
+      const active=items.filter(i=>!i.done), done=items.filter(i=>i.done);
+      active.forEach(it=>list.appendChild(this.make(b,w,it,true,true)));
+      if(done.length){ const open=!!w.config.showDone; const hdr=el("div","donehdr"+(open?" open":"")); hdr.innerHTML=`<span class="chev">▸</span> 완료됨 ${done.length}`; hdr.onclick=()=>{ w.config.showDone=!w.config.showDone; persist(); this.drawList(b,w); }; list.appendChild(hdr); if(open){ done.forEach(it=>list.appendChild(this.make(b,w,it,true,true))); } }
+      enableListDnD(list, w.config.items, persist); },
+    drawCal(b,w){ const body=$("[data-body]",b); const todayStr=ymd(new Date());
+      if(!w.config.sel || w.config.selSetOn!==todayStr){ w.config.sel=todayStr; w.config.moff=0; w.config.selSetOn=todayStr; }
+      const base=new Date(); base.setDate(1); base.setMonth(base.getMonth()+(w.config.moff||0));
+      const y=base.getFullYear(), m=base.getMonth(), dim=new Date(y,m+1,0).getDate(), startDow=new Date(y,m,1).getDay();
+      const today=ymd(new Date());
+      if(!w.config.sel) w.config.sel=today;
+      const sel=w.config.sel;
+      const cnt={}; w.config.items.forEach(it=>{ if(it.date&&!it.done) cnt[it.date]=(cnt[it.date]||0)+1; });
+      body.innerHTML=`<div class="ndate"><button data-pm>‹</button><span>${y}년 ${m+1}월</span><button data-nm>›</button></div><div class="tcal" data-grid></div><div class="tsel" data-sel></div>`;
+      $("[data-pm]",body).onclick=()=>{ w.config.moff=(w.config.moff||0)-1; persist(); this.drawCal(b,w); };
+      $("[data-nm]",body).onclick=()=>{ w.config.moff=(w.config.moff||0)+1; persist(); this.drawCal(b,w); };
+      const g=$("[data-grid]",body); const days=["일","월","화","수","목","금","토"];
+      days.forEach((d,i)=>{ g.appendChild(el("div","cal-w"+(i===0?" sun":i===6?" sat":""),d)); });
+      for(let i=0;i<startDow;i++) g.appendChild(el("div"));
+      for(let dn=1; dn<=dim; dn++){ const ds=`${y}${pad(m+1)}${pad(dn)}`, dow=new Date(y,m,dn).getDay();
+        const c=el("div","cal-d"+(ds===today?" today":"")+(ds===sel?" sel":"")+(dow===0?" sun":dow===6?" sat":""));
+        c.innerHTML=`<span>${dn}</span>`+(cnt[ds]?`<i class="cdot"></i>`:"");
+        c.onclick=()=>{ w.config.sel=ds; w.config.selSetOn=ymd(new Date()); persist(); this.drawCal(b,w); }; g.appendChild(c); }
+      const sbox=$("[data-sel]",body);
+      const dow=["일","월","화","수","목","금","토"][new Date(+sel.slice(0,4),+sel.slice(4,6)-1,+sel.slice(6,8)).getDay()];
+      const label=`${+sel.slice(4,6)}월 ${+sel.slice(6,8)}일 (${dow})`+(sel===today?" · 오늘":"");
+      sbox.innerHTML=`<div class="tsel-h">${label}</div>`;
+      sbox.appendChild(this.addRow(b,w,isoOf(sel)));
+      const list=el("div","list"); sbox.appendChild(list);
+      const day=w.config.items.filter(it=>it.date===sel);
+      if(!day.length){ list.innerHTML=`<div class="empty">이날 할 일이 없어요.</div>`; return; }
+      day.filter(i=>!i.done).forEach(it=>list.appendChild(this.make(b,w,it,false,false)));
+      day.filter(i=>i.done).forEach(it=>list.appendChild(this.make(b,w,it,false,false))); },
+    print(w){ const items=w.config.items||[]; const done=items.filter(i=>i.done); const T=w.title||this.title;
+      let h=`<h1>${escapeHtml(T)}</h1><ul class="pt-list">`;
+      done.forEach(it=>{ const d=it.date?`${+it.date.slice(4,6)}/${+it.date.slice(6,8)} · `:""; h+=`<li class="pt-done">${escapeHtml(d+it.text)}</li>`; });
+      if(!done.length) h+=`<li>(완료된 항목 없음)</li>`;
+      h+=`</ul>`; return {title:T, html:h}; } },
+
+  meal:{ title:"급식", icon:"🍱", desc:"학교 급식 식단. 학교 검색해 등록.", settings:true,
+    defaultCfg:()=>({school:null,offset:0,key:""}),
+    mount(b,w){ b.classList.add("meal"); if(!w.config.school) this.searchUI(b,w); else this.draw(b,w); },
+    openSettings(b,w){ this.searchUI(b,w); },
+    searchUI(b,w){ b.innerHTML=`<div class="row"><input placeholder="학교 이름 검색 (예: 구리고등학교)" data-q value="${w.config.school?w.config.school.name:''}"><button class="mini go" data-find>검색</button></div><div class="sresult" data-res></div>`;
+      const q=$("[data-q]",b), res=$("[data-res]",b);
+      const find=async()=>{const name=q.value.trim(); if(!name)return; res.innerHTML=`<div class="empty"><span class="spin"></span> 학교 검색 중…</div>`;
+        try{ let url=`https://open.neis.go.kr/hub/schoolInfo?Type=json&pSize=15&SCHUL_NM=${encodeURIComponent(name)}`; if(w.config.key)url+=`&KEY=${w.config.key}`;
+          const data=JSON.parse(await httpGet(url)); const rows=(data.schoolInfo&&data.schoolInfo[1]&&data.schoolInfo[1].row)||[]; res.innerHTML="";
+          if(!rows.length){res.innerHTML=`<div class="empty">검색 결과가 없어요. 정확한 이름으로 다시 시도하세요.</div>`; return;}
+          rows.forEach(r=>{const it=el("div","si",`<div class="sn">${r.SCHUL_NM}</div><div class="sr">${r.LCTN_SC_NM||""} · ${r.SCHUL_KND_SC_NM||""}</div>`);
+            it.onclick=()=>{w.config.school={name:r.SCHUL_NM,atpt:r.ATPT_OFCDC_SC_CODE,code:r.SD_SCHUL_CODE}; w.config.offset=0; persist(); this.draw(b,w); toast(`${r.SCHUL_NM} 등록 완료`);}; res.appendChild(it);});
+        }catch(e){res.innerHTML=`<div class="empty">검색 실패. 인터넷 연결을 확인하세요.</div>`;} };
+      $("[data-find]",b).onclick=find; q.addEventListener("keydown",e=>{if(e.key==="Enter")find();}); },
+    async draw(b,w){ const sc=w.config.school; const d=new Date(); d.setDate(d.getDate()+(w.config.offset||0)); const days=["일","월","화","수","목","금","토"];
+      const label=(w.config.offset===0?"오늘":w.config.offset===1?"내일":w.config.offset===-1?"어제":`${d.getMonth()+1}.${d.getDate()}`);
+      b.innerHTML=`<div class="datebar"><div class="dd">${sc.name}</div><div class="nav"><button data-prev>‹</button><button data-today>${label}</button><button data-next>›</button></div></div><div data-body><span class="spin"></span> 급식 불러오는 중…</div>`;
+      $("[data-prev]",b).onclick=()=>{w.config.offset--; persist(); this.draw(b,w);}; $("[data-next]",b).onclick=()=>{w.config.offset++; persist(); this.draw(b,w);}; $("[data-today]",b).onclick=()=>{w.config.offset=0; persist(); this.draw(b,w);};
+      const out=$("[data-body]",b);
+      try{ let url=`https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&ATPT_OFCDC_SC_CODE=${sc.atpt}&SD_SCHUL_CODE=${sc.code}&MLSV_YMD=${ymd(d)}`; if(w.config.key)url+=`&KEY=${w.config.key}`;
+        const data=JSON.parse(await httpGet(url)); const rows=(data.mealServiceDietInfo&&data.mealServiceDietInfo[1]&&data.mealServiceDietInfo[1].row)||[];
+        if(!rows.length){out.innerHTML=`<div class="empty">${days[d.getDay()]}요일 (${d.getMonth()+1}/${d.getDate()})에는 급식 정보가 없어요.</div>`; return;}
+        out.innerHTML=""; rows.forEach(r=>{const dishes=cleanDish(r.DDISH_NM); const blk=el("div","block"); blk.innerHTML=`<div class="bt">${r.MMEAL_SC_NM||"식단"}</div>`; const wr=el("div","dishes"); dishes.forEach(n=>wr.appendChild(el("span",null,n))); blk.appendChild(wr); out.appendChild(blk);});
+      }catch(e){ out.innerHTML=`<div class="empty">급식 정보를 불러오지 못했어요. 자주 끊기면 설정(⚙)에서 NEIS 인증키를 넣어 보세요.</div>`; } } },
+
+  neis:{ title:"학사일정", icon:"📅", desc:"학교 학사일정(NEIS).", settings:true,
+    defaultCfg:()=>({school:null,grade:"",cls:"",tab:"schedule",off:0,moff:0,key:""}),
+    mount(b,w){ b.classList.add("neis"); if(!w.config.school) this.setupUI(b,w); else this.draw(b,w); },
+    openSettings(b,w){ this.setupUI(b,w); },
+    setupUI(b,w){ const sc=w.config.school;
+      b.innerHTML=`<div class="row"><input placeholder="학교 이름 검색 (예: 포항제철중학교)" data-q value="${sc?sc.name:''}"><button class="mini go" data-find>검색</button></div><div class="sresult" data-res></div>
+        <div class="neis-set" data-set style="${sc?'':'display:none'}">
+          <div class="setrow"><span>학교</span><b data-scn>${sc?sc.name:''}</b></div>
+          <div class="setrow"><span>인증키</span><input data-key value="${w.config.key||''}" placeholder="선택 (없어도 동작)"></div>
+          <button class="mini go" data-done>완료</button>
+          <div class="setnote">학교만 정하면 학사일정이 나옵니다. 자주 끊기면 NEIS 인증키를 넣어 주세요.</div>
+        </div>`;
+      const q=$("[data-q]",b), res=$("[data-res]",b);
+      const find=async()=>{const name=q.value.trim(); if(!name)return; res.innerHTML=`<div class="empty"><span class="spin"></span> 학교 검색 중…</div>`;
+        try{ let url=`https://open.neis.go.kr/hub/schoolInfo?Type=json&pSize=15&SCHUL_NM=${encodeURIComponent(name)}`; if(w.config.key)url+=`&KEY=${w.config.key}`;
+          const data=JSON.parse(await httpGet(url)); const rows=(data.schoolInfo&&data.schoolInfo[1]&&data.schoolInfo[1].row)||[]; res.innerHTML="";
+          if(!rows.length){res.innerHTML=`<div class="empty">검색 결과가 없어요. 정확한 이름으로 다시 시도하세요.</div>`; return;}
+          rows.forEach(r=>{const it=el("div","si",`<div class="sn">${r.SCHUL_NM}</div><div class="sr">${r.LCTN_SC_NM||""} · ${r.SCHUL_KND_SC_NM||""}</div>`);
+            it.onclick=()=>{w.config.school={name:r.SCHUL_NM,atpt:r.ATPT_OFCDC_SC_CODE,code:r.SD_SCHUL_CODE,kind:r.SCHUL_KND_SC_NM}; persist(); this.setupUI(b,w); toast(`${r.SCHUL_NM} 선택됨`);}; res.appendChild(it);});
+        }catch(e){res.innerHTML=`<div class="empty">검색 실패. 인터넷 연결을 확인하세요.</div>`;} };
+      $("[data-find]",b).onclick=find; q.addEventListener("keydown",e=>{if(e.key==="Enter")find();});
+      const done=$("[data-done]",b); if(done) done.onclick=()=>{ w.config.key=($("[data-key]",b).value||"").trim(); if(!w.config.school){toast("학교를 먼저 검색해 선택하세요"); return;} persist(); this.draw(b,w); toast("저장됨"); }; },
+    draw(b,w){ const sc=w.config.school; if(!sc){ this.setupUI(b,w); return; }
+      b.innerHTML=`<div class="ndate" data-nav></div><div class="nbody" data-body><span class="spin"></span> 불러오는 중…</div>`;
+      this.drawSchedule(b,w); },
+    async drawSchedule(b,w){ const sc=w.config.school; const base=new Date(); base.setDate(1); base.setMonth(base.getMonth()+(w.config.moff||0)); const y=base.getFullYear(), m=base.getMonth();
+      const first=new Date(y,m,1), last=new Date(y,m+1,0); const days=["일","월","화","수","목","금","토"];
+      $("[data-nav]",b).innerHTML=`<button data-prev>‹</button><span class="cal-trigger">${y}년 ${m+1}월</span><button data-next>›</button>`;
+      $("[data-prev]",b).onclick=()=>{w.config.moff=(w.config.moff||0)-1; persist(); this.draw(b,w);}; $("[data-next]",b).onclick=()=>{w.config.moff=(w.config.moff||0)+1; persist(); this.draw(b,w);};
+      $(".cal-trigger",b).onclick=()=>openCalendar($(".cal-trigger",b), first, picked=>{ const now=new Date(); w.config.moff=(picked.getFullYear()-now.getFullYear())*12+(picked.getMonth()-now.getMonth()); persist(); this.draw(b,w); });
+      const out=$("[data-body]",b);
+      try{ let url=`https://open.neis.go.kr/hub/SchoolSchedule?Type=json&pSize=200&ATPT_OFCDC_SC_CODE=${sc.atpt}&SD_SCHUL_CODE=${sc.code}&AA_FROM_YMD=${ymd(first)}&AA_TO_YMD=${ymd(last)}`; if(w.config.key)url+=`&KEY=${w.config.key}`;
+        const data=JSON.parse(await httpGet(url)); const rows=(data.SchoolSchedule&&data.SchoolSchedule[1]&&data.SchoolSchedule[1].row)||[];
+        const seen={}, evs=[]; rows.forEach(r=>{ const nm=(r.EVENT_NM||"").trim(); if(!nm||nm==="토요휴업일")return; const k=r.AA_YMD+"|"+nm; if(seen[k])return; seen[k]=1; evs.push(r); });
+        if(!evs.length){ out.innerHTML=`<div class="empty">${m+1}월 학사일정이 없어요.</div>`; return; }
+        const todayY=ymd(new Date()); out.innerHTML=""; const wrap=el("div","schlist");
+        evs.forEach(r=>{ const dd=r.AA_YMD; const dt=new Date(+dd.slice(0,4),+dd.slice(4,6)-1,+dd.slice(6,8)); const row=el("div","sch"+(dd===todayY?" today":""));
+          row.innerHTML=`<div class="sch-d">${+dd.slice(4,6)}/${+dd.slice(6,8)}<small>${days[dt.getDay()]}</small></div><div class="sch-e"></div>`; $(".sch-e",row).textContent=r.EVENT_NM; wrap.appendChild(row); });
+        out.appendChild(wrap);
+      }catch(e){ out.innerHTML=`<div class="empty">학사일정을 불러오지 못했어요. 자주 끊기면 설정(⚙)에서 NEIS 인증키를 넣어 보세요.</div>`; } } },
+
+  quote:{ title:"오늘의 명언", icon:"💬", desc:"매일 바뀌는 위인들의 명언.",
+    defaultCfg:()=>({}),
+    quotes:[
+      {t:"상상력은 지식보다 중요하다.",a:"알베르트 아인슈타인"},
+      {t:"삶에는 두 가지 방법이 있다. 하나는 기적이 없다고 여기는 것이고, 다른 하나는 모든 것이 기적이라 여기는 것이다.",a:"알베르트 아인슈타인"},
+      {t:"내가 더 멀리 보았다면, 그것은 거인들의 어깨 위에 서 있었기 때문이다.",a:"아이작 뉴턴"},
+      {t:"인생에서 두려워할 것은 아무것도 없다. 이해해야 할 것만 있을 뿐이다.",a:"마리 퀴리"},
+      {t:"천재는 1퍼센트의 영감과 99퍼센트의 노력이다.",a:"토머스 에디슨"},
+      {t:"살아남는 종은 강한 종도, 똑똑한 종도 아니라 변화에 가장 잘 적응하는 종이다.",a:"찰스 다윈"},
+      {t:"나는 생각한다, 고로 존재한다.",a:"르네 데카르트"},
+      {t:"너 자신을 알라.",a:"소크라테스"},
+      {t:"우리는 반복적으로 행하는 것의 결과다. 그러므로 탁월함은 습관이다.",a:"아리스토텔레스"},
+      {t:"배우기만 하고 생각하지 않으면 얻는 것이 없고, 생각만 하고 배우지 않으면 위태롭다.",a:"공자"},
+      {t:"그대를 죽이지 못하는 것은 그대를 더 강하게 만든다.",a:"프리드리히 니체"},
+      {t:"내 위의 별이 빛나는 하늘과 내 안의 도덕 법칙.",a:"이마누엘 칸트"},
+      {t:"아는 것이 힘이다.",a:"프랜시스 베이컨"},
+      {t:"인간은 자유롭도록 선고받았다.",a:"장폴 사르트르"},
+      {t:"세상에서 보고 싶은 변화가 있다면, 스스로 그 변화가 되어라.",a:"마하트마 간디"},
+      {t:"결코, 결코, 결코 포기하지 말라.",a:"윈스턴 처칠"},
+      {t:"성공은 영원하지 않고, 실패는 치명적이지 않다. 중요한 것은 계속하는 용기다.",a:"윈스턴 처칠"},
+      {t:"국민의, 국민에 의한, 국민을 위한 정부.",a:"에이브러햄 링컨"},
+      {t:"국가가 당신을 위해 무엇을 할지 묻지 말고, 당신이 국가를 위해 무엇을 할지 물으라.",a:"존 F. 케네디"},
+      {t:"교육은 세상을 바꾸는 가장 강력한 무기다.",a:"넬슨 만델라"},
+      {t:"가장 큰 영광은 넘어지지 않는 데 있지 않고, 넘어질 때마다 일어서는 데 있다.",a:"넬슨 만델라"},
+      {t:"오늘 할 수 있는 일을 내일로 미루지 말라.",a:"벤저민 프랭클린"},
+      {t:"자유가 아니면 죽음을 달라.",a:"패트릭 헨리"},
+      {t:"펜은 칼보다 강하다.",a:"에드워드 불워리턴"},
+      {t:"위대한 일은 결코 쉽게 이루어지지 않는다.",a:"세네카"},
+      {t:"행복은 습관이다. 그것을 몸에 지녀라.",a:"엘버트 허버드"},
+      {t:"지혜의 시작은 용어의 정의다.",a:"소크라테스"},
+      {t:"인내는 쓰지만 그 열매는 달다.",a:"장자크 루소"},
+      {t:"흐르지 않는 물은 썩는다. 끊임없이 나아가라.",a:"레오나르도 다빈치"}
+    ],
+    mount(b,w){ b.classList.add("quote"); b.innerHTML=`<div class="q-body" data-q></div><div class="q-foot"><button class="mini" data-new>🔄 다른 명언</button></div>`;
+      const day=Math.floor(Date.now()/86400000)%this.quotes.length; this.show(b,day);
+      $("[data-new]",b).onclick=()=>this.show(b,Math.floor(Math.random()*this.quotes.length)); },
+    show(b,i){ const q=this.quotes[i]; const box=$("[data-q]",b); if(!box)return; box.innerHTML=`<div class="q-t"></div><div class="q-a"></div>`; $(".q-t",box).textContent=`“${q.t}”`; $(".q-a",box).textContent=`— ${q.a}`; } },
+
+  dict:{ title:"사전", icon:"📖", desc:"국어·영영·영한·한영·일한·한일 사전, 읽기·듣기 지원.", settings:true,
+    defaultCfg:()=>({mode:"국어",krKey:"",mwKey:""}),
+    modes:{"국어":{ph:"우리말 단어 (예: 나무)",kr:true,inLang:"ko-KR"},"영영":{ph:"영어 단어 (예: apple)",en:true,inLang:"en-US"},"영한":{ph:"영어 단어 → 한국어",pair:"en|ko",en:true,inLang:"en-US",outLang:"ko-KR"},"한영":{ph:"한국어 단어 → 영어",pair:"ko|en",inLang:"ko-KR",outLang:"en-US"},"일한":{ph:"일본어 단어 → 한국어",pair:"ja|ko",inLang:"ja-JP",outLang:"ko-KR",jaIn:true},"한일":{ph:"한국어 단어 → 일본어",pair:"ko|ja",inLang:"ko-KR",outLang:"ja-JP"}},
+    spk(text,lang){ const bt=el("button","spk","🔊"); bt.title="듣기"; bt.onclick=(e)=>{ e.stopPropagation(); speak(text,lang); }; return bt; },
+    openSettings(b,w){ const old=$(".dset",b); if(old){ old.remove(); return; }
+      const box=el("div","dset");
+      box.innerHTML=`<div class="setrow"><span>국어사전 키</span><input data-kk placeholder="표준국어대사전 인증키" value="${w.config.krKey||''}"></div>
+        <div class="setrow"><span>영영 키</span><input data-mk placeholder="Merriam-Webster 키 (선택)" value="${w.config.mwKey||''}"></div>
+        <div class="row"><button class="mini go" data-save>저장</button></div>
+        <div class="setnote">국어사전 키는 stdict.korean.go.kr 또는 공공데이터포털에서 무료로 발급받습니다. 영영 키를 넣으면 발음·뜻이 더 자세히 나오고, 없으면 무료 사전으로 동작합니다.</div>`;
+      b.insertBefore(box,b.firstChild);
+      $("[data-save]",box).onclick=()=>{ w.config.krKey=$("[data-kk]",box).value.trim(); w.config.mwKey=$("[data-mk]",box).value.trim(); persist(); box.remove(); toast("저장됨"); }; },
+    mount(b,w){ b.classList.add("dict"); if(!this.modes[w.config.mode]) w.config.mode="국어";
+      b.innerHTML=`<div class="dmodes" data-modes></div><div class="row"><input data-q><button class="mini go" data-find>검색</button></div><div class="dict-body" data-body></div>`;
+      const q=$("[data-q]",b), body=$("[data-body]",b), mwrap=$("[data-modes]",b);
+      const setPh=()=>{ q.placeholder=this.modes[w.config.mode].ph; };
+      const renderModes=()=>{ mwrap.innerHTML=""; Object.keys(this.modes).forEach(k=>{ const c=el("button","dmode"+(w.config.mode===k?" on":""),k); c.onclick=()=>{ w.config.mode=k; persist(); renderModes(); setPh(); body.innerHTML=""; q.focus(); }; mwrap.appendChild(c); }); setPh(); };
+      const find=async()=>{ const word=q.value.trim(); if(!word)return; const md=this.modes[w.config.mode]; body.innerHTML=`<div class="empty"><span class="spin"></span> 찾는 중…</div>`;
+        try{
+          if(md.kr){
+            if(!w.config.krKey){ body.innerHTML=`<div class="empty">설정(⚙)에서 국어사전 인증키를 넣어 주세요. stdict.korean.go.kr에서 무료로 발급받을 수 있어요.</div>`; return; }
+            const d=JSON.parse(await httpGet(`https://stdict.korean.go.kr/api/search.do?key=${encodeURIComponent(w.config.krKey)}&q=${encodeURIComponent(word)}&req_type=json&num=10`));
+            let items=(d.channel&&d.channel.item)||[]; if(!Array.isArray(items)) items=[items];
+            if(!items.length){ body.innerHTML=`<div class="empty">‘${escapeHtml(word)}’을(를) 찾지 못했어요.</div>`; return; }
+            body.innerHTML=`<div class="d-word"><span class="dw-t"></span></div>`; $(".dw-t",body).textContent=items[0].word||word; $(".d-word",body).appendChild(this.spk(items[0].word||word,"ko-KR"));
+            items.slice(0,5).forEach(it=>{ let sn=it.sense; if(Array.isArray(sn)) sn=sn[0]; if(!sn)return;
+              const blk=el("div","d-mean"); blk.innerHTML=`<span class="d-pos">${escapeHtml(it.pos||"")}</span><div class="d-def"></div>`; $(".d-def",blk).textContent=sn.definition||"";
+              if(sn.link){ const a=el("div","d-more","자세히 보기"); a.onclick=()=>openLink(sn.link); blk.appendChild(a); }
+              body.appendChild(blk); });
+            body.appendChild(el("div","d-src","출처: 국립국어원 표준국어대사전"));
+          } else if(w.config.mode==="영영"){
+            if(w.config.mwKey){
+              const arr=JSON.parse(await httpGet(`https://www.dictionaryapi.com/api/v3/references/collegiate/json/${encodeURIComponent(word.toLowerCase())}?key=${encodeURIComponent(w.config.mwKey)}`));
+              if(Array.isArray(arr)&&arr.length&&typeof arr[0]==="object"){
+                const e=arr[0]; const ph=(e.hwi&&e.hwi.prs&&e.hwi.prs[0]&&e.hwi.prs[0].mw)||"";
+                body.innerHTML=`<div class="d-word"><span class="dw-t"></span> <span class="d-ph"></span></div>`; $(".dw-t",body).textContent=word; $(".d-ph",body).textContent=ph?`[${ph}]`:""; $(".d-word",body).appendChild(this.spk(word,"en-US"));
+                arr.slice(0,3).forEach(en=>{ if(typeof en!=="object"||!en.shortdef||!en.shortdef.length)return; const blk=el("div","d-mean"); blk.innerHTML=`<span class="d-pos">${escapeHtml(en.fl||"")}</span><div class="d-def"></div>`; $(".d-def",blk).textContent=en.shortdef[0]; body.appendChild(blk); });
+                body.appendChild(el("div","d-src","출처: Merriam-Webster")); return;
+              }
+            }
+            const arr=JSON.parse(await httpGet(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word.toLowerCase())}`));
+            if(!Array.isArray(arr)||!arr[0]||!arr[0].meanings){ body.innerHTML=`<div class="empty">‘${escapeHtml(word)}’ 뜻을 찾지 못했어요. 철자를 확인해 보세요.</div>`; return; }
+            const e=arr[0]; const ph=e.phonetic||((e.phonetics||[]).find(pp=>pp.text)||{}).text||"";
+            body.innerHTML=`<div class="d-word"><span class="dw-t"></span> <span class="d-ph"></span></div>`; $(".dw-t",body).textContent=e.word; $(".d-ph",body).textContent=ph; $(".d-word",body).appendChild(this.spk(e.word,"en-US"));
+            e.meanings.slice(0,3).forEach(m=>{ const def=(m.definitions||[])[0]; if(!def)return; const blk=el("div","d-mean"); blk.innerHTML=`<span class="d-pos">${escapeHtml(m.partOfSpeech||"")}</span><div class="d-def"></div>`; $(".d-def",blk).textContent=def.definition||""; if(def.example){ const ex=el("div","d-ex"); ex.textContent=`“${def.example}”`; blk.appendChild(ex); } body.appendChild(blk); });
+          } else {
+            const d=JSON.parse(await httpGet(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=${encodeURIComponent(md.pair)}`));
+            const main=d.responseData&&d.responseData.translatedText;
+            if(!main){ body.innerHTML=`<div class="empty">뜻을 찾지 못했어요. (학교망에서 막혀 있을 수 있어요)</div>`; return; }
+            body.innerHTML=`<div class="d-word"><span class="dw-t"></span></div><div class="tr-main"><span class="tm-t"></span></div>`;
+            $(".dw-t",body).textContent=word; $(".d-word",body).appendChild(this.spk(word,md.inLang));
+            const addReading=(afterEl,ja)=>{ const rd=el("div","tr-read"); rd.textContent="읽기 …"; afterEl.insertAdjacentElement("afterend",rd); jaReading(ja).then(h=>{ if(h){ rd.textContent="읽기: "+h; } else { rd.style.display="none"; } }); };
+            if(md.jaIn){ addReading($(".d-word",body), word); }
+            $(".tm-t",body).textContent=main; $(".tr-main",body).appendChild(this.spk(main,md.outLang));
+            if(w.config.mode==="한일"){ addReading($(".tr-main",body), main); }
+            const alts=[]; (d.matches||[]).forEach(m=>{ const t=(m.translation||"").trim(); if(t && t.toLowerCase()!==main.toLowerCase() && !alts.includes(t) && alts.length<4) alts.push(t); });
+            if(alts.length){ const box=el("div","tr-alts"); box.innerHTML=`<div class="tr-lbl">다른 뜻</div>`; alts.forEach(t=>{ const it=el("div","tr-alt"); it.textContent=t; box.appendChild(it); }); body.appendChild(box); }
+          }
+        }catch(err){ body.innerHTML=`<div class="empty">사전을 불러오지 못했어요. (키가 맞는지, 인터넷이 되는지 확인해 주세요)</div>`; } };
+      $("[data-find]",b).onclick=find;
+      attachAutocomplete(q,{ min:1, source:(qv)=>{ if(!this.modes[w.config.mode].en) return []; const ql=qv.toLowerCase(); return COMMON_WORDS.filter(x=>x.startsWith(ql)).slice(0,8).map(x=>({label:x,value:x})); }, onPick:(word)=>{ q.value=word; find(); }, onEnter:find });
+      renderModes(); } },
+
+  encyc:{ title:"백과사전", icon:"📚", desc:"위키백과에서 항목을 찾아 요약을 봅니다.",
+    defaultCfg:()=>({}),
+    mount(b,w){ b.classList.add("encyc");
+      b.innerHTML=`<div class="row"><input placeholder="찾을 항목 (예: 광합성, 세종대왕)" data-q><button class="mini go" data-find>검색</button></div><div class="ency-body" data-body></div>`;
+      const q=$("[data-q]",b), body=$("[data-body]",b);
+      const show=async(title)=>{ body.innerHTML=`<div class="empty"><span class="spin"></span> 불러오는 중…</div>`;
+        try{ const d=JSON.parse(await httpGet(`https://ko.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&exintro=1&explaintext=1&redirects=1&pithumbsize=180&format=json&origin=*&titles=${encodeURIComponent(title)}`));
+          const pages=d.query&&d.query.pages; const pg=pages&&pages[Object.keys(pages)[0]];
+          if(!pg||pg.missing!==undefined||!pg.extract){ body.innerHTML=`<div class="empty">내용을 찾지 못했어요.</div>`; return; }
+          let txt=(pg.extract||"").trim(); if(txt.length>700) txt=txt.slice(0,700)+"…";
+          const url=`https://ko.wikipedia.org/wiki/${encodeURIComponent(pg.title)}`;
+          body.innerHTML=`<div class="e-head">${pg.thumbnail?`<img class="e-img" src="${pg.thumbnail.source}" alt="">`:""}<div class="e-title"></div></div><div class="e-text"></div><div class="e-foot"><span class="e-src">출처: 위키백과 (CC BY-SA)</span><button class="mini" data-more>원문 보기</button></div>`;
+          $(".e-title",body).textContent=pg.title; $(".e-text",body).textContent=txt;
+          $("[data-more]",body).onclick=()=>openLink(url);
+        }catch(e){ body.innerHTML=`<div class="empty">불러오지 못했어요. (그 PC/망에서 위키백과가 막혀 있을 수 있어요)</div>`; } };
+      const find=async()=>{ const s=q.value.trim(); if(!s)return; body.innerHTML=`<div class="empty"><span class="spin"></span> 찾는 중…</div>`;
+        try{ const d=JSON.parse(await httpGet(`https://ko.wikipedia.org/w/api.php?action=query&list=search&srlimit=8&format=json&origin=*&srsearch=${encodeURIComponent(s)}`));
+          const rs=(d.query&&d.query.search)||[];
+          if(!rs.length){ body.innerHTML=`<div class="empty">검색 결과가 없어요.</div>`; return; }
+          if(rs.length===1||rs[0].title===s){ show(rs[0].title); return; }
+          body.innerHTML=""; rs.forEach(r=>{ const it=el("div","si",`<div class="sn">${escapeHtml(r.title)}</div>`); it.onclick=()=>{ q.value=r.title; show(r.title); }; body.appendChild(it); });
+        }catch(e){ body.innerHTML=`<div class="empty">검색하지 못했어요. (그 PC/망에서 위키백과가 막혀 있을 수 있어요)</div>`; } };
+      $("[data-find]",b).onclick=find;
+      attachAutocomplete(q,{ min:2, delay:220, source:async(qv)=>{ try{ const d=JSON.parse(await httpGet(`https://ko.wikipedia.org/w/api.php?action=opensearch&limit=8&format=json&origin=*&search=${encodeURIComponent(qv)}`)); return (d[1]||[]).map(t=>({label:t,value:t})); }catch(e){ return []; } }, onPick:(t)=>{ q.value=t; show(t); }, onEnter:find }); } },
+
+  history:{ title:"오늘의 역사", icon:"📜", desc:"그날 있었던 역사적 사건.",
+    defaultCfg:()=>({off:0}),
+    mount(b,w){ b.classList.add("hist"); b.innerHTML=`<div class="ndate" data-nav></div><div class="hist-body" data-body></div>`; this.load(b,w); },
+    async load(b,w){ const d=new Date(); d.setDate(d.getDate()+(w.config.off||0)); const mm=String(d.getMonth()+1).padStart(2,"0"), dd=String(d.getDate()).padStart(2,"0");
+      $("[data-nav]",b).innerHTML=`<button data-prev>‹</button><span>${d.getMonth()+1}월 ${d.getDate()}일</span><button data-next>›</button>`;
+      $("[data-prev]",b).onclick=()=>{w.config.off=(w.config.off||0)-1; persist(); this.load(b,w);}; $("[data-next]",b).onclick=()=>{w.config.off=(w.config.off||0)+1; persist(); this.load(b,w);};
+      const out=$("[data-body]",b); out.innerHTML=`<div class="empty"><span class="spin"></span> 불러오는 중…</div>`;
+      const koUrls=[`https://api.wikimedia.org/feed/v1/wikipedia/ko/onthisday/events/${mm}/${dd}`,`https://ko.wikipedia.org/api/rest_v1/feed/onthisday/events/${mm}/${dd}`];
+      let evs=null, isEn=false;
+      for(const u of koUrls){ try{ const j=JSON.parse(await httpGet(u)); if(j&&Array.isArray(j.events)&&j.events.length){ evs=j.events.map(e=>({year:e.year,text:e.text,page:(e.pages&&e.pages[0]&&e.pages[0].content_urls&&e.pages[0].content_urls.desktop&&e.pages[0].content_urls.desktop.page)||""})); break; } }catch(e){} }
+      if(!evs){ try{ const j=JSON.parse(await httpGet(`https://byabbe.se/on-this-day/${d.getMonth()+1}/${d.getDate()}/events.json`)); if(j&&Array.isArray(j.events)&&j.events.length){ isEn=true; evs=j.events.map(e=>({year:e.year,text:e.description,page:(e.wikipedia&&e.wikipedia[0]&&e.wikipedia[0].wikipedia)||""})); } }catch(e){} }
+      if(!evs||!evs.length){ out.innerHTML=`<div class="empty">불러오지 못했어요. app.py도 새로 빌드했는지 확인해 주세요. (또는 그 PC/망에서 위키백과가 막혀 있을 수 있어요)</div>`; return; }
+      evs=evs.sort((a,c)=>(Number(c.year)||0)-(Number(a.year)||0)).slice(0,15);
+      out.innerHTML=""; let note=null; if(isEn){ note=el("div","hist-note","영어 원문을 한글로 자동 번역 중… (원문: 위키백과)"); out.appendChild(note); }
+      const refs=[]; evs.forEach(ev=>{ const row=el("div","hrow"); const yr=el("div","hyr"); yr.textContent=ev.year!=null?String(ev.year):""; const tx=el("div","htx"); tx.textContent=ev.text||""; row.appendChild(yr); row.appendChild(tx);
+        if(ev.page){ row.classList.add("hlink"); row.onclick=()=>openLink(ev.page); }
+        out.appendChild(row); refs.push({tx,text:ev.text||""}); });
+      if(isEn){ (async()=>{ let ok=0; for(const r of refs){ if(!document.body.contains(r.tx)) return; const ko=await translateText(r.text,"en","ko"); if(ko){ r.tx.textContent=ko; ok++; } } if(note) note.textContent = ok? "영어 원문을 한글로 자동 번역했습니다. (원문: 위키백과)" : "번역에 실패해 영어 원문으로 표시합니다. (원문: 위키백과)"; })(); } } },
+
+  country:{ title:"세계 국가정보", icon:"🌍", desc:"국기·수도·인구 등 국가 정보.",
+    defaultCfg:()=>({}),
+    match(qv){ const q=qv.trim(); const ql=q.toLowerCase(); return COUNTRIES.filter(c=>c.ko.includes(q)||c.en.toLowerCase().includes(ql)||c.cc.toLowerCase()===ql); },
+    mount(b,w){ b.classList.add("country"); b.innerHTML=`<div class="row"><input placeholder="나라 이름 (예: 프랑스, Japan)" data-q><button class="mini go" data-find>검색</button></div><div class="ctry-body" data-body></div>`;
+      const q=$("[data-q]",b);
+      const find=()=>{ const name=q.value.trim(); if(!name)return; const out=$("[data-body]",b); const hits=this.match(name);
+        if(!hits.length){ out.innerHTML=`<div class="empty">‘${escapeHtml(name)}’ 나라를 찾지 못했어요. 다른 이름으로 시도해 보세요.</div>`; return; }
+        if(hits.length>1){ out.innerHTML=""; hits.slice(0,8).forEach(c=>{ const e=el("div","si",`<div class="sn">${flagEmoji(c.cc)} ${escapeHtml(c.ko)}</div><div class="sr">${escapeHtml(c.en)}</div>`); e.onclick=()=>{ q.value=c.ko; this.show(out,c); }; out.appendChild(e); }); return; }
+        this.show(out,hits[0]); };
+      $("[data-find]",b).onclick=find;
+      attachAutocomplete(q,{ min:1, source:(qv)=>this.match(qv).slice(0,8).map(c=>({label:flagEmoji(c.cc)+" "+c.ko, sub:c.en, value:c})), onPick:(c)=>{ q.value=c.ko; this.show($("[data-body]",b),c); }, onEnter:find }); },
+    show(out,c){ out.innerHTML=`<div class="c-head"><div class="c-flagem">${flagEmoji(c.cc)}</div><div class="c-tt"><div class="c-name"></div><div class="c-en"></div></div></div><div class="c-rows"><div class="c-r"><span>수도</span><b class="cv-cap"></b></div><div class="c-r"><span>지역</span><b class="cv-reg"></b></div><div class="c-r"><span>인구</span><b class="cv-pop"></b></div><div class="c-r"><span>언어</span><b class="cv-lang"></b></div></div>`;
+      $(".c-name",out).textContent=c.ko; $(".c-en",out).textContent=c.en; $(".cv-cap",out).textContent=c.cap; $(".cv-reg",out).textContent=c.region; $(".cv-pop",out).textContent="약 "+c.pop.toLocaleString()+"명"; $(".cv-lang",out).textContent=c.lang; } },
+
+  timetable:{ title:"시간표", icon:"📆", desc:"교사별·학반별 주간 시간표를 봅니다.", settings:true,
+    defaultCfg:()=>({file:"",fileName:"",tab:"teacher",sel:""}),
+    async take(b,w,file){ if(!file) return;
+      if(!/\.(xlsx|xlsm|xls)$/i.test(file.name)){ toast("엑셀 파일만 올릴 수 있어요"); return; }
+      if(!hasApi("save_upload")){ toast("설치형(exe)에서만 동작해요"); return; }
+      toast("시간표 등록 중…");
+      try{ const b64=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(",")[1]); r.onerror=()=>rej(new Error("read")); r.readAsDataURL(file); });
+        const r=await window.pywebview.api.save_upload("timetable",file.name,b64);
+        if(r&&r.ok){ w.config.file=r.path; w.config.fileName=file.name; persist(); this.mount(b,w); } else toast("파일을 저장하지 못했어요");
+      }catch(e){ toast("파일을 읽지 못했어요"); } },
+    hookFile(b,w,scope){ const fi=$("[data-file]",scope); if(fi) fi.onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(f) this.take(b,w,f); };
+      const pk=$("[data-pick]",scope); if(pk) pk.onclick=async()=>{ if(!hasApi("pick_path")){ toast("설치형(exe)에서만 동작해요"); return; }
+        try{ const r=await window.pywebview.api.pick_path("file"); if(r&&r.ok&&r.path){ w.config.file=r.path; w.config.fileName=r.path.split(/[\\/]/).pop(); persist(); this.mount(b,w); } }catch(e){ toast("파일을 열지 못했어요"); } }; },
+    dropZone(b,w,zone){ if(!zone)return;
+      ["dragenter","dragover"].forEach(ev=>zone.addEventListener(ev,e=>{ e.preventDefault(); e.stopPropagation(); zone.classList.add("over"); }));
+      ["dragleave","drop"].forEach(ev=>zone.addEventListener(ev,e=>{ e.preventDefault(); e.stopPropagation(); zone.classList.remove("over"); }));
+      zone.addEventListener("drop",e=>{ const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) this.take(b,w,f); }); },
+    openSettings(b,w){ const old=$(".rset",b); if(old){ old.remove(); return; }
+      const box=el("div","rset");
+      box.innerHTML=`<div class="setrow"><span>파일</span><b class="rfile"></b></div>
+        <div class="rup"><label class="mini up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div>
+        <div class="setnote">엑셀을 위젯에 끌어다 놓아도 등록됩니다. 교사별·학반별 어느 양식이든 자동으로 인식해요.</div>`;
+      b.insertBefore(box,b.firstChild);
+      $(".rfile",box).textContent=w.config.fileName||(w.config.file? w.config.file.split(/[\\/]/).pop():"(선택 안 됨)");
+      this.hookFile(b,w,box); },
+    async mount(b,w){ b.classList.add("roster","tt2");
+      if(!w.config.file){ b.innerHTML=`<div class="rdrop" data-zone><div class="rd-i">📥</div><div class="rd-t">시간표 엑셀을 여기에 끌어다 놓으세요</div><div class="rup"><label class="mini go up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div></div>`;
+        this.hookFile(b,w,b); this.dropZone(b,w,$("[data-zone]",b)); return; }
+      b.innerHTML=`<div class="empty"><span class="spin"></span> 시간표 읽는 중…</div>`;
+      if(!hasApi("read_timetable")){ b.innerHTML=`<div class="empty">설치형(exe)에서만 동작해요. 최신 build.bat으로 다시 만들어 주세요.</div>`; return; }
+      let res=null; try{ res=await window.pywebview.api.read_timetable(w.config.file); }catch(e){}
+      if(!res||!res.ok){ const why=res&&res.error==="openpyxl_missing"?"엑셀 읽기 도구가 없어요. 최신 build.bat으로 다시 빌드해 주세요.":res&&res.error==="notfound"?"파일을 찾을 수 없어요. 다시 올려 주세요.":res&&res.error==="noformat"?"요일·교시 제목줄을 찾지 못했어요.":"시간표를 읽지 못했어요.";
+        b.innerHTML=`<div class="empty">${why}</div><div class="rup"><label class="mini go up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div>`; this.hookFile(b,w,b); return; }
+      w._tt=res;
+      const isT=()=>w.config.tab!=="class";
+      b.innerHTML=`<div class="ttabs" data-tabs><button data-t="teacher">교사별</button><button data-t="class">학반별</button></div>
+        <div class="row"><input data-q><button class="mini go" data-find>보기</button></div><div class="rcount"></div><div class="ttgrid" data-grid></div>`;
+      $(".rcount",b).textContent=`${w.config.fileName||res.file} · 학반 ${res.classes.length} · 교사 ${res.teachers.length}`;
+      [...b.querySelectorAll("[data-t]")].forEach(btn=>{ btn.className=((btn.dataset.t==="teacher")===isT())?"on":""; btn.onclick=()=>{ w.config.tab=btn.dataset.t; w.config.sel=""; persist(); this.mount(b,w); }; });
+      const q=$("[data-q]",b), grid=$("[data-grid]",b);
+      q.placeholder=isT()?"교사 이름 (예: 홍길동)":"학반 (예: 1-3)";
+      this.dropZone(b,w,b);
+      const draw=(key)=>{ if(!key){ grid.innerHTML=`<div class="empty">${isT()?"교사 이름을":"학반을"} 입력해 보세요.</div>`; return; }
+        const rows=res.lessons.filter(x=>isT()? x.teacher===key : x.cls===key);
+        if(!rows.length){ grid.innerHTML=`<div class="empty">‘${escapeHtml(key)}’ 시간표가 없어요.</div>`; return; }
+        const days=["월","화","수","목","금"]; const maxP=Math.max(...rows.map(x=>x.period),6);
+        const todayIdx=[-1,0,1,2,3,4,-1][new Date().getDay()];
+        let h=`<table class="tt"><tr><th></th>`+days.map((d,i)=>`<th class="${i===todayIdx?'now':''}">${d}</th>`).join("")+`</tr>`;
+        for(let p=1;p<=maxP;p++){ h+=`<tr><th class="pn">${p}</th>`;
+          days.forEach((d,i)=>{ const c=rows.find(x=>x.day===d&&x.period===p);
+            h+=`<td class="${i===todayIdx?'now':''}">`+(c?`<div class="s">${escapeHtml(c.subject||"")}</div><div class="t">${escapeHtml(isT()?c.cls:(c.teacher||""))}</div>`:"")+`</td>`; });
+          h+=`</tr>`; }
+        h+=`</table><div class="ttsum">주당 ${rows.length}시간</div>`;
+        grid.innerHTML=h; };
+      const find=()=>{ const s2=q.value.trim().replace(/\s/g,""); if(!s2)return;
+        const key=isT()? s2 : s2.replace(/학년|반/g,"-").replace(/-+/g,"-").replace(/-$/,"");
+        w.config.sel=key; persist(); draw(key); };
+      $("[data-find]",b).onclick=find;
+      attachAutocomplete(q,{ min:1, source:(qv)=>{ const s2=qv.trim();
+          if(isT()) return res.teachers.filter(t=>t.includes(s2)).slice(0,8).map(t=>({label:t,value:t}));
+          const k=s2.replace(/학년|반/g,"-").replace(/-+/g,"-");
+          return res.classes.filter(c=>c.name.startsWith(k)||c.name.includes(k)).slice(0,8).map(c=>({label:c.name, sub:c.homeroom?("담임 "+c.homeroom):"", value:c.name})); },
+        onPick:(v)=>{ q.value=v; w.config.sel=v; persist(); draw(v); }, onEnter:find });
+      if(w.config.sel){ q.value=w.config.sel; draw(w.config.sel); } else draw(""); } },
+
+  contacts:{ title:"교사 연락처", icon:"📞", desc:"이름으로 내선번호·자리·특별실을 찾습니다.", settings:true,
+    defaultCfg:()=>({file:"",fileName:""}),
+    async take(b,w,file){ if(!file) return;
+      if(!/\.(xlsx|xlsm|xls)$/i.test(file.name)){ toast("엑셀 파일만 올릴 수 있어요"); return; }
+      if(!hasApi("save_upload")){ toast("설치형(exe)에서만 동작해요"); return; }
+      toast("연락처 등록 중…");
+      try{ const b64=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(",")[1]); r.onerror=()=>rej(new Error("read")); r.readAsDataURL(file); });
+        const r=await window.pywebview.api.save_upload("contacts",file.name,b64);
+        if(r&&r.ok){ w.config.file=r.path; w.config.fileName=file.name; persist(); this.mount(b,w); } else toast("파일을 저장하지 못했어요");
+      }catch(e){ toast("파일을 읽지 못했어요"); } },
+    hookFile(b,w,scope){ const fi=$("[data-file]",scope); if(fi) fi.onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(f) this.take(b,w,f); };
+      const pk=$("[data-pick]",scope); if(pk) pk.onclick=async()=>{ if(!hasApi("pick_path")){ toast("설치형(exe)에서만 동작해요"); return; }
+        try{ const r=await window.pywebview.api.pick_path("file"); if(r&&r.ok&&r.path){ w.config.file=r.path; w.config.fileName=r.path.split(/[\\/]/).pop(); persist(); this.mount(b,w); } }catch(e){ toast("파일을 열지 못했어요"); } }; },
+    dropZone(b,w,zone){ if(!zone)return;
+      ["dragenter","dragover"].forEach(ev=>zone.addEventListener(ev,e=>{ e.preventDefault(); e.stopPropagation(); zone.classList.add("over"); }));
+      ["dragleave","drop"].forEach(ev=>zone.addEventListener(ev,e=>{ e.preventDefault(); e.stopPropagation(); zone.classList.remove("over"); }));
+      zone.addEventListener("drop",e=>{ const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) this.take(b,w,f); }); },
+    openSettings(b,w){ const old=$(".rset",b); if(old){ old.remove(); return; }
+      const box=el("div","rset");
+      box.innerHTML=`<div class="setrow"><span>파일</span><b class="rfile"></b></div>
+        <div class="rup"><label class="mini up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div>
+        <div class="setnote">엑셀을 위젯에 끌어다 놓아도 등록됩니다. 이름·전화번호 제목줄이 있으면 자동으로 인식해요.</div>`;
+      b.insertBefore(box,b.firstChild);
+      $(".rfile",box).textContent=w.config.fileName||(w.config.file? w.config.file.split(/[\\/]/).pop():"(선택 안 됨)");
+      this.hookFile(b,w,box); },
+    async mount(b,w){ b.classList.add("roster","ctc");
+      if(!w.config.file){ b.innerHTML=`<div class="rdrop" data-zone><div class="rd-i">📥</div><div class="rd-t">교사 연락처 엑셀을 여기에 끌어다 놓으세요</div><div class="rup"><label class="mini go up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div></div>`;
+        this.hookFile(b,w,b); this.dropZone(b,w,$("[data-zone]",b)); return; }
+      b.innerHTML=`<div class="empty"><span class="spin"></span> 연락처 읽는 중…</div>`;
+      if(!hasApi("read_contacts")){ b.innerHTML=`<div class="empty">설치형(exe)에서만 동작해요. 최신 build.bat으로 다시 만들어 주세요.</div>`; return; }
+      let res=null; try{ res=await window.pywebview.api.read_contacts(w.config.file); }catch(e){}
+      if(!res||!res.ok){ const why=res&&res.error==="openpyxl_missing"?"엑셀 읽기 도구가 없어요. 최신 build.bat으로 다시 빌드해 주세요.":res&&res.error==="notfound"?"파일을 찾을 수 없어요. 다시 올려 주세요.":res&&res.error==="noformat"?"이름·전화번호 제목줄을 찾지 못했어요.":"연락처를 읽지 못했어요.";
+        b.innerHTML=`<div class="empty">${why}</div><div class="rup"><label class="mini go up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div>`; this.hookFile(b,w,b); return; }
+      w._ctc=res;
+      b.innerHTML=`<div class="row"><input placeholder="이름 또는 장소 (예: 홍길동, 보건실)" data-q><button class="mini go" data-find>찾기</button></div><div class="rcount"></div><div class="rbody" data-body></div>`;
+      $(".rcount",b).textContent=`${w.config.fileName||res.file} · 교사 ${res.people.length} · 특별실 ${res.rooms.length}`;
+      this.dropZone(b,w,b);
+      const q=$("[data-q]",b), body=$("[data-body]",b);
+      const line=(lb,v)=>v?`<div class="cline"><span>${lb}</span><b>${escapeHtml(v)}</b></div>`:"";
+      const showPerson=(p)=>{ const card=el("div","rrow");
+        const extra=(w._ctc.rooms||[]).filter(x=>x.person===p.name);
+        card.innerHTML=`<div class="rn"></div>`+
+          (p.phone?`<div class="cphone">☎ ${escapeHtml(p.phone)}</div>`:"")+
+          line("소속",[p.bldg,p.office,p.zone].filter(Boolean).join(" · "))+
+          line("업무",p.duty)+ line("자리",p.seat?`${p.seat} (행,열)`:"")+
+          extra.map(x=>line("담당실",`${x.room}${x.phone?" ☎ "+x.phone:""}`)).join("");
+        $(".rn",card).textContent=p.name; return card; };
+      const showRoom=(x)=>{ const card=el("div","rrow");
+        card.innerHTML=`<div class="rn"></div>`+(x.phone?`<div class="cphone">☎ ${escapeHtml(x.phone)}</div>`:"")+
+          line("담당",x.person)+ line("건물",x.bldg); 
+        $(".rn",card).textContent=x.room||x.place; return card; };
+      const showOther=(x)=>{ const card=el("div","rrow");
+        card.innerHTML=`<div class="rn"></div>`+(x.phone?`<div class="cphone">☎ ${escapeHtml(x.phone)}</div>`:"")+
+          line("담당",x.person)+ line("구분",x.cat);
+        $(".rn",card).textContent=x.place; return card; };
+      const find=()=>{ const s2=q.value.trim(); if(!s2){ body.innerHTML=""; return; }
+        const ppl=(res.people||[]).filter(p=>p.name.includes(s2)||(p.duty||"").includes(s2)||(p.office||"").includes(s2));
+        const rms=(res.rooms||[]).filter(x=>(x.room||"").includes(s2)||(x.person||"").includes(s2));
+        const oth=(res.others||[]).filter(x=>(x.place||"").includes(s2)||(x.person||"").includes(s2));
+        body.innerHTML="";
+        if(!ppl.length&&!rms.length&&!oth.length){ body.innerHTML=`<div class="empty">‘${escapeHtml(s2)}’ 결과가 없어요.</div>`; return; }
+        if(ppl.length){ body.appendChild(el("div","rhead",`교사 ${ppl.length}명`)); ppl.slice(0,30).forEach(p=>body.appendChild(showPerson(p))); }
+        if(rms.length){ body.appendChild(el("div","rhead",`특별실 ${rms.length}곳`)); rms.slice(0,20).forEach(x=>body.appendChild(showRoom(x))); }
+        if(oth.length){ body.appendChild(el("div","rhead",`기타 ${oth.length}곳`)); oth.slice(0,20).forEach(x=>body.appendChild(showOther(x))); } };
+      $("[data-find]",b).onclick=find;
+      attachAutocomplete(q,{ min:1, source:(qv)=>{ const out=[], seen={};
+          (res.people||[]).forEach(p=>{ if(out.length>=8)return; if(!p.name.includes(qv))return; if(seen[p.name])return; seen[p.name]=1;
+            out.push({label:p.name, sub:[p.office,p.phone].filter(Boolean).join(" · "), value:{t:"p",v:p}}); });
+          (res.rooms||[]).forEach(x=>{ if(out.length>=8)return; if(!(x.room||"").includes(qv))return;
+            out.push({label:x.room, sub:"특별실"+(x.person?" · "+x.person:""), value:{t:"r",v:x}}); });
+          (res.others||[]).forEach(x=>{ if(out.length>=8)return; if(!(x.place||"").includes(qv))return;
+            out.push({label:x.place, sub:"기타"+(x.person?" · "+x.person:""), value:{t:"o",v:x}}); });
+          return out; },
+        onPick:(o)=>{ q.value=(o.t==="p"?o.v.name:(o.t==="r"?o.v.room:o.v.place)); body.innerHTML="";
+          body.appendChild(o.t==="p"?showPerson(o.v):(o.t==="r"?showRoom(o.v):showOther(o.v))); },
+        onEnter:find }); } },
+
+  roster:{ title:"학생 찾기", icon:"🎓", desc:"명렬표 엑셀에서 학년·반·번호를 찾습니다.", settings:true,
+    defaultCfg:()=>({file:"",fileName:"",showPhone:false}),
+    async take(b,w,file){ if(!file) return;
+      if(!/\.(xlsx|xlsm|xls)$/i.test(file.name)){ toast("엑셀 파일만 올릴 수 있어요"); return; }
+      if(!hasApi("save_upload")){ toast("설치형(exe)에서만 동작해요"); return; }
+      toast("명렬표 등록 중…");
+      try{ const b64=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(",")[1]); r.onerror=()=>rej(new Error("read")); r.readAsDataURL(file); });
+        const r=await window.pywebview.api.save_upload("roster",file.name,b64);
+        if(r&&r.ok){ w.config.file=r.path; w.config.fileName=file.name; persist(); this.mount(b,w); } else toast("파일을 저장하지 못했어요");
+      }catch(e){ toast("파일을 읽지 못했어요"); } },
+    hookFile(b,w,scope){ const fi=$("[data-file]",scope); if(fi) fi.onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(f) this.take(b,w,f); };
+      const pk=$("[data-pick]",scope); if(pk) pk.onclick=async()=>{ if(!hasApi("pick_path")){ toast("설치형(exe)에서만 동작해요"); return; }
+        try{ const r=await window.pywebview.api.pick_path("file"); if(r&&r.ok&&r.path){ w.config.file=r.path; w.config.fileName=r.path.split(/[\\/]/).pop(); persist(); this.mount(b,w); } }catch(e){ toast("파일을 열지 못했어요"); } }; },
+    dropZone(b,w,zone){ if(!zone)return;
+      ["dragenter","dragover"].forEach(ev=>zone.addEventListener(ev,e=>{ e.preventDefault(); e.stopPropagation(); zone.classList.add("over"); }));
+      ["dragleave","drop"].forEach(ev=>zone.addEventListener(ev,e=>{ e.preventDefault(); e.stopPropagation(); zone.classList.remove("over"); }));
+      zone.addEventListener("drop",e=>{ const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) this.take(b,w,f); }); },
+    openSettings(b,w){ const old=$(".rset",b); if(old){ old.remove(); return; }
+      const box=el("div","rset");
+      box.innerHTML=`<div class="setrow"><span>파일</span><b class="rfile"></b></div>
+        <div class="rup"><label class="mini up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div>
+        <label class="rchk"><input type="checkbox" data-ph ${w.config.showPhone?"checked":""}> 연락처도 함께 보기</label>
+        <div class="setnote">엑셀을 위젯에 끌어다 놓아도 등록됩니다. 명렬표는 이 컴퓨터에서만 읽고, 학생 정보는 설정에 저장하지 않아요.</div>`;
+      b.insertBefore(box,b.firstChild);
+      $(".rfile",box).textContent=w.config.fileName || (w.config.file? w.config.file.split(/[\\/]/).pop() : "(선택 안 됨)");
+      $("[data-ph]",box).onchange=(e)=>{ w.config.showPhone=e.target.checked; persist(); };
+      this.hookFile(b,w,box); },
+    async mount(b,w){ b.classList.add("roster");
+      if(!w.config.file){ b.innerHTML=`<div class="rdrop" data-zone><div class="rd-i">📥</div><div class="rd-t">명렬표 엑셀을 여기에 끌어다 놓으세요</div><div class="rup"><label class="mini go up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div></div>`;
+        this.hookFile(b,w,b); this.dropZone(b,w,$("[data-zone]",b)); return; }
+      b.innerHTML=`<div class="empty"><span class="spin"></span> 명렬표 읽는 중…</div>`;
+      if(!hasApi("read_roster")){ b.innerHTML=`<div class="empty">설치형(exe)에서만 동작해요. build.bat으로 다시 만들어 주세요.</div>`; return; }
+      let res=null; try{ res=await window.pywebview.api.read_roster(w.config.file); }catch(e){}
+      if(!res||!res.ok){ const why=res&&res.error==="openpyxl_missing"?"엑셀 읽기 도구가 없어요. 최신 build.bat으로 다시 빌드해 주세요.":res&&res.error==="notfound"?"파일을 찾을 수 없어요. 다시 올려 주세요.":res&&res.error==="noformat"?"학년·반·이름 제목줄을 찾지 못했어요.":"명렬표를 읽지 못했어요.";
+        b.innerHTML=`<div class="empty">${why}</div><div class="rup"><label class="mini go up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div>`; this.hookFile(b,w,b); return; }
+      w._roster=res.students;
+      b.innerHTML=`<div class="row"><input placeholder="이름 또는 학급 (예: 홍길동, 1-3)" data-q><button class="mini go" data-find>찾기</button></div><div class="rcount"></div><div class="rbody" data-body></div>`;
+      $(".rcount",b).textContent=`${w.config.fileName||res.file} · ${res.count.toLocaleString()}명`;
+      this.dropZone(b,w,b);
+      const q=$("[data-q]",b), body=$("[data-body]",b);
+      const clsKey=s2=>`${+s2.grade}-${+s2.cls}`;
+      const card=(s2)=>{ const it=el("div","rrow");
+        it.innerHTML=`<div class="rn"></div><div class="rc"></div>`;
+        $(".rn",it).textContent=s2.name; $(".rc",it).textContent=`${+s2.grade}학년 ${+s2.cls}반 ${+s2.no}번`+(s2.teacher?` · 담임 ${s2.teacher}`:"");
+        if(w.config.showPhone&&(s2.sphone||s2.pphone)){ const pz=el("div","rp"); pz.textContent=[s2.sphone?`학생 ${s2.sphone}`:"",s2.pphone?`보호자 ${s2.pphone}`:""].filter(Boolean).join("  ·  "); it.appendChild(pz); }
+        return it; };
+      const find=()=>{ const s2=q.value.trim(); if(!s2){ body.innerHTML=""; return; }
+        const cm=s2.match(/^(\d)\s*[-학년]*\s*(\d{1,2})\s*반?$/);
+        let hits;
+        if(cm){ const key=`${+cm[1]}-${+cm[2]}`; hits=w._roster.filter(x=>clsKey(x)===key).sort((a,c)=>(+a.no)-(+c.no)); }
+        else { hits=w._roster.filter(x=>x.name.includes(s2)); }
+        if(!hits.length){ body.innerHTML=`<div class="empty">‘${escapeHtml(s2)}’ 결과가 없어요.</div>`; return; }
+        body.innerHTML=""; if(hits.length>1){ const h=el("div","rhead",`${hits.length}명`); body.appendChild(h); }
+        hits.slice(0,60).forEach(x=>body.appendChild(card(x))); };
+      $("[data-find]",b).onclick=find;
+      attachAutocomplete(q,{ min:1, source:(qv)=>{ if(/^\d/.test(qv)) return [];
+          const seen={},out=[]; w._roster.forEach(x=>{ if(out.length>=8)return; if(!x.name.includes(qv))return; const k=x.name+x.grade+x.cls+x.no; if(seen[k])return; seen[k]=1; out.push({label:x.name, sub:`${+x.grade}-${+x.cls}-${+x.no}`, value:x}); }); return out; },
+        onPick:(s2)=>{ q.value=s2.name; find(); }, onEnter:find }); } },
+
+  dday:{ title:"D-Day", icon:"📌", desc:"기념일·마감일까지 남은 날.",
+    defaultCfg:()=>({events:[]}),
+    mount(b,w){ b.classList.add("dday"); b.innerHTML=`<div class="row" style="margin-bottom:6px"><input placeholder="이름" data-n style="flex:1.2"><input type="date" data-d style="flex:1"><button class="mini go" data-add>추가</button></div><div data-list></div>`;
+      const add=()=>{const n=$("[data-n]",b).value.trim(), dt=$("[data-d]",b).value; if(!n||!dt){toast("이름과 날짜를 입력하세요"); return;} w.config.events.push({id:uid(),name:n,date:dt}); $("[data-n]",b).value=""; $("[data-d]",b).value=""; persist(); this.draw(b,w);};
+      $("[data-add]",b).onclick=add; this.draw(b,w); },
+    draw(b,w){ const list=$("[data-list]",b); list.innerHTML=""; if(!w.config.events.length){list.innerHTML=`<div class="empty">기념일·마감일을 추가해 보세요.</div>`; return;}
+      const today=new Date(); today.setHours(0,0,0,0);
+      w.config.events.forEach(ev=>{const t=new Date(ev.date+"T00:00"); const diff=Math.round((t-today)/86400000); const txt=diff===0?"D-DAY":diff>0?`D-${diff}`:`D+${-diff}`; const cls=diff===0?"soon":diff<0?"past":diff<=7?"soon":"";
+        const it=el("div","item",`<div class="nm"></div><div class="dv ${cls}">${txt}</div><div class="x">✕</div>`); it.dataset.rid=ev.id; $(".nm",it).innerHTML=`${ev.name}<small>${ev.date}</small>`; $(".x",it).onclick=()=>{w.config.events=w.config.events.filter(x=>x.id!==ev.id); persist(); this.draw(b,w);}; list.appendChild(it);});
+      enableListDnD(list, w.config.events, persist); } },
+
+  links:{ title:"바로가기", icon:"🔗", desc:"자주 가는 사이트 모음.",
+    defaultCfg:()=>({items:[]}),
+    mount(b,w){ b.classList.add("links"); b.innerHTML=`<div class="row" style="margin-bottom:8px"><input placeholder="이름" data-n style="flex:1"><input placeholder="주소 (https://…)" data-u style="flex:1.6"><button class="mini go" data-add>추가</button></div><div class="ls" data-list></div>`;
+      const add=()=>{const n=$("[data-n]",b).value.trim(); let u=$("[data-u]",b).value.trim(); if(!n||!u){toast("이름과 주소를 입력하세요"); return;} if(!/^https?:\/\//.test(u))u="https://"+u; w.config.items.push({id:uid(),name:n,url:u}); $("[data-n]",b).value=""; $("[data-u]",b).value=""; persist(); this.draw(b,w);};
+      $("[data-add]",b).onclick=add; this.draw(b,w); },
+    draw(b,w){ const list=$("[data-list]",b); list.innerHTML=""; if(!w.config.items.length){list.innerHTML=`<div class="empty">자주 쓰는 사이트를 추가해 보세요.</div>`; return;}
+      w.config.items.forEach(it=>{const a=el("a",null,`<span class="fav">${it.name.slice(0,1)}</span><span class="lk-nm"></span><span class="rx">✕</span>`); a.dataset.rid=it.id; a.href="#"; a.draggable=false; $(".lk-nm",a).textContent=it.name; a.onclick=e=>{e.preventDefault(); openLink(it.url);}; $(".rx",a).onclick=e=>{e.preventDefault(); e.stopPropagation(); w.config.items=w.config.items.filter(x=>x.id!==it.id); persist(); this.draw(b,w);}; inlineRename($(".lk-nm",a), ()=>it.name, v=>{it.name=v;}, ()=>{persist(); this.draw(b,w);}); list.appendChild(a);});
+      enableListDnD(list, w.config.items, persist); } },
+
+  memo:{ title:"메모", icon:"📝", desc:"자유롭게 적는 메모장. URL은 클릭하면 열려요.",
+    defaultCfg:()=>({text:""}),
+    mount(b,w){ b.classList.add("memo");
+      const view=el("div","memo-view"); const ta=el("textarea","memo-edit"); ta.placeholder="여기에 메모를 적으세요…"; ta.value=w.config.text||""; ta.style.display="none";
+      b.appendChild(view); b.appendChild(ta);
+      const render=()=>{ const t=w.config.text||""; if(!t.trim()){ view.innerHTML=`<span class="memo-empty">여기에 메모를 적으세요…</span>`; } else { view.innerHTML=linkify(t); view.querySelectorAll("a[data-url]").forEach(a=>{ a.draggable=false; a.onclick=e=>{ e.preventDefault(); openLink(a.dataset.url); }; }); } };
+      view.addEventListener("click",e=>{ if(e.target.closest("a"))return; ta.style.display="block"; view.style.display="none"; ta.value=w.config.text||""; ta.focus(); });
+      let tm=null; ta.addEventListener("input",()=>{ w.config.text=ta.value; clearTimeout(tm); tm=setTimeout(persist,400); });
+      ta.addEventListener("blur",()=>{ w.config.text=ta.value; persist(); render(); ta.style.display="none"; view.style.display="block"; });
+      render(); },
+    print(w){ const T=w.title||this.title; const t=w.config.text||""; return {title:T, html:`<h1>${escapeHtml(T)}</h1><div class="pt-memo">${escapeHtml(t)||"(내용 없음)"}</div>`}; } },
+
+  shortcuts:{ title:"아이콘 바로가기", icon:"🚀", desc:"사이트 아이콘을 눌러 바로 이동.",
+    defaultCfg:()=>({items:[]}),
+    mount(b,w){ b.classList.add("apps"); b.innerHTML=`<div class="row" style="margin-bottom:8px"><input placeholder="이름" data-n style="flex:1"><input placeholder="주소 (https://…)" data-u style="flex:1.6"><button class="mini go" data-add>추가</button></div><div class="grid-ic" data-list></div>`;
+      const add=()=>{const n=$("[data-n]",b).value.trim(); let u=$("[data-u]",b).value.trim(); if(!n||!u){toast("이름과 주소를 입력하세요"); return;} if(!/^https?:\/\//.test(u))u="https://"+u; w.config.items.push({id:uid(),name:n,url:u}); $("[data-n]",b).value=""; $("[data-u]",b).value=""; persist(); this.draw(b,w);};
+      $("[data-add]",b).onclick=add; this.draw(b,w); },
+    draw(b,w){ const list=$("[data-list]",b); list.innerHTML=""; if(!w.config.items.length){list.innerHTML=`<div class="empty">사이트를 추가하면 아이콘으로 모여요.</div>`; return;}
+      w.config.items.forEach(it=>{let host=""; try{host=new URL(it.url).hostname;}catch(e){}
+        const tile=el("div","ic"); tile.title=it.name; tile.dataset.rid=it.id;
+        tile.innerHTML=`<div class="ic-img"><span class="ic-fb">${it.name.slice(0,1)}</span><img alt="" draggable="false" style="display:none"></div><div class="ic-nm">${it.name}</div><div class="ic-x">✕</div>`;
+        const img=$("img",tile), fb=$(".ic-fb",tile); setFavicon(img, fb, it.url, host);
+        tile.onclick=()=>openLink(it.url); $(".ic-x",tile).onclick=e=>{e.stopPropagation(); w.config.items=w.config.items.filter(x=>x.id!==it.id); persist(); this.draw(b,w);};
+        inlineRename($(".ic-nm",tile), ()=>it.name, v=>{it.name=v;}, ()=>{persist(); this.draw(b,w);});
+        list.appendChild(tile);});
+      enableListDnD(list, w.config.items, persist); } },
+
+  files:{ title:"폴더·파일", icon:"📂", desc:"내 PC의 폴더·파일·프로그램을 아이콘으로 열기.",
+    defaultCfg:()=>({items:[]}),
+    kindOf(path){ const p=(path||"").trim().replace(/["']/g,""); const low=p.toLowerCase();
+      if(["바탕화면","desktop","다운로드","downloads","문서","documents","사진","pictures","홈","home"].includes(low)) return "folder";
+      const m=low.match(/\.([a-z0-9]{1,5})$/); if(!m) return "folder";
+      if(["exe","bat","cmd","com","msi","lnk","app"].includes(m[1])) return "app"; return "file"; },
+    iconFor(kind){ return kind==="folder"?"📁":kind==="app"?"⚙️":"📄"; },
+    mount(b,w){ b.classList.add("apps");
+      b.innerHTML=`<div class="fpick"><button class="mini" data-pf>📁 폴더 선택</button><button class="mini" data-pfile>📄 파일 선택</button></div>
+        <div class="quickpick" data-quick></div><div class="fconfirm" data-confirm style="display:none"></div><div class="grid-ic" data-list></div>`;
+      const quicks=["바탕화면","다운로드","문서"]; const qb=$("[data-quick]",b);
+      quicks.forEach(q=>{ const c=el("button","qp",q); c.onclick=()=>{ w.config.items.push({id:uid(),name:q,path:q,kind:"folder"}); persist(); this.draw(b,w); }; qb.appendChild(c); });
+      const confirm=$("[data-confirm]",b);
+      const showConfirm=(path,kind)=>{ const base=path.replace(/[\\/]+$/,"").split(/[\\/]/).pop()||path; confirm.style.display="block"; confirm.innerHTML=`<div class="fc-path">${this.iconFor(kind)} <span class="fc-p"></span></div><div class="row"><input data-cn placeholder="이름"><button class="mini go" data-cadd>추가</button></div>`;
+        $(".fc-p",confirm).textContent=path; const cn=$("[data-cn]",confirm); cn.value=base; cn.title=path;
+        const doAdd=()=>{ const nm=cn.value.trim()||base; w.config.items.push({id:uid(),name:nm,path:path,kind:kind}); persist(); confirm.style.display="none"; confirm.innerHTML=""; this.draw(b,w); };
+        $("[data-cadd]",confirm).onclick=doAdd; cn.addEventListener("keydown",e=>{if(e.key==="Enter")doAdd();}); cn.focus(); cn.select(); };
+      const pick=async(kind)=>{ if(!hasApi("pick_path")){ toast("이 기능은 설치형(exe)에서만 동작해요"); return; } try{ const r=await window.pywebview.api.pick_path(kind); if(r&&r.ok&&r.path){ showConfirm(r.path, kind==="folder"?"folder":this.kindOf(r.path)); } }catch(e){ toast("선택 창을 열지 못했어요"); } };
+      $("[data-pf]",b).onclick=()=>pick("folder"); $("[data-pfile]",b).onclick=()=>pick("file");
+      this.draw(b,w); },
+    draw(b,w){ const list=$("[data-list]",b); list.innerHTML=""; if(!w.config.items.length){list.innerHTML=`<div class="empty">폴더·파일·프로그램을 추가하면 아이콘으로 모여요.</div>`; return;}
+      w.config.items.forEach(it=>{ const kind=it.kind||this.kindOf(it.path);
+        const tile=el("div","ic"); tile.title=it.path; tile.dataset.rid=it.id;
+        tile.innerHTML=`<div class="ic-img"><span class="ic-emoji">${this.iconFor(kind)}</span></div><div class="ic-nm">${it.name}</div><div class="ic-x">✕</div>`;
+        tile.onclick=()=>openPath(it.path); $(".ic-x",tile).onclick=e=>{e.stopPropagation(); w.config.items=w.config.items.filter(x=>x.id!==it.id); persist(); this.draw(b,w);};
+        inlineRename($(".ic-nm",tile), ()=>it.name, v=>{it.name=v;}, ()=>{persist(); this.draw(b,w);});
+        list.appendChild(tile);});
+      enableListDnD(list, w.config.items, persist); } },
+
+  news:{ title:"경제 뉴스", icon:"📰", desc:"국내외 경제 뉴스 헤드라인(RSS).",
+    defaultCfg:()=>({feed:"gko"}),
+    feeds:{ gko:{name:"국내경제",url:"https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=ko&gl=KR&ceid=KR:ko"}, stock:{name:"증시",url:"https://news.google.com/rss/search?q=%EC%A6%9D%EC%8B%9C&hl=ko&gl=KR&ceid=KR:ko"}, donga:{name:"동아경제",url:"http://rss.donga.com/economy.xml"}, world:{name:"해외경제",url:"https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=en-US&gl=US&ceid=US:en"} },
+    mount(b,w){ b.classList.add("news"); if(!this.feeds[w.config.feed]) w.config.feed=Object.keys(this.feeds)[0];
+      b.innerHTML=`<div class="news-src" data-src></div><div class="news-list" data-list></div>`;
+      this.renderSrc(b,w); this.load(b,w);
+      if(w._timer) clearInterval(w._timer); w._timer=setInterval(()=>{ if(!document.body.contains(b)){clearInterval(w._timer); w._timer=null; return;} this.load(b,w); }, 600000); },
+    renderSrc(b,w){ const wrap=$("[data-src]",b); wrap.innerHTML=""; Object.keys(this.feeds).forEach(k=>{ const f=this.feeds[k]; const c=el("button","nsrc"+(w.config.feed===k?" on":""),f.name); c.onclick=()=>{ w.config.feed=k; persist(); this.renderSrc(b,w); this.load(b,w); }; wrap.appendChild(c); }); },
+    async load(b,w){ const out=$("[data-list]",b); if(!out)return; out.innerHTML=`<div class="empty"><span class="spin"></span> 불러오는 중…</div>`;
+      const f=this.feeds[w.config.feed]||this.feeds[Object.keys(this.feeds)[0]];
+      try{ const xml=await httpGet(f.url); const doc=new DOMParser().parseFromString(xml,"text/xml");
+        let items=[...doc.querySelectorAll("item")]; if(!items.length) items=[...doc.querySelectorAll("entry")];
+        const arr=items.slice(0,12).map(it=>{ const tn=it.querySelector("title"); const t=(tn?tn.textContent:"").trim(); let link=""; const l=it.querySelector("link"); if(l) link=(l.getAttribute("href")||l.textContent||"").trim(); return {t,link}; }).filter(x=>x.t);
+        if(!arr.length){ out.innerHTML=`<div class="empty">불러올 뉴스가 없어요. 다른 출처를 눌러 보세요.</div>`; return; }
+        out.innerHTML=""; arr.forEach(n=>{ const row=el("div","nitem"); const tt=el("div","ntitle"); tt.textContent=n.t; row.appendChild(tt); if(n.link) row.onclick=()=>openLink(n.link); out.appendChild(row); });
+      }catch(e){ out.innerHTML=`<div class="empty">뉴스를 불러오지 못했어요. 다른 출처를 눌러 보거나 잠시 후 다시 시도하세요.</div>`; } } },
+
+  stocks:{ title:"시세", icon:"📈", desc:"주식·코인·환율·원자재 실시간 시세.",
+    defaultCfg:()=>({items:[]}),
+    mount(b,w){ b.classList.add("stk");
+      b.innerHTML=`<div class="row"><input placeholder="예: 삼성전자, AAPL, 비트코인, 달러, WTI, 금" data-q><button class="mini go" data-find>추가</button></div><div class="sresult" data-res></div><div class="stk-list" data-list></div>`;
+      const q=$("[data-q]",b), res=$("[data-res]",b);
+      const addItem=(o)=>{ if(!w.config.items.some(i=>i.code===o.code&&i.src===o.src)){ w.config.items.push(Object.assign({id:uid()},o)); persist(); } q.value=""; res.innerHTML=""; this.draw(b,w); toast(`${o.name} 추가`); };
+      const find=async()=>{ const raw=q.value.trim(); if(!raw)return; res.innerHTML=`<div class="empty"><span class="spin"></span> 찾는 중…</div>`;
+        try{
+          const low=raw.toLowerCase().replace(/\s/g,"");
+          if(/^\d{6}$/.test(raw)){ const nm=await this.krName(raw)||raw; addItem({src:"kr",code:"A"+raw,name:nm}); return; }
+          const pre=PRESETS.find(p=>p.a.includes(low)); if(pre){ addItem({src:pre.src,code:pre.code,name:pre.name}); return; }
+          const dc=KR_STOCKS[raw]||KR_STOCKS[raw.replace(/\s/g,"")]||KR_STOCKS[low]||KR_STOCKS[raw.toUpperCase()];
+          if(dc){ addItem({src:"kr",code:"A"+dc,name:raw}); return; }
+          const coins=await this.coinSearch(raw);
+          if(coins&&coins.length){
+            const exact=coins.find(c=>c.name===raw||c.code.split("-")[1]===raw.toUpperCase());
+            if(exact){ addItem({src:"coin",code:exact.code,name:exact.name}); return; }
+            res.innerHTML=""; coins.forEach(c=>{ const e=el("div","si",`<div class="sn">${c.name}</div><div class="sr">코인 · ${c.code.split("-")[1]}</div>`); e.onclick=()=>addItem({src:"coin",code:c.code,name:c.name}); res.appendChild(e); }); return;
+          }
+          if(/^[\^A-Za-z][A-Za-z0-9.\-=]*$/.test(raw)){ addItem({src:"yahoo",code:raw.toUpperCase(),name:raw.toUpperCase()}); return; }
+          res.innerHTML=`<div class="empty">못 찾았어요. 예) 삼성전자·005930, AAPL, 비트코인·BTC, 달러, WTI, 금</div>`;
+        }catch(e){ res.innerHTML=`<div class="empty">검색 실패. 인터넷 연결을 확인하세요.</div>`; } };
+      $("[data-find]",b).onclick=find;
+      attachAutocomplete(q,{ min:1, delay:200, source:async(qv)=>{ const ql=qv.toLowerCase().replace(/\s/g,""); const out=[]; const seen={};
+          const push=(o,score)=>{ const k=o.value.src+o.value.code; if(seen[k])return; seen[k]=1; o._s=score; out.push(o); };
+          for(const nm in KR_STOCKS){ const code=KR_STOCKS[nm]; const key=nm.toLowerCase(); const idx=key.indexOf(ql); if(idx>=0){ push({label:nm, sub:"국내주식 "+code, value:{src:"kr",code:"A"+code,name:nm}}, idx===0?0:1); } }
+          PRESETS.forEach(p=>{ const hit=p.a.some(a=>a.includes(ql)) || p.name.toLowerCase().includes(ql); if(hit){ const st=p.a.some(a=>a.startsWith(ql))?0:1; push({label:p.name, sub:(p.src==="coin"?"코인":"환율·원자재·지수"), value:{src:p.src,code:p.code,name:p.name}}, st); } });
+          try{ const ms=await coinMarkets(); ms.forEach(m=>{ const sym=m.market.split("-")[1].toLowerCase(); const kn=(m.korean_name||""); if(kn.includes(qv)||sym.startsWith(ql)){ push({label:kn||m.market, sub:"코인 "+m.market.split("-")[1], value:{src:"coin",code:m.market,name:kn||m.market}}, (kn.startsWith(qv)||sym.startsWith(ql))?0:1); } }); }catch(e){}
+          return out.sort((a,c)=>a._s-c._s).slice(0,8); },
+        onPick:(v)=>addItem(v), onEnter:find });
+      if(w._timer) clearInterval(w._timer); w._timer=setInterval(()=>this.refresh(b,w), 20000);
+      this.draw(b,w); },
+    refresh(b,w){ const list=$("[data-list]",b); if(!list||!document.body.contains(b)){ if(w._timer){clearInterval(w._timer); w._timer=null;} return; } const rows=[...list.querySelectorAll("[data-rid]")]; rows.forEach((row,idx)=>{ const it=w.config.items.find(x=>x.id===row.dataset.rid); if(it) setTimeout(()=>this.loadQuote(row,it), idx*180); }); },
+    async krName(code6){ try{ const j=JSON.parse(await httpGet(`https://polling.finance.naver.com/api/realtime/domestic/stock/${code6}`)); const d=j.datas&&j.datas[0]; return d&&d.stockName||null; }catch(e){ return null; } },
+    async coinSearch(query){ try{ const ms=await coinMarkets(); const q=query.trim(), ql=q.toLowerCase();
+        return ms.filter(m=>{ const sym=m.market.split("-")[1].toLowerCase(); const kn=m.korean_name||"", en=(m.english_name||"").toLowerCase(); return kn===q||kn.includes(q)||sym===ql||en===ql||en.includes(ql); }).slice(0,8).map(m=>({code:m.market,name:m.korean_name||m.market.split("-")[1]})); }catch(e){ return []; } },
+    draw(b,w){ const list=$("[data-list]",b); if(!list)return; if(!w.config.items.length){ list.innerHTML=`<div class="empty">관심 종목·코인을 추가해 보세요. (국내주식: 종목명·6자리 코드 / 해외주식: 티커 / 코인: 비트코인·BTC)</div>`; return; }
+      list.innerHTML=""; w.config.items.forEach((it,idx)=>{ const row=el("div","sq"); row.dataset.rid=it.id;
+        row.innerHTML=`<div class="sq-l"><div class="sq-n"></div><div class="sq-s">${it.code}</div></div><div class="sq-r"><span class="spin"></span></div><div class="sq-x">✕</div>`;
+        $(".sq-n",row).textContent=it.name;
+        $(".sq-x",row).onclick=(e)=>{ e.stopPropagation(); w.config.items=w.config.items.filter(x=>x.id!==it.id); persist(); this.draw(b,w); };
+        row.onclick=()=>{ if(_cvtOpen.has(it.id)) _cvtOpen.delete(it.id); else _cvtOpen.add(it.id); this.loadQuote(row,it); };
+        list.appendChild(row); setTimeout(()=>this.loadQuote(row,it), idx*180); });
+      enableListDnD(list, w.config.items, persist); },
+    async loadQuote(row,it){ const r=$(".sq-r",row); if(!r)return; const num=v=>typeof v==="number"?v:parseFloat(String(v==null?"":v).replace(/,/g,""))||0;
+      const krw=v=>Math.abs(v)>=100?Math.round(v).toLocaleString():v.toLocaleString(undefined,{maximumFractionDigits:2});
+      const finish=(price,ccy,html)=>{ _lastQuote[it.id]=html; r.innerHTML=html; if(_cvtOpen.has(it.id)) this.appendConv(r,price,ccy); };
+      try{
+        if(it.src==="coin"){
+          let d=null; try{ const j=JSON.parse(await httpGet(`https://api.upbit.com/v1/ticker?markets=${it.code}`)); d=Array.isArray(j)?j[0]:null; }catch(_){}
+          if(d&&d.trade_price!=null){
+            const price=num(d.trade_price), change=num(d.signed_change_price), rate=num(d.signed_change_rate)*100;
+            const up=(d.change?d.change==="RISE":change>=0);
+            return finish(price,"KRW",`<div class="sq-p">₩${krw(price)}</div><div class="sq-c ${up?'up':'down'}">${up?'▲':'▼'} ${krw(Math.abs(change))} (${Math.abs(rate).toFixed(2)}%)</div>`);
+          }
+          const meta=await yahooChart(String(it.code).split("-")[1]+"-KRW");
+          if(!meta){ if(_lastQuote[it.id]){ r.innerHTML=_lastQuote[it.id]; } else { r.innerHTML=`<span class="sq-na">불러오기 실패</span>`; } return; }
+          const price=meta.regularMarketPrice, base=meta.chartPreviousClose||meta.previousClose||price, diff=price-base, pct=base?diff/base*100:0, up=diff>=0;
+          return finish(price,"KRW",`<div class="sq-p">₩${krw(price)}</div><div class="sq-c ${up?'up':'down'}">${up?'▲':'▼'} ${krw(Math.abs(diff))} (${Math.abs(pct).toFixed(2)}%)</div>`);
+        }else if(it.src==="yahoo"){
+          const meta=await yahooChart(it.code);
+          if(!meta){ if(_lastQuote[it.id]){ r.innerHTML=_lastQuote[it.id]; } else { r.innerHTML=`<span class="sq-na">불러오기 실패</span>`; } return; }
+          const price=meta.regularMarketPrice, base=meta.chartPreviousClose||meta.previousClose||price;
+          const diff=price-base, pct=base?diff/base*100:0, up=diff>=0;
+          return finish(price,meta.currency||"",`<div class="sq-p">${fmtMoney(price,meta.currency)}</div><div class="sq-c ${up?'up':'down'}">${up?'▲':'▼'} ${fmtNum(Math.abs(diff))} (${Math.abs(pct).toFixed(2)}%)</div>`);
+        }else{
+          const code6=String(it.code).replace(/^A/,"");
+          const j=JSON.parse(await httpGet(`https://polling.finance.naver.com/api/realtime/domestic/stock/${code6}`));
+          const d=j.datas&&j.datas[0];
+          if(!d||d.closePrice==null){ if(_lastQuote[it.id]){ r.innerHTML=_lastQuote[it.id]; } else { r.innerHTML=`<span class="sq-na">정보 없음</span>`; } return; }
+          const price=num(d.closePrice), change=num(d.compareToPreviousClosePrice), rate=num(d.fluctuationsRatio);
+          const dir=d.compareToPreviousPrice&&(d.compareToPreviousPrice.code||d.compareToPreviousPrice.name);
+          const up=dir?(dir==="1"||dir==="2"||/상승|상한/.test(String(dir))):(change>=0);
+          return finish(price,"KRW",`<div class="sq-p">${fmtMoney(price,"KRW")}</div><div class="sq-c ${up?'up':'down'}">${up?'▲':'▼'} ${fmtNum(Math.abs(change))} (${Math.abs(rate).toFixed(2)}%)</div>`);
+        }
+      }catch(e){ if(_lastQuote[it.id]){ r.innerHTML=_lastQuote[it.id]; } else { r.innerHTML=`<span class="sq-na">불러오기 실패</span>`; } } },
+    appendConv(r,price,ccy){ usdKrw().then(rate=>{ if(!rate||!r.isConnected)return; let line=""; if(ccy==="KRW"){ line=`≈ $${(price/rate).toLocaleString(undefined,{maximumFractionDigits:2})}`; } else if(ccy==="USD"){ line=`≈ ₩${Math.round(price*rate).toLocaleString()}`; } if(line){ const e=document.createElement("div"); e.className="sq-cvt"; e.textContent=line; r.appendChild(e); } }); } }
+};
+
+const KR_STOCKS={"삼성전자":"005930","삼성전자우":"005935","sk하이닉스":"000660","lg에너지솔루션":"373220","삼성바이오로직스":"207940","현대차":"005380","기아":"000270","셀트리온":"068270","네이버":"035420","naver":"035420","카카오":"035720","kakao":"035720","포스코홀딩스":"005490","lg화학":"051910","삼성sdi":"006400","현대모비스":"012330","삼성물산":"028260","kb금융":"105560","신한지주":"055550","하나금융지주":"086790","삼성생명":"032830","sk이노베이션":"096770","lg전자":"066570","한국전력":"015760","kt":"030200","sk텔레콤":"017670","크래프톤":"259960","두산에너빌리티":"034020","한화에어로스페이스":"012450","hmm":"011200","삼성화재":"000810","우리금융지주":"316140","고려아연":"010130","에코프로비엠":"247540","에코프로":"086520","포스코퓨처엠":"003670","카카오뱅크":"323410","삼성전기":"009150","엔씨소프트":"036570","넷마블":"251270","아모레퍼시픽":"090430","현대건설":"000720","삼성에스디에스":"018260","대한항공":"003490","한화오션":"042660","두산":"000150","현대글로비스":"086280","lg":"003550","s-oil":"010950","롯데케미칼":"011170"};
+
+const PRESETS=[
+  {a:["달러","원달러","환율","usd","usdkrw"],src:"yahoo",code:"USDKRW=X",name:"달러/원"},
+  {a:["유로","eur","유로화","유로환율"],src:"yahoo",code:"EURKRW=X",name:"유로/원"},
+  {a:["엔화","엔","jpy","엔환율","100엔"],src:"yahoo",code:"JPYKRW=X",name:"엔/원"},
+  {a:["위안","위안화","cny"],src:"yahoo",code:"CNYKRW=X",name:"위안/원"},
+  {a:["wti","원유","crude","crudeoil","wti원유","유가"],src:"yahoo",code:"CL=F",name:"WTI 원유"},
+  {a:["브렌트","brent","브렌트유"],src:"yahoo",code:"BZ=F",name:"브렌트유"},
+  {a:["금","골드","gold","금값","금시세"],src:"yahoo",code:"GC=F",name:"금(Gold)"},
+  {a:["은","실버","silver"],src:"yahoo",code:"SI=F",name:"은(Silver)"},
+  {a:["구리","카퍼","copper"],src:"yahoo",code:"HG=F",name:"구리"},
+  {a:["천연가스","가스","gas","naturalgas"],src:"yahoo",code:"NG=F",name:"천연가스"},
+  {a:["코스피","kospi"],src:"yahoo",code:"^KS11",name:"코스피"},
+  {a:["코스닥","kosdaq"],src:"yahoo",code:"^KQ11",name:"코스닥"},
+  {a:["나스닥","nasdaq","ixic"],src:"yahoo",code:"^IXIC",name:"나스닥"},
+  {a:["sp500","s&p500","에스앤피","gspc","sp"],src:"yahoo",code:"^GSPC",name:"S&P 500"},
+  {a:["다우","dow","다우존스","dji"],src:"yahoo",code:"^DJI",name:"다우존스"},
+  {a:["비트코인","비트","btc"],src:"coin",code:"KRW-BTC",name:"비트코인"},
+  {a:["이더리움","이더","eth"],src:"coin",code:"KRW-ETH",name:"이더리움"},
+  {a:["리플","xrp"],src:"coin",code:"KRW-XRP",name:"리플"},
+  {a:["솔라나","sol"],src:"coin",code:"KRW-SOL",name:"솔라나"},
+  {a:["도지코인","도지","doge"],src:"coin",code:"KRW-DOGE",name:"도지코인"},
+  {a:["에이다","ada"],src:"coin",code:"KRW-ADA",name:"에이다"},
+  {a:["트론","trx"],src:"coin",code:"KRW-TRX",name:"트론"}
+];
+
+const DEF_SIZE={ clock:{w:300,h:150}, weather:{w:340,h:400}, todo:{w:320,h:300}, meal:{w:344,h:320}, dday:{w:308,h:236}, links:{w:344,h:180}, memo:{w:300,h:240}, shortcuts:{w:320,h:220}, stocks:{w:332,h:288}, neis:{w:344,h:360}, files:{w:320,h:240}, news:{w:340,h:340}, quote:{w:320,h:170}, dict:{w:320,h:300}, history:{w:340,h:340}, country:{w:320,h:300}, encyc:{w:340,h:340}, roster:{w:330,h:320}, timetable:{w:360,h:420}, contacts:{w:330,h:330} };
+
+function wcode(c, isDay){ const m={0:["☀️","맑음"],1:["🌤️","대체로 맑음"],2:["⛅","구름 많음"],3:["☁️","흐림"],45:["🌫️","안개"],48:["🌫️","짙은 안개"],51:["🌦️","약한 이슬비"],53:["🌦️","이슬비"],55:["🌧️","강한 이슬비"],56:["🌧️","약한 어는 이슬비"],57:["🌧️","어는 이슬비"],61:["🌧️","약한 비"],63:["🌧️","비"],65:["🌧️","강한 비"],66:["🌧️","약한 어는 비"],67:["🌧️","어는 비"],71:["🌨️","약한 눈"],73:["🌨️","눈"],75:["❄️","강한 눈"],77:["🌨️","싸락눈"],80:["🌦️","약한 소나기"],81:["🌧️","소나기"],82:["⛈️","강한 소나기"],85:["🌨️","약한 눈 소나기"],86:["🌨️","강한 눈 소나기"],95:["⛈️","뇌우"],96:["⛈️","뇌우·약한 우박"],99:["⛈️","뇌우·강한 우박"]};
+  const v=m[c]||["🌡️","—"]; let e=v[0];
+  if(isDay===0){ if(c===0)e="🌙"; else if(c===1)e="🌙"; else if(c===2)e="☁️"; }
+  return {e:e, k:v[1]}; }
+function cleanDish(s){ return String(s||"").split(/<br\s*\/?>/i).map(x=>x.replace(/\s*\(?[0-9]{1,2}(\.[0-9]{1,2})*\.?\)?\s*$/,"").replace(/[0-9]{1,2}\./g,"").trim()).filter(Boolean); }
+function fmtMoney(v,cur){ if(cur==="KRW")return "₩"+Math.round(v).toLocaleString(); if(cur==="USD")return "$"+v.toFixed(2); if(cur==="EUR")return "€"+v.toFixed(2); if(cur==="JPY")return "¥"+Math.round(v).toLocaleString(); if(cur==="GBP")return "£"+v.toFixed(2); return v.toLocaleString(undefined,{maximumFractionDigits:2})+(cur?(" "+cur):""); }
+function fmtNum(v){ return v>=100?Math.round(v).toLocaleString():v.toFixed(2); }
+
+function escapeHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function linkify(text){ return escapeHtml(text).replace(/(https?:\/\/[^\s<]+|www\.[^\s<]+)/g, m=>{ let tail=""; const mt=m.match(/[.,!?)\]]+$/); if(mt){ tail=mt[0]; m=m.slice(0,-tail.length); } const url=(m.startsWith("http")?m:("https://"+m)).replace(/"/g,"&quot;"); return `<a href="#" data-url="${url}">${m}</a>${tail}`; }); }
+
+const _favCache={};
+function applyFav(img, fb, src, host){ img.onload=()=>{ fb.style.display="none"; img.style.display="block"; }; img.onerror=()=>{ fallbackChain(img, fb, host, 0); }; img.src=src; }
+async function setFavicon(img, fb, url, host){
+  if(!host){ fb.style.display="grid"; return; }
+  if(_favCache[host]){ applyFav(img, fb, _favCache[host], host); return; }
+  if(typeof hasApi==="function" && hasApi("get_favicon")){
+    try{ const r=await window.pywebview.api.get_favicon(url); if(r&&r.ok&&r.dataUrl){ _favCache[host]=r.dataUrl; applyFav(img, fb, r.dataUrl, host); return; } }catch(e){}
+  }
+  fallbackChain(img, fb, host, 0);
+}
+function fallbackChain(img, fb, host, i){
+  const srcs=[`https://icons.duckduckgo.com/ip3/${host}.ico`, `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64`];
+  if(i>=srcs.length){ img.style.display="none"; fb.style.display="grid"; return; }
+  img.onload=()=>{ fb.style.display="none"; img.style.display="block"; };
+  img.onerror=()=>{ fallbackChain(img, fb, host, i+1); };
+  img.src=srcs[i];
+}
+
+let _coinMarkets=null;
+function flagEmoji(cc){ try{ return [...cc.toUpperCase()].map(ch=>String.fromCodePoint(0x1F1E6+ch.charCodeAt(0)-65)).join(""); }catch(e){ return ""; } }
+
+const KR_PLACES=[
+  {n:"서울",r:"서울특별시",lat:37.57,lon:126.98},{n:"강남",r:"서울 강남구",lat:37.52,lon:127.05},{n:"강동",r:"서울 강동구",lat:37.53,lon:127.12},{n:"강북",r:"서울 강북구",lat:37.64,lon:127.03},{n:"강서",r:"서울 강서구",lat:37.55,lon:126.85},{n:"관악",r:"서울 관악구",lat:37.48,lon:126.95},{n:"광진",r:"서울 광진구",lat:37.54,lon:127.08},{n:"구로",r:"서울 구로구",lat:37.50,lon:126.89},{n:"금천",r:"서울 금천구",lat:37.46,lon:126.90},{n:"노원",r:"서울 노원구",lat:37.65,lon:127.08},{n:"도봉",r:"서울 도봉구",lat:37.67,lon:127.05},{n:"동대문",r:"서울 동대문구",lat:37.57,lon:127.04},{n:"동작",r:"서울 동작구",lat:37.51,lon:126.94},{n:"마포",r:"서울 마포구",lat:37.56,lon:126.91},{n:"서대문",r:"서울 서대문구",lat:37.58,lon:126.94},{n:"서초",r:"서울 서초구",lat:37.48,lon:127.03},{n:"성동",r:"서울 성동구",lat:37.56,lon:127.04},{n:"성북",r:"서울 성북구",lat:37.59,lon:127.02},{n:"송파",r:"서울 송파구",lat:37.51,lon:127.11},{n:"양천",r:"서울 양천구",lat:37.52,lon:126.87},{n:"영등포",r:"서울 영등포구",lat:37.52,lon:126.90},{n:"용산",r:"서울 용산구",lat:37.53,lon:126.98},{n:"은평",r:"서울 은평구",lat:37.60,lon:126.93},{n:"종로",r:"서울 종로구",lat:37.57,lon:126.98},{n:"중랑",r:"서울 중랑구",lat:37.61,lon:127.09},
+  {n:"인천",r:"인천광역시",lat:37.46,lon:126.71},{n:"강화",r:"인천 강화군",lat:37.75,lon:126.49},{n:"부산",r:"부산광역시",lat:35.18,lon:129.08},{n:"대구",r:"대구광역시",lat:35.87,lon:128.60},{n:"광주",r:"광주광역시",lat:35.16,lon:126.85},{n:"대전",r:"대전광역시",lat:36.35,lon:127.38},{n:"울산",r:"울산광역시",lat:35.54,lon:129.31},{n:"세종",r:"세종특별자치시",lat:36.48,lon:127.29},
+  {n:"수원",r:"경기",lat:37.26,lon:127.03},{n:"성남",r:"경기",lat:37.42,lon:127.13},{n:"용인",r:"경기",lat:37.24,lon:127.18},{n:"고양",r:"경기",lat:37.66,lon:126.83},{n:"부천",r:"경기",lat:37.50,lon:126.79},{n:"안양",r:"경기",lat:37.39,lon:126.93},{n:"안산",r:"경기",lat:37.32,lon:126.83},{n:"평택",r:"경기",lat:36.99,lon:127.11},{n:"시흥",r:"경기",lat:37.38,lon:126.80},{n:"파주",r:"경기",lat:37.76,lon:126.78},{n:"의정부",r:"경기",lat:37.74,lon:127.03},{n:"김포",r:"경기",lat:37.62,lon:126.72},{n:"광명",r:"경기",lat:37.48,lon:126.86},{n:"군포",r:"경기",lat:37.36,lon:126.94},{n:"하남",r:"경기",lat:37.54,lon:127.21},{n:"오산",r:"경기",lat:37.15,lon:127.07},{n:"이천",r:"경기",lat:37.27,lon:127.44},{n:"안성",r:"경기",lat:36.99,lon:127.28},{n:"의왕",r:"경기",lat:37.34,lon:126.97},{n:"양평",r:"경기",lat:37.49,lon:127.49},{n:"여주",r:"경기",lat:37.30,lon:127.64},{n:"과천",r:"경기",lat:37.43,lon:126.99},{n:"구리",r:"경기",lat:37.59,lon:127.13},{n:"남양주",r:"경기",lat:37.64,lon:127.22},{n:"포천",r:"경기",lat:37.89,lon:127.20},{n:"동두천",r:"경기",lat:37.90,lon:127.06},{n:"가평",r:"경기",lat:37.83,lon:127.51},{n:"연천",r:"경기",lat:38.10,lon:127.07},
+  {n:"춘천",r:"강원",lat:37.88,lon:127.73},{n:"원주",r:"강원",lat:37.35,lon:127.95},{n:"강릉",r:"강원",lat:37.75,lon:128.90},{n:"동해",r:"강원",lat:37.52,lon:129.11},{n:"속초",r:"강원",lat:38.21,lon:128.59},{n:"삼척",r:"강원",lat:37.45,lon:129.17},{n:"태백",r:"강원",lat:37.16,lon:128.99},{n:"홍천",r:"강원",lat:37.70,lon:127.89},{n:"평창",r:"강원",lat:37.37,lon:128.39},{n:"정선",r:"강원",lat:37.38,lon:128.66},{n:"영월",r:"강원",lat:37.18,lon:128.46},{n:"철원",r:"강원",lat:38.15,lon:127.31},{n:"양구",r:"강원",lat:38.11,lon:127.99},{n:"인제",r:"강원",lat:38.07,lon:128.17},{n:"양양",r:"강원",lat:38.08,lon:128.62},{n:"횡성",r:"강원",lat:37.49,lon:127.98},
+  {n:"청주",r:"충북",lat:36.64,lon:127.49},{n:"충주",r:"충북",lat:36.99,lon:127.93},{n:"제천",r:"충북",lat:37.13,lon:128.19},{n:"천안",r:"충남",lat:36.82,lon:127.15},{n:"아산",r:"충남",lat:36.79,lon:127.00},{n:"공주",r:"충남",lat:36.45,lon:127.12},{n:"보령",r:"충남",lat:36.33,lon:126.61},{n:"서산",r:"충남",lat:36.78,lon:126.45},{n:"논산",r:"충남",lat:36.19,lon:127.10},{n:"당진",r:"충남",lat:36.89,lon:126.63},
+  {n:"포항",r:"경북",lat:36.02,lon:129.37},{n:"경주",r:"경북",lat:35.86,lon:129.22},{n:"구미",r:"경북",lat:36.12,lon:128.34},{n:"안동",r:"경북",lat:36.57,lon:128.73},{n:"김천",r:"경북",lat:36.14,lon:128.11},{n:"영주",r:"경북",lat:36.81,lon:128.62},{n:"영천",r:"경북",lat:35.97,lon:128.94},{n:"상주",r:"경북",lat:36.41,lon:128.16},{n:"문경",r:"경북",lat:36.59,lon:128.19},{n:"경산",r:"경북",lat:35.83,lon:128.74},{n:"울진",r:"경북",lat:36.99,lon:129.40},{n:"의성",r:"경북",lat:36.35,lon:128.70},{n:"칠곡",r:"경북",lat:35.99,lon:128.40},
+  {n:"창원",r:"경남",lat:35.23,lon:128.68},{n:"김해",r:"경남",lat:35.23,lon:128.89},{n:"진주",r:"경남",lat:35.18,lon:128.11},{n:"양산",r:"경남",lat:35.34,lon:129.04},{n:"거제",r:"경남",lat:34.88,lon:128.62},{n:"통영",r:"경남",lat:34.85,lon:128.43},{n:"사천",r:"경남",lat:35.00,lon:128.06},{n:"밀양",r:"경남",lat:35.50,lon:128.75},{n:"거창",r:"경남",lat:35.69,lon:127.91},{n:"함안",r:"경남",lat:35.27,lon:128.41},
+  {n:"전주",r:"전북",lat:35.82,lon:127.15},{n:"익산",r:"전북",lat:35.95,lon:126.96},{n:"군산",r:"전북",lat:35.98,lon:126.72},{n:"남원",r:"전북",lat:35.42,lon:127.39},{n:"김제",r:"전북",lat:35.80,lon:126.89},
+  {n:"목포",r:"전남",lat:34.81,lon:126.39},{n:"여수",r:"전남",lat:34.76,lon:127.66},{n:"순천",r:"전남",lat:34.95,lon:127.49},{n:"광양",r:"전남",lat:34.94,lon:127.70},{n:"나주",r:"전남",lat:35.02,lon:126.71},{n:"해남",r:"전남",lat:34.57,lon:126.60},
+  {n:"제주",r:"제주",lat:33.50,lon:126.53},{n:"서귀포",r:"제주",lat:33.25,lon:126.56},{n:"울릉도",r:"경북 울릉군",lat:37.48,lon:130.90}
+];
+function krPlaceMatch(q){ const s=q.trim(); if(!s) return []; return KR_PLACES.filter(p=>p.n.startsWith(s)||p.n.includes(s)||p.r.includes(s)).slice(0,8); }
+
+function speak(text,lang){ try{ if(!window.speechSynthesis||!text)return; window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang=lang||"en-US"; u.rate=.95; window.speechSynthesis.speak(u); }catch(e){} }
+
+const RO_MAP={kya:"캬",kyu:"큐",kyo:"쿄",gya:"갸",gyu:"규",gyo:"교",sha:"샤",shu:"슈",sho:"쇼",sya:"샤",syu:"슈",syo:"쇼",cha:"차",chu:"추",cho:"초",tya:"차",tyu:"추",tyo:"초",nya:"냐",nyu:"뉴",nyo:"뇨",hya:"햐",hyu:"휴",hyo:"효",bya:"뱌",byu:"뷰",byo:"뵤",pya:"퍄",pyu:"퓨",pyo:"표",mya:"먀",myu:"뮤",myo:"묘",rya:"랴",ryu:"류",ryo:"료",ja:"자",ju:"주",jo:"조",jya:"자",jyu:"주",jyo:"조",
+shi:"시",chi:"치",tsu:"츠",fu:"후",ka:"카",ki:"키",ku:"쿠",ke:"케",ko:"코",ga:"가",gi:"기",gu:"구",ge:"게",go:"고",sa:"사",si:"시",su:"스",se:"세",so:"소",za:"자",ji:"지",zi:"지",zu:"즈",ze:"제",zo:"조",ta:"타",ti:"치",tu:"츠",te:"테",to:"토",da:"다",di:"디",du:"두",de:"데",do:"도",na:"나",ni:"니",nu:"누",ne:"네",no:"노",ha:"하",hi:"히",hu:"후",he:"헤",ho:"호",ba:"바",bi:"비",bu:"부",be:"베",bo:"보",pa:"파",pi:"피",pu:"푸",pe:"페",po:"포",ma:"마",mi:"미",mu:"무",me:"메",mo:"모",ya:"야",yu:"유",yo:"요",ra:"라",ri:"리",ru:"루",re:"레",ro:"로",wa:"와",wo:"오",wi:"위",we:"웨",vu:"부",
+a:"아",i:"이",u:"우",e:"에",o:"오"};
+function addTail(prev,tail){ if(!prev)return prev; const code=prev.charCodeAt(prev.length-1); if(code>=0xAC00&&code<=0xD7A3&&(code-0xAC00)%28===0){ return prev.slice(0,-1)+String.fromCharCode(code+tail); } return prev; }
+function romajiToHangul(rom){ rom=(rom||"").toLowerCase().replace(/[āáàâ]/g,"a").replace(/[īíìî]/g,"i").replace(/[ūúùû]/g,"u").replace(/[ēéèê]/g,"e").replace(/[ōóòô]/g,"o"); let out="",i=0;
+  while(i<rom.length){ const ch=rom[i];
+    if(!/[a-z]/.test(ch)){ out+=(ch===" "?" ":""); i++; continue; }
+    if("kstpgdbjcz".includes(ch)&&rom[i+1]===ch){ out=addTail(out,19); i++; continue; }
+    if(ch==="n"&&!/[aeiouy]/.test(rom[i+1]||"")){ out=addTail(out,4); i++; continue; }
+    let m=false; for(let len=3;len>=1;len--){ const seg=rom.substr(i,len); if(RO_MAP[seg]){ out+=RO_MAP[seg]; i+=len; m=true; break; } } if(!m) i++;
+  } return out.trim(); }
+async function translateText(text, sl, tl){
+  try{ const d=JSON.parse(await httpGet(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`)); if(Array.isArray(d)&&Array.isArray(d[0])){ const r=d[0].map(c=>c&&c[0]?c[0]:"").join(""); if(r.trim()) return r; } }catch(e){}
+  try{ const d=JSON.parse(await httpGet(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sl}|${tl}`)); const r=d.responseData&&d.responseData.translatedText; if(r) return r; }catch(e){}
+  return "";
+}
+async function jaReading(jaText){ try{ const d=JSON.parse(await httpGet(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=en&dt=rm&q=${encodeURIComponent(jaText)}`)); let rom=""; (d[0]||[]).forEach(c=>{ if(Array.isArray(c)&&c[0]==null){ if(typeof c[3]==="string") rom+=c[3]; else if(typeof c[2]==="string") rom+=c[2]; } }); rom=rom.trim(); return rom?romajiToHangul(rom):""; }catch(e){ return ""; } }
+const COUNTRIES=[
+  {ko:"대한민국",en:"South Korea",cc:"KR",cap:"서울",region:"아시아",pop:51700000,lang:"한국어"},
+  {ko:"북한",en:"North Korea",cc:"KP",cap:"평양",region:"아시아",pop:26000000,lang:"한국어"},
+  {ko:"일본",en:"Japan",cc:"JP",cap:"도쿄",region:"아시아",pop:124000000,lang:"일본어"},
+  {ko:"중국",en:"China",cc:"CN",cap:"베이징",region:"아시아",pop:1410000000,lang:"중국어"},
+  {ko:"대만",en:"Taiwan",cc:"TW",cap:"타이베이",region:"아시아",pop:23400000,lang:"중국어"},
+  {ko:"미국",en:"United States",cc:"US",cap:"워싱턴 D.C.",region:"북아메리카",pop:334000000,lang:"영어"},
+  {ko:"캐나다",en:"Canada",cc:"CA",cap:"오타와",region:"북아메리카",pop:39000000,lang:"영어·프랑스어"},
+  {ko:"멕시코",en:"Mexico",cc:"MX",cap:"멕시코시티",region:"북아메리카",pop:128000000,lang:"스페인어"},
+  {ko:"영국",en:"United Kingdom",cc:"GB",cap:"런던",region:"유럽",pop:67000000,lang:"영어"},
+  {ko:"프랑스",en:"France",cc:"FR",cap:"파리",region:"유럽",pop:68000000,lang:"프랑스어"},
+  {ko:"독일",en:"Germany",cc:"DE",cap:"베를린",region:"유럽",pop:84000000,lang:"독일어"},
+  {ko:"이탈리아",en:"Italy",cc:"IT",cap:"로마",region:"유럽",pop:59000000,lang:"이탈리아어"},
+  {ko:"스페인",en:"Spain",cc:"ES",cap:"마드리드",region:"유럽",pop:48000000,lang:"스페인어"},
+  {ko:"포르투갈",en:"Portugal",cc:"PT",cap:"리스본",region:"유럽",pop:10000000,lang:"포르투갈어"},
+  {ko:"네덜란드",en:"Netherlands",cc:"NL",cap:"암스테르담",region:"유럽",pop:18000000,lang:"네덜란드어"},
+  {ko:"벨기에",en:"Belgium",cc:"BE",cap:"브뤼셀",region:"유럽",pop:11700000,lang:"네덜란드어·프랑스어"},
+  {ko:"스위스",en:"Switzerland",cc:"CH",cap:"베른",region:"유럽",pop:8800000,lang:"독일어·프랑스어"},
+  {ko:"오스트리아",en:"Austria",cc:"AT",cap:"빈",region:"유럽",pop:9000000,lang:"독일어"},
+  {ko:"스웨덴",en:"Sweden",cc:"SE",cap:"스톡홀름",region:"유럽",pop:10500000,lang:"스웨덴어"},
+  {ko:"노르웨이",en:"Norway",cc:"NO",cap:"오슬로",region:"유럽",pop:5500000,lang:"노르웨이어"},
+  {ko:"덴마크",en:"Denmark",cc:"DK",cap:"코펜하겐",region:"유럽",pop:5900000,lang:"덴마크어"},
+  {ko:"핀란드",en:"Finland",cc:"FI",cap:"헬싱키",region:"유럽",pop:5600000,lang:"핀란드어"},
+  {ko:"폴란드",en:"Poland",cc:"PL",cap:"바르샤바",region:"유럽",pop:38000000,lang:"폴란드어"},
+  {ko:"체코",en:"Czechia",cc:"CZ",cap:"프라하",region:"유럽",pop:10500000,lang:"체코어"},
+  {ko:"헝가리",en:"Hungary",cc:"HU",cap:"부다페스트",region:"유럽",pop:9700000,lang:"헝가리어"},
+  {ko:"그리스",en:"Greece",cc:"GR",cap:"아테네",region:"유럽",pop:10400000,lang:"그리스어"},
+  {ko:"아일랜드",en:"Ireland",cc:"IE",cap:"더블린",region:"유럽",pop:5100000,lang:"영어·아일랜드어"},
+  {ko:"러시아",en:"Russia",cc:"RU",cap:"모스크바",region:"유럽",pop:144000000,lang:"러시아어"},
+  {ko:"우크라이나",en:"Ukraine",cc:"UA",cap:"키이우",region:"유럽",pop:38000000,lang:"우크라이나어"},
+  {ko:"튀르키예",en:"Turkey",cc:"TR",cap:"앙카라",region:"아시아",pop:85000000,lang:"튀르키예어"},
+  {ko:"인도",en:"India",cc:"IN",cap:"뉴델리",region:"아시아",pop:1430000000,lang:"힌디어·영어"},
+  {ko:"인도네시아",en:"Indonesia",cc:"ID",cap:"자카르타",region:"아시아",pop:277000000,lang:"인도네시아어"},
+  {ko:"베트남",en:"Vietnam",cc:"VN",cap:"하노이",region:"아시아",pop:98000000,lang:"베트남어"},
+  {ko:"태국",en:"Thailand",cc:"TH",cap:"방콕",region:"아시아",pop:72000000,lang:"태국어"},
+  {ko:"필리핀",en:"Philippines",cc:"PH",cap:"마닐라",region:"아시아",pop:115000000,lang:"필리핀어·영어"},
+  {ko:"말레이시아",en:"Malaysia",cc:"MY",cap:"쿠알라룸푸르",region:"아시아",pop:34000000,lang:"말레이어"},
+  {ko:"싱가포르",en:"Singapore",cc:"SG",cap:"싱가포르",region:"아시아",pop:5900000,lang:"영어·중국어·말레이어"},
+  {ko:"몽골",en:"Mongolia",cc:"MN",cap:"울란바토르",region:"아시아",pop:3400000,lang:"몽골어"},
+  {ko:"네팔",en:"Nepal",cc:"NP",cap:"카트만두",region:"아시아",pop:30000000,lang:"네팔어"},
+  {ko:"파키스탄",en:"Pakistan",cc:"PK",cap:"이슬라마바드",region:"아시아",pop:240000000,lang:"우르두어·영어"},
+  {ko:"방글라데시",en:"Bangladesh",cc:"BD",cap:"다카",region:"아시아",pop:170000000,lang:"벵골어"},
+  {ko:"사우디아라비아",en:"Saudi Arabia",cc:"SA",cap:"리야드",region:"아시아",pop:37000000,lang:"아랍어"},
+  {ko:"아랍에미리트",en:"United Arab Emirates",cc:"AE",cap:"아부다비",region:"아시아",pop:9900000,lang:"아랍어"},
+  {ko:"이란",en:"Iran",cc:"IR",cap:"테헤란",region:"아시아",pop:89000000,lang:"페르시아어"},
+  {ko:"이라크",en:"Iraq",cc:"IQ",cap:"바그다드",region:"아시아",pop:45000000,lang:"아랍어"},
+  {ko:"이스라엘",en:"Israel",cc:"IL",cap:"예루살렘",region:"아시아",pop:9700000,lang:"히브리어·아랍어"},
+  {ko:"이집트",en:"Egypt",cc:"EG",cap:"카이로",region:"아프리카",pop:112000000,lang:"아랍어"},
+  {ko:"남아프리카 공화국",en:"South Africa",cc:"ZA",cap:"프리토리아",region:"아프리카",pop:60000000,lang:"영어 외"},
+  {ko:"나이지리아",en:"Nigeria",cc:"NG",cap:"아부자",region:"아프리카",pop:223000000,lang:"영어"},
+  {ko:"케냐",en:"Kenya",cc:"KE",cap:"나이로비",region:"아프리카",pop:54000000,lang:"스와힐리어·영어"},
+  {ko:"모로코",en:"Morocco",cc:"MA",cap:"라바트",region:"아프리카",pop:37000000,lang:"아랍어"},
+  {ko:"브라질",en:"Brazil",cc:"BR",cap:"브라질리아",region:"남아메리카",pop:215000000,lang:"포르투갈어"},
+  {ko:"아르헨티나",en:"Argentina",cc:"AR",cap:"부에노스아이레스",region:"남아메리카",pop:46000000,lang:"스페인어"},
+  {ko:"칠레",en:"Chile",cc:"CL",cap:"산티아고",region:"남아메리카",pop:19000000,lang:"스페인어"},
+  {ko:"페루",en:"Peru",cc:"PE",cap:"리마",region:"남아메리카",pop:34000000,lang:"스페인어"},
+  {ko:"콜롬비아",en:"Colombia",cc:"CO",cap:"보고타",region:"남아메리카",pop:52000000,lang:"스페인어"},
+  {ko:"호주",en:"Australia",cc:"AU",cap:"캔버라",region:"오세아니아",pop:26000000,lang:"영어"},
+  {ko:"뉴질랜드",en:"New Zealand",cc:"NZ",cap:"웰링턴",region:"오세아니아",pop:5200000,lang:"영어·마오리어"}
+];
+
+function inlineRename(elm, get, set, done){
+  elm.style.cursor="text"; elm.title="더블클릭하면 이름 수정";
+  elm.addEventListener("pointerdown",e=>e.stopPropagation());
+  elm.addEventListener("click",e=>{ e.stopPropagation(); e.preventDefault(); });
+  elm.addEventListener("dblclick",e=>{ e.stopPropagation(); e.preventDefault();
+    const inp=document.createElement("input"); inp.className="nm-edit"; inp.value=get();
+    inp.onpointerdown=ev=>ev.stopPropagation(); inp.onclick=ev=>ev.stopPropagation();
+    elm.replaceWith(inp); inp.focus(); inp.select();
+    let fin=false; const commit=(save)=>{ if(fin)return; fin=true; if(save){ const v=inp.value.trim(); if(v) set(v); } done(); };
+    inp.addEventListener("keydown",ev=>{ if(ev.key==="Enter")commit(true); else if(ev.key==="Escape")commit(false); });
+    inp.addEventListener("blur",()=>commit(true));
+  });
+}
+
+function attachAutocomplete(input, opts){
+  if(input._acPop){ try{input._acPop.remove();}catch(e){} }
+  const pop=el("div","ac-pop"); document.body.appendChild(pop); pop.style.display="none"; input._acPop=pop;
+  let items=[], active=-1, timer=null, seq=0;
+  const close=()=>{ pop.style.display="none"; active=-1; };
+  const place=()=>{ const r=input.getBoundingClientRect(); pop.style.left=r.left+"px"; pop.style.top=(r.bottom+4)+"px"; pop.style.minWidth=r.width+"px"; };
+  const render=()=>{ if(!items.length){ close(); return; } pop.innerHTML=""; items.forEach((it,i)=>{ const r2=el("div","ac-item"+(i===active?" on":"")); const l=el("span","ac-l"); l.textContent=it.label; r2.appendChild(l); if(it.sub){ const s=el("span","ac-s"); s.textContent=it.sub; r2.appendChild(s); } r2.onmousedown=(e)=>{ e.preventDefault(); pick(it); }; pop.appendChild(r2); }); place(); pop.style.display="block"; };
+  const pick=(it)=>{ close(); opts.onPick(it.value,it); };
+  const run=async()=>{ const qv=input.value.trim(); if(qv.length<(opts.min||1)){ items=[]; close(); return; } const my=++seq; let r=[]; try{ r=await opts.source(qv); }catch(e){ r=[]; } if(my!==seq)return; items=(r||[]).slice(0,8); active=-1; render(); };
+  input.addEventListener("input",()=>{ clearTimeout(timer); timer=setTimeout(run,opts.delay||170); });
+  input.addEventListener("keydown",(e)=>{ const open=pop.style.display!=="none";
+    if(e.key==="ArrowDown"&&open){ e.preventDefault(); active=Math.min(active+1,items.length-1); render(); }
+    else if(e.key==="ArrowUp"&&open){ e.preventDefault(); active=Math.max(active-1,0); render(); }
+    else if(e.key==="Enter"){ if(open&&active>=0&&items[active]){ e.preventDefault(); pick(items[active]); } else { close(); if(opts.onEnter) opts.onEnter(); } }
+    else if(e.key==="Escape"){ close(); } });
+  input.addEventListener("blur",()=>{ setTimeout(close,120); });
+  return {close};
+}
+
+const COMMON_WORDS="a able about above accept across act add afraid after again against age ago agree air all allow almost alone along already also although always among amount and anger angry animal answer any appear apple area arm army around arrive art as ask attack aunt autumn away baby back bad bag ball bank base basket bath be bean bear beautiful bed bedroom been beer before begin behind believe bell below beside best better between big bird birth birthday bit bite black bleed block blood blow blue board boat body boil bone book border born borrow both bottle bottom bowl box boy branch brave bread break breakfast breathe bridge bright bring brother brown brush build burn business busy but butter buy by cake call can candle cap car card care careful careless carry case cat catch cause ceiling cell center century certain chair chance change cheap cheese child choose circle city class clean clear clever climb clock close cloth clothes cloud coat coffee coin cold collect color come comfort common compare complete computer condition continue control cook cool copy corner correct cost count country course cover crow cry cup cut dance danger dark daughter day dead dear death decide deep deer depend desk destroy develop die dinner direction dirty discover dish do doctor dog door double down draw dream drink drive drop dry duck dust duty each ear early earn earth east easy eat education effect egg eight either electric elephant else empty end enemy enjoy enough enter equal escape even evening event ever every example excellent except exercise expect explain eye face fact fail fall false family famous far farm father favorite fear feed feel female fever few field fight fill film find fine finger finish fire first fish fit five fix flag flat float floor flower fly follow food foot for force forest forget forgive fork form fox free fresh friend from front fruit full fun funny future game garden gate general gentle get gift girl give glad glass go goat god gold good goodbye grandfather grandmother grass gray great green ground group grow gun hair half hall hand happen happy hard hat hate have he head health hear heart heat heavy hello help here hide high hill history hit hold hole holiday home hope horse hospital hot hour house how however hundred hungry hurry hurt husband ice idea if important in increase inside into introduce invent iron island it jelly job join juice jump just keep key kill kind king kitchen knee knife knock know lady lake lamp land large last late laugh law lazy lead leaf learn leave left leg lend length less lesson let letter library lie life light like line lion lip list listen little live lock lonely long look lose lot love low luck machine main make male man many map mark market marry matter may me meal mean meat medicine meet member mention method middle milk million mind minute miss mistake mix model modern moment money month moon more morning most mother mountain mouth move much music must name narrow nation nature near neck need needle neighbor never new news next nice night no noise north nose not note nothing notice now number nurse object ocean of off offer office often oil old on once one only open opposite or orange order other our out outside over own page pain paint pair paper parent park part partner party pass past path pay peace pen pencil people perfect period person picture piece pig place plane plant plate play please pocket point police poor popular position possible pot potato power practice prepare present press pretty prevent price print prize probably problem produce promise proper protect provide public pull punish pupil push put quarter queen question quick quiet quite radio rain rainy raise reach read ready real reason receive record red remember remind remove rent repair repeat reply report rest restaurant result return rice rich ride right ring rise river road rock room root rope rose round rubber rude rule ruler run rush sad safe sail salt same sand save say school science scissors search seat second see seem sell send sentence serve seven several sex shade shadow shake shape share sharp she sheep sheet shelf shine ship shirt shoe shoot shop short should shoulder shout show sick side signal silence silk silly silver similar simple since sing single sink sister sit six size skill skin skirt sky sleep slip slow small smell smile smoke snow so soap sock soft some someone something sometimes son song soon sorry sound soup south space speak special speed spell spend spoon sport spread spring square stamp stand star start station stay steal steam step still stomach stone stop store storm story strange street strong structure student study stupid subject substance successful such sudden sugar suitable summer sun sunny support sure surprise sweet swim sword table take talk tall taste taxi tea teach team tear telephone television tell ten tennis terrible test than that the their then there therefore they thick thin thing think third this though threat three tidy tie time tiny tired title to today together tomorrow tonight too tool tooth top total touch town train tram travel tree trouble true trust try tube turn twice type ugly umbrella uncle under understand unit until up use useful usual usually vegetable very village visit voice wait wake walk wall want warm was wash waste watch water way we weak wear weather wedding week weight welcome well were west wet what wheel when where which while white who why wide wife wild will win wind window wine winter wire wise wish with without woman wonder word work world worry worse worst worth would write wrong year yellow yes yesterday yet you young your zero zoo".split(" ");
+const _cvtOpen=new Set();
+const _lastQuote={};
+async function yahooChart(symbol){ for(const host of ["query1","query2"]){ try{ const d=JSON.parse(await httpGet(`https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=1d&interval=1d`)); const m=d.chart&&d.chart.result&&d.chart.result[0]&&d.chart.result[0].meta; if(m&&m.regularMarketPrice!=null) return m; }catch(e){} } return null; }
+let _fx={rate:0,t:0};
+async function usdKrw(){ const now=Date.now(); if(_fx.rate && now-_fx.t<600000) return _fx.rate; const m=await yahooChart("USDKRW=X"); if(m&&m.regularMarketPrice){ _fx={rate:m.regularMarketPrice,t:now}; } return _fx.rate||0; }
+async function coinMarkets(){ if(_coinMarkets) return _coinMarkets; const j=JSON.parse(await httpGet("https://api.upbit.com/v1/market/all?isDetails=false")); _coinMarkets=(Array.isArray(j)?j:[]).filter(m=>String(m.market).startsWith("KRW-")); return _coinMarkets; }
+
+/* 행 전체를 잡고 끌어 순서 바꾸기 — 들어 올리고 다른 항목이 밀려남 (세로 목록) */
+function enableListDnD(list, arr, onDone){
+  if(!list) return;
+  list.querySelectorAll("[data-rid]").forEach(row=>{
+    row.addEventListener("pointerdown", e=>{
+      if(e.button!==0) return;
+      if(e.target.closest(".box, .x, .sq-x, .ic-x, .rx, .hact, input, select, textarea, button")) return;
+      const startX=e.clientX, startY=e.clientY; let dragging=false, ph=null, offX=0, offY=0;
+      const begin=()=>{
+        dragging=true; const rect=row.getBoundingClientRect(); offX=startX-rect.left; offY=startY-rect.top;
+        ph=document.createElement("div"); ph.className="dnd-ph"; ph.style.width=rect.width+"px"; ph.style.height=rect.height+"px";
+        list.insertBefore(ph, row);
+        row.classList.add("lift");
+        row.style.width=rect.width+"px"; row.style.height=rect.height+"px"; row.style.position="fixed"; row.style.left=rect.left+"px"; row.style.top=rect.top+"px"; row.style.margin="0"; row.style.zIndex="3000"; row.style.pointerEvents="none";
+        document.body.appendChild(row);
+      };
+      const move=ev=>{
+        if(!dragging){ if(Math.abs(ev.clientY-startY)<5 && Math.abs(ev.clientX-startX)<5) return; begin(); }
+        row.style.left=(ev.clientX-offX)+"px"; row.style.top=(ev.clientY-offY)+"px";
+        const sibs=[...list.querySelectorAll("[data-rid]")];
+        let best=null, bd=Infinity, before=true;
+        for(const s of sibs){ const bx=s.getBoundingClientRect(); const cx=bx.left+bx.width/2, cy=bx.top+bx.height/2; const d=Math.hypot(ev.clientX-cx, ev.clientY-cy);
+          if(d<bd){ bd=d; best=s; before=(ev.clientY<cy-bx.height*0.2)?true:(ev.clientY>cy+bx.height*0.2?false:(ev.clientX<cx)); } }
+        if(best){ list.insertBefore(ph, before?best:best.nextSibling); } else { list.appendChild(ph); }
+      };
+      const up=()=>{
+        document.removeEventListener("pointermove",move,true); document.removeEventListener("pointerup",up,true);
+        if(dragging){
+          row.classList.remove("lift");
+          row.style.position=""; row.style.left=""; row.style.top=""; row.style.width=""; row.style.height=""; row.style.margin=""; row.style.zIndex=""; row.style.pointerEvents="";
+          if(ph){ list.insertBefore(row, ph); ph.remove(); }
+          const order=[...list.querySelectorAll("[data-rid]")].map(r=>r.dataset.rid);
+          arr.sort((a,b)=>{ const ia=order.indexOf(String(a.id)), ib=order.indexOf(String(b.id)); if(ia<0&&ib<0)return 0; if(ia<0)return 1; if(ib<0)return -1; return ia-ib; });
+          const swallow=ev2=>{ ev2.stopPropagation(); ev2.preventDefault(); row.removeEventListener("click",swallow,true); };
+          row.addEventListener("click",swallow,true); setTimeout(()=>row.removeEventListener("click",swallow,true),350);
+          if(onDone) onDone();
+        }
+      };
+      document.addEventListener("pointermove",move,true); document.addEventListener("pointerup",up,true);
+    });
+  });
+}
+
+/* 항목 끌어서 순서 바꾸기 (목록형 위젯 공용) */
+function enableReorder(list, arr, onDone){
+  if(!list) return;
+  list.querySelectorAll(".drag-h").forEach(h=>{
+    const row=h.closest("[data-rid]"); if(!row) return;
+    h.addEventListener("click", ev=>ev.stopPropagation());
+    h.addEventListener("pointerdown", e=>{
+      e.preventDefault(); e.stopPropagation(); row.classList.add("dragging");
+      try{ h.setPointerCapture(e.pointerId); }catch(_){}
+      const move=ev=>{
+        const rows=[...list.querySelectorAll("[data-rid]:not(.dragging)")];
+        let best=null, bd=Infinity, before=true;
+        rows.forEach(r=>{ const bx=r.getBoundingClientRect(); const cx=bx.left+bx.width/2, cy=bx.top+bx.height/2; const d=Math.hypot(ev.clientX-cx, ev.clientY-cy);
+          if(d<bd){ bd=d; best=r; before=(ev.clientY<cy-0.5)||(Math.abs(ev.clientY-cy)<=bx.height/2 && ev.clientX<cx); } });
+        if(best){ list.insertBefore(row, before?best:best.nextSibling); } else { list.appendChild(row); }
+      };
+      const up=()=>{ try{ h.releasePointerCapture(e.pointerId); }catch(_){}
+        h.removeEventListener("pointermove",move); h.removeEventListener("pointerup",up); row.classList.remove("dragging");
+        const order=[...list.querySelectorAll("[data-rid]")].map(r=>r.dataset.rid);
+        arr.sort((a,b)=>{ const ia=order.indexOf(String(a.id)), ib=order.indexOf(String(b.id)); if(ia<0&&ib<0)return 0; if(ia<0)return 1; if(ib<0)return -1; return ia-ib; });
+        if(onDone) onDone();
+      };
+      h.addEventListener("pointermove",move); h.addEventListener("pointerup",up);
+    });
+  });
+}
+
+/* ===== 보드 / 카드 / 자유 배치·크기조절 ===== */
+const board=$("#board");
+const boardW=()=>board.clientWidth;
+function cardOf(id){ return board.querySelector(`.card[data-id="${id}"]`); }
+let mode="normal";
+function lay(w){
+  if(mode==="max"){ if(!w.layoutMax) w.layoutMax=Object.assign({}, w.layout||{x:0,y:0,w:300,h:200,z:1}); return w.layoutMax; }
+  if(!w.layout) w.layout=Object.assign({}, w.layoutMax||{x:0,y:0,w:300,h:200,z:1}); return w.layout;
+}
+function renderPositions(){ state.widgets.forEach(w=>{ const c=cardOf(w.id); if(c) applyPos(c,w); }); growBoard(); }
+function setMode(m){ if(mode===m) return; mode=m; renderPositions(); persist(); }
+function rdLay(o){ return mode==="max" ? (o.layoutMax||o.layout) : o.layout; }
+function applyPos(card,w){ const L=lay(w); card.style.left=L.x+"px"; card.style.top=L.y+"px"; card.style.width=L.w+"px"; card.style.height=L.h+"px"; card.style.zIndex=L.z||1; }
+function bringFront(card,w){ const L=lay(w); L.z=++maxZ; card.style.zIndex=L.z; }
+function growBoard(){ let max=320; state.widgets.forEach(w=>{ const L=rdLay(w); if(L) max=Math.max(max, L.y+L.h); }); board.style.height=(max+40)+"px"; }
+function overlap(a,b){ return !(a.x+a.w<=b.x||b.x+b.w<=a.x||a.y+a.h<=b.y||b.y+b.h<=a.y); }
+function findFreeSpot(wd,ht){ const bw=boardW()||1000; const step=24; for(let y=0;y<5000;y+=step){ for(let x=0;x+wd<=bw;x+=step){ const cand={x,y,w:wd,h:ht}; const hit=state.widgets.some(o=>{ const lo=rdLay(o); return lo&&overlap(cand,lo); }); if(!hit) return {x,y}; } } return {x:0,y:0}; }
+
+function mountCard(w){
+  const def=WIDGETS[w.type]; if(!def) return null;
+  const card=el("div","card"); card.dataset.id=w.id; applyPos(card,w);
+  const head=el("div","head");
+  const ttl=el("div","ttl",`<span class="ico">${def.icon}</span><span class="tname"></span>`);
+  $(".tname",ttl).textContent = w.title || def.title;
+  head.appendChild(ttl); head.appendChild(el("div","sp"));
+  const ren=el("div","hact",`✎`); ren.title="제목 변경"; ren.onpointerdown=e=>e.stopPropagation(); ren.onclick=()=>renameTitle(ttl,w,def); head.appendChild(ren);
+  if(def.print){ const pr=el("div","hact",`🖨`); pr.title="인쇄"; pr.onpointerdown=e=>e.stopPropagation(); pr.onclick=()=>{ const o=def.print(w); printContent(o.title,o.html); }; head.appendChild(pr); }
+  if(def.settings){ const gear=el("div","hact",`⚙`); gear.title="설정"; gear.onpointerdown=e=>e.stopPropagation(); gear.onclick=()=>def.openSettings($(".body",card),w); head.appendChild(gear); }
+  const del=el("div","hact del",`✕`); del.title="삭제"; del.onpointerdown=e=>e.stopPropagation(); del.onclick=()=>removeWidget(w,card); head.appendChild(del);
+  const body=el("div","body"); const rsz=el("div","rsz");
+  card.appendChild(head); card.appendChild(body); card.appendChild(rsz);
+  def.mount(body,w);
+  enableMove(card,head,w); enableResize(card,rsz,w);
+  card.addEventListener("pointerdown",()=>bringFront(card,w));
+  return card;
+}
+function renameTitle(ttl,w,def){
+  const cur=w.title||def.title;
+  const inp=el("input"); inp.className="tedit"; inp.value=cur; inp.maxLength=24;
+  inp.onpointerdown=e=>e.stopPropagation();
+  const nameEl=$(".tname",ttl); nameEl.replaceWith(inp); inp.focus(); inp.select();
+  let done=false;
+  const finish=(val)=>{ if(done)return; done=true; const ns=el("span","tname"); ns.textContent=val; inp.replaceWith(ns); };
+  const commit=()=>{ const v=inp.value.trim(); w.title=v||def.title; finish(w.title); persist(); };
+  inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){commit();} else if(e.key==="Escape"){finish(cur);} });
+  inp.addEventListener("blur",commit);
+}
+function enableMove(card,head,w){
+  head.addEventListener("pointerdown",e=>{
+    if(e.target.closest(".hact")) return; e.preventDefault(); bringFront(card,w);
+    const sTop=()=>window.pageYOffset||document.documentElement.scrollTop||0;
+    const L=lay(w); const sx=e.clientX, sy=e.clientY+sTop(), ox=L.x, oy=L.y;
+    card.classList.add("moving"); head.setPointerCapture(e.pointerId);
+    let lastEv=e, autoT=null;
+    const place=(cx,cy)=>{ let nx=snap(clamp(ox+(cx-sx),0,Math.max(0,boardW()-L.w))); let ny=snap(Math.max(0,oy+(cy-sy)));
+      L.x=nx; L.y=ny; card.style.left=nx+"px"; card.style.top=ny+"px"; growBoard(); };
+    const EDGE=80, STEP=16;
+    autoT=setInterval(()=>{
+      if(!lastEv) return; const vh=window.innerHeight; let dir=0;
+      if(lastEv.clientY > vh-EDGE) dir=1; else if(lastEv.clientY < EDGE && sTop()>0) dir=-1;
+      if(!dir) return;
+      const before=sTop(); window.scrollBy(0, dir*STEP);
+      if(sTop()!==before) place(lastEv.clientX, lastEv.clientY+sTop());
+    },16);
+    const mv=ev=>{ lastEv=ev; place(ev.clientX, ev.clientY+sTop()); };
+    const up=()=>{ if(autoT){clearInterval(autoT); autoT=null;} head.releasePointerCapture(e.pointerId); head.removeEventListener("pointermove",mv); head.removeEventListener("pointerup",up); card.classList.remove("moving"); growBoard(); persist(); };
+    head.addEventListener("pointermove",mv); head.addEventListener("pointerup",up);
+  });
+}
+function enableResize(card,rsz,w){
+  rsz.addEventListener("pointerdown",e=>{
+    e.preventDefault(); e.stopPropagation(); bringFront(card,w);
+    const L=lay(w); const sx=e.clientX, sy=e.clientY, ow=L.w, oh=L.h; card.classList.add("sizing"); rsz.setPointerCapture(e.pointerId);
+    const mv=ev=>{ let nw=snap(clamp(ow+(ev.clientX-sx),220,boardW()-L.x)); let nh=snap(Math.max(130,oh+(ev.clientY-sy))); L.w=nw; L.h=nh; card.style.width=nw+"px"; card.style.height=nh+"px"; growBoard(); };
+    const up=()=>{ rsz.releasePointerCapture(e.pointerId); rsz.removeEventListener("pointermove",mv); rsz.removeEventListener("pointerup",up); card.classList.remove("sizing"); growBoard(); persist(); };
+    rsz.addEventListener("pointermove",mv); rsz.addEventListener("pointerup",up);
+  });
+}
+
+function addWidget(type){
+  const def=WIDGETS[type]; const cfg=def.defaultCfg?def.defaultCfg():{}; const d=DEF_SIZE[type]||{w:320,h:240};
+  const spot=findFreeSpot(d.w,d.h); const base={x:spot.x,y:spot.y,w:d.w,h:d.h,z:++maxZ};
+  const w={id:uid(),type,config:cfg,layout:Object.assign({},base),layoutMax:Object.assign({},base)};
+  state.widgets.push(w); const card=mountCard(w); if(card) board.appendChild(card); growBoard(); persist(); closeSheet(); toast(`${def.title} 위젯을 추가했어요`);
+}
+function removeWidget(w,card){ card.remove(); state.widgets=state.widgets.filter(x=>x.id!==w.id); growBoard(); persist(); toast("위젯을 삭제했어요"); }
+
+function assignLayouts(){
+  maxZ=1; state.widgets.forEach(w=>{ if(w.layout&&w.layout.z) maxZ=Math.max(maxZ,w.layout.z); });
+  state.widgets.forEach(w=>{
+    if(!w.config){ const def=WIDGETS[w.type]; w.config=def&&def.defaultCfg?def.defaultCfg():{}; }
+    if(w.type==="weather" && (!w.config||w.config.lat==null)){ w.config={name:w.name||"서울",lat:w.lat||37.5665,lon:w.lon||126.9780}; }
+    if(!w.layout || typeof w.layout.x!=="number"){ const d=DEF_SIZE[w.type]||{w:320,h:240}; const spot=findFreeSpot(d.w,d.h); w.layout={x:spot.x,y:spot.y,w:d.w,h:d.h,z:++maxZ}; }
+  });
+}
+function renderAll(){ board.innerHTML=""; state.widgets.forEach(w=>{ const c=mountCard(w); if(c) board.appendChild(c); }); growBoard(); }
+function clampAll(){ state.widgets.forEach(w=>{ const c=cardOf(w.id); if(c) applyPos(c,w); }); growBoard(); }
+
+/* ===== 테마 / 시계 / 상단 ===== */
+function applyTheme(){ document.documentElement.setAttribute("data-theme",state.theme); $("#themeBtn").textContent=state.theme==="dark"?"🌙":"☀️"; }
+$("#themeBtn").onclick=()=>{ state.theme=state.theme==="dark"?"light":"dark"; applyTheme(); persist(); };
+/* ===== 오늘 일정 알림 (우측 아래 팝업) ===== */
+function notifDismissed(){ try{ return JSON.parse(localStorage.getItem("dash.notif")||"{}"); }catch(e){ return {}; } }
+function notifDismiss(key){ try{ const d=notifDismissed(); d[key]=ymd(new Date()); localStorage.setItem("dash.notif",JSON.stringify(d)); }catch(e){} }
+function memoDatesToday(text){
+  const now=new Date(), M=now.getMonth()+1, D=now.getDate(), Y=now.getFullYear(); const out=[];
+  (text||"").split(/\r?\n/).forEach(line=>{
+    const t=line.trim(); if(!t) return;
+    const pats=[ /(\d{4})[-.\/](\d{1,2})[-.\/](\d{1,2})/, /(?:^|[^\d])(\d{1,2})[-.\/](\d{1,2})(?![\d\-.\/])/, /(\d{1,2})\s*월\s*(\d{1,2})\s*일/ ];
+    for(let i=0;i<pats.length;i++){ const m=t.match(pats[i]); if(!m) continue;
+      let mo,da; if(i===0){ if(+m[1]!==Y) continue; mo=+m[2]; da=+m[3]; } else { mo=+m[1]; da=+m[2]; }
+      if(mo===M&&da===D){ out.push(t); break; }
+    }
+  });
+  return out;
+}
+async function collectNotices(){
+  const list=[], today=ymd(new Date());
+  state.widgets.forEach(w=>{
+    const title=w.title||(WIDGETS[w.type]&&WIDGETS[w.type].title)||"";
+    if(w.type==="todo"&&w.config&&Array.isArray(w.config.items)){
+      w.config.items.filter(i=>!i.done&&i.date===today).forEach(i=>list.push({key:"todo:"+i.id, icon:"✓", from:title||"할 일", text:i.text}));
+    }
+    if(w.type==="memo"&&w.config&&w.config.text){
+      memoDatesToday(w.config.text).forEach((line,idx)=>list.push({key:"memo:"+w.id+":"+today+":"+idx, icon:"📝", from:title||"메모", text:line}));
+    }
+  });
+  const neis=state.widgets.find(w=>w.type==="neis"&&w.config&&w.config.school);
+  if(neis){
+    try{ const sc=neis.config.school; let url=`https://open.neis.go.kr/hub/SchoolSchedule?Type=json&pSize=50&ATPT_OFCDC_SC_CODE=${sc.atpt}&SD_SCHUL_CODE=${sc.code}&AA_FROM_YMD=${today}&AA_TO_YMD=${today}`; if(neis.config.key)url+=`&KEY=${neis.config.key}`;
+      const d=JSON.parse(await httpGet(url)); const rows=(d.SchoolSchedule&&d.SchoolSchedule[1]&&d.SchoolSchedule[1].row)||[];
+      const seen={}; rows.forEach(r=>{ const nm=(r.EVENT_NM||"").trim(); if(!nm||nm==="토요휴업일"||seen[nm])return; seen[nm]=1;
+        list.push({key:"neis:"+today+":"+nm, icon:"📅", from:"학사일정", text:nm}); });
+    }catch(e){}
+  }
+  return list;
+}
+function showNotices(items){
+  if(!items.length) return;
+  let wrap=document.getElementById("noticeWrap");
+  if(!wrap){ wrap=document.createElement("div"); wrap.id="noticeWrap"; document.body.appendChild(wrap); }
+  items.slice(0,6).forEach((n,i)=>{
+    const card=el("div","notice");
+    card.innerHTML=`<div class="nt-i">${n.icon}</div><div class="nt-b"><div class="nt-f"></div><div class="nt-t"></div></div><div class="nt-x">✕</div>`;
+    $(".nt-f",card).textContent=n.from+" · 오늘";
+    $(".nt-t",card).textContent=n.text;
+    const close=()=>{ notifDismiss(n.key); card.classList.remove("on"); setTimeout(()=>card.remove(),200); };
+    $(".nt-x",card).onclick=close;
+    wrap.appendChild(card);
+    setTimeout(()=>card.classList.add("on"), 80+i*110);
+  });
+}
+async function runNotices(){
+  try{
+    const done=notifDismissed(), today=ymd(new Date());
+    const all=await collectNotices();
+    const fresh=all.filter(n=>done[n.key]!==today);
+    showNotices(fresh);
+  }catch(e){}
+}
+
+function tickClock(){ const now=new Date(); document.querySelectorAll("[data-clock-time]").forEach(e=>e.innerHTML=`${pad(now.getHours())}:${pad(now.getMinutes())}<span class="sec">${pad(now.getSeconds())}</span>`); const wd=["일","월","화","수","목","금","토"][now.getDay()]; document.querySelectorAll("[data-clock-date]").forEach(e=>e.textContent=`${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 ${wd}요일`); checkDayRollover(); }
+let _curDay=new Date().toDateString();
+function checkDayRollover(){ const d=new Date().toDateString(); if(d===_curDay) return; const prevToday=ymd(new Date(_curDay)); _curDay=d; updateTopbar();
+  state.widgets.forEach(w=>{ if(w.type==="todo" && w.config && w.config.sel===prevToday){ w.config.sel=ymd(new Date()); w.config.moff=0; } });
+  setTimeout(runNotices,800);
+  state.widgets.forEach(w=>{ if(["dday","meal","neis","quote","history","todo"].includes(w.type)){ const c=cardOf(w.id); if(!c) return; const body=c.querySelector(".body"); if(!body) return; const def=WIDGETS[w.type]; try{ def.mount(body,w); }catch(e){} } }); }
+function updateTopbar(){ const now=new Date(), h=now.getHours(); let g="반가워요"; if(h>=5&&h<11)g="좋은 아침이에요"; else if(h>=11&&h<17)g="좋은 오후예요"; else if(h>=17&&h<22)g="좋은 저녁이에요"; else g="편안한 밤 되세요"; $("#greet").textContent=g; }
+setInterval(tickClock,1000); setInterval(updateTopbar,60000);
+
+/* ===== 창 버튼 (테두리 없는 창) ===== */
+$("#winMin").onclick=()=>{ if(hasApi("minimize")) window.pywebview.api.minimize(); };
+$("#winMax").onclick=toggleMax;
+$("#winClose").onclick=()=>{ if(hasApi("close")) window.pywebview.api.close(); };
+$("#titlebar").addEventListener("dblclick",e=>{ if(e.target.closest(".wbtn"))return; toggleMax(); });
+/* 제목줄을 끌어 옮긴 뒤: 창을 되돌리지 말고, 최대화 여부만 다시 읽어 아이콘/상태를 맞춤 */
+$("#titlebar").addEventListener("mousedown",e=>{ if(e.target.closest(".wbtn"))return;
+  const up=()=>{ window.removeEventListener("mouseup",up); setTimeout(syncMaxIcon,200); };
+  window.addEventListener("mouseup",up); });
+let isMax=false;
+async function syncMaxIcon(){
+  const mb=$("#winMax"); if(!mb) return;
+  if(hasApi("is_maximized")){ try{ isMax=!!(await window.pywebview.api.is_maximized()); }catch(e){} }
+  mb.textContent = isMax ? "❐" : "▢";
+  mb.title = isMax ? "이전 크기로" : "최대화";
+  setMode(isMax?"max":"normal");
+}
+function toggleMax(){
+  if(hasApi("toggle_max")){ window.pywebview.api.toggle_max(); setTimeout(syncMaxIcon,200); }
+  else { isMax=!isMax; const mb=$("#winMax"); if(mb){ mb.textContent=isMax?"❐":"▢"; mb.title=isMax?"이전 크기로":"최대화"; } setMode(isMax?"max":"normal"); }
+}
+let _rsTimer=null;
+window.addEventListener("resize",()=>{ clearTimeout(_rsTimer); _rsTimer=setTimeout(syncMaxIcon,220); });
+(function(){ const grip=$("#winResize"); let raf=null,pw,ph;
+  grip.addEventListener("pointerdown",e=>{ if(!hasApi("resize"))return; e.preventDefault(); grip.setPointerCapture(e.pointerId);
+    const sx=e.screenX, sy=e.screenY, sw=window.innerWidth, sh=window.innerHeight;
+    const mv=ev=>{ pw=Math.max(760,sw+(ev.screenX-sx)); ph=Math.max(540,sh+(ev.screenY-sy)); if(!raf)raf=requestAnimationFrame(()=>{raf=null; window.pywebview.api.resize(Math.round(pw),Math.round(ph));}); };
+    const up=()=>{ grip.releasePointerCapture(e.pointerId); grip.removeEventListener("pointermove",mv); grip.removeEventListener("pointerup",up); setTimeout(clampAll,80); };
+    grip.addEventListener("pointermove",mv); grip.addEventListener("pointerup",up); });
+})();
+
+/* ===== 위젯 추가 모달 ===== */
+
+/* ===== 자동 업데이트 ===== */
+async function checkUpdate(manual){
+  if(!hasApi("check_update")){ if(manual) toast("설치형(exe)에서만 확인할 수 있어요"); return; }
+  let r=null; try{ r=await window.pywebview.api.check_update(); }catch(e){}
+  if(!r||!r.ok){ if(manual) toast(r&&r.reason==="offline"?"업데이트 서버에 연결할 수 없어요":"업데이트를 확인하지 못했어요"); return; }
+  if(!r.ui && !r.app){ if(manual) toast("최신 버전입니다"); return; }
+  showUpdateBar(r);
+}
+function showUpdateBar(r){
+  const old=document.getElementById("updBar"); if(old) old.remove();
+  const bar=el("div","updbar"); bar.id="updBar";
+  const what=[r.ui?"화면":"", r.app?"프로그램":""].filter(Boolean).join("·");
+  bar.innerHTML=`<div class="ub-i">🎉</div><div class="ub-b"><div class="ub-t">새 버전이 나왔습니다</div><div class="ub-s"></div></div><button class="ub-go">업데이트</button><div class="ub-x">✕</div>`;
+  $(".ub-s",bar).textContent=(r.notes||`${what} 업데이트가 준비되어 있어요.`);
+  $(".ub-x",bar).onclick=()=>bar.remove();
+  const btn=$(".ub-go",bar);
+  btn.onclick=async()=>{
+    btn.disabled=true; btn.textContent="받는 중…";
+    let res=null; try{ res=await window.pywebview.api.apply_update(); }catch(e){}
+    if(!res||!res.ok){ btn.disabled=false; btn.textContent="다시 시도"; toast("업데이트를 받지 못했어요"); return; }
+    if(res.app){
+      btn.textContent="설치 중…";
+      $(".ub-s",bar).textContent="잠시 후 프로그램이 자동으로 다시 시작됩니다.";
+      try{ await window.pywebview.api.finish_app_update(); }catch(e){}
+      setTimeout(()=>{ try{ window.pywebview.api.close(); }catch(e){} }, 1200);
+      return;
+    }
+    if(res.ui){
+      $(".ub-t",bar).textContent="업데이트 완료";
+      $(".ub-s",bar).textContent="새 화면을 불러옵니다…";
+      btn.remove(); setTimeout(()=>location.reload(), 900);
+      return;
+    }
+    btn.disabled=false; btn.textContent="업데이트";
+    toast(res.app_error==="not_frozen"?"설치형(exe)에서만 프로그램 업데이트가 됩니다":"이미 최신 상태예요");
+  };
+  document.body.appendChild(bar);
+  setTimeout(()=>bar.classList.add("on"), 60);
+}
+
+const APP_VER="2026-09-08";
+function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag"); if(vt) vt.textContent=`화면 버전 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`; Object.keys(WIDGETS).forEach(type=>{ const d=WIDGETS[type]; const c=el("div","pcard",`<div class="pi">${d.icon}</div><div><div class="pt">${d.title}</div><div class="pd">${d.desc}</div></div>`); c.onclick=()=>addWidget(type); p.appendChild(c); }); }
+function openSheet(){ $("#scrim").classList.add("on"); }
+function closeSheet(){ $("#scrim").classList.remove("on"); }
+$("#addBtn").onclick=openSheet; $("#scrim").onclick=e=>{ if(e.target===$("#scrim")) closeSheet(); };
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeSheet(); });
+window.addEventListener("resize",clampAll);
+
+/* ===== 시작 ===== */
+function ensureDefaults(){
+  if(!state.widgets||!state.widgets.length){
+    state.widgets=[ {id:uid(),type:"clock"}, {id:uid(),type:"weather"}, {id:uid(),type:"todo"}, {id:uid(),type:"meal"} ];
+  }
+}
+var bootedWithApi=false, _ready=false;
+async function boot(){
+  if(booted && (bootedWithApi || !hasApi("load_state"))) return;
+  booted=true; bootedWithApi=hasApi("load_state"); _ready=false;
+  await loadState(); if(!state.theme)state.theme="light"; ensureDefaults(); assignLayouts();
+  if(hasApi("is_maximized")){ try{ if(await window.pywebview.api.is_maximized()){ isMax=true; mode="max"; } }catch(e){} }
+  const _mb=$("#winMax"); if(_mb){ _mb.textContent=isMax?"❐":"▢"; _mb.title=isMax?"이전 크기로":"최대화"; }
+  applyTheme(); updateTopbar(); buildPalette(); renderAll(); _ready=true; setTimeout(runNotices,1200); setTimeout(()=>checkUpdate(false),2500); }
+window.addEventListener("pywebviewready",()=>{ document.body.classList.add("app"); boot(); });
+window.addEventListener("DOMContentLoaded",()=>{ updateTopbar(); setTimeout(()=>{ if(!window.pywebview) boot(); },1500); });
+</script>
+</body>
+</html>
