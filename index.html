@@ -1465,6 +1465,60 @@
   .notice .nt-x{flex:none; font-size:11px; color:var(--faint); cursor:pointer; padding:2px 4px; border-radius:6px;}
   .notice .nt-x:hover{color:var(--danger); background:var(--card-2);}
   .vertag{display:inline-block; margin-left:6px; padding:2px 8px; border-radius:999px; background:var(--accent-soft); color:var(--accent-2); font-size:11px; font-weight:700;}
+  .aiu .aiu-row{margin-bottom:14px;}
+  .aiu .aiu-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;}
+  .aiu .aiu-lb{font-size:12.5px; color:var(--muted);}
+  .aiu .aiu-pc{font-size:14px; font-weight:800;}
+  .aiu .aiu-pc.warn{color:#BA7517;} .aiu .aiu-pc.danger{color:var(--danger);}
+  .aiu .aiu-bar{height:8px; background:var(--card-2); border-radius:5px; overflow:hidden;}
+  .aiu .aiu-bar i{display:block; height:100%; border-radius:5px; background:var(--accent); transition:width .4s var(--ease);}
+  .aiu .aiu-bar i.warn{background:#BA7517;} .aiu .aiu-bar i.danger{background:var(--danger);}
+  .aiu .aiu-sub{font-size:11px; color:var(--faint); margin-top:5px;}
+  .aiu .aiu-foot{font-size:10.5px; color:var(--faint); margin-top:12px; padding-top:9px; border-top:1px solid var(--border);}
+  .aiu .aiu-guide{text-align:center; padding:14px 8px;}
+  .aiu .aiu-gi{font-size:28px; margin-bottom:9px;}
+  .aiu .aiu-gt{font-size:13px; font-weight:700; margin-bottom:6px;}
+  .aiu .aiu-gs{font-size:11.5px; color:var(--muted); line-height:1.6; margin-bottom:12px;}
+
+  .ptabs{display:flex; gap:7px; margin:2px 0 14px;}
+  .ptabs button{padding:8px 16px; font-size:13px; font-weight:700; border:1px solid var(--border);
+    background:var(--card); color:var(--muted); border-radius:999px; cursor:pointer;
+    transition:background .13s var(--ease), color .13s var(--ease), border-color .13s var(--ease);}
+  .ptabs button:hover{border-color:var(--accent); color:var(--text);}
+  .ptabs button.on{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+  .pnote{grid-column:1/-1; font-size:11.5px; color:var(--muted); line-height:1.6;
+    background:var(--card-2); border:1px solid var(--border); border-radius:12px; padding:11px 13px; margin-bottom:2px;}
+
+  .nsw .nsw-row{display:flex; align-items:center; gap:10px; padding:10px 11px; border-radius:12px;
+    background:var(--card-2); border:1px solid var(--border); margin-bottom:7px;}
+  .nsw .nsw-row.on{border-color:var(--accent); background:var(--accent-soft);}
+  .nsw .nsw-row.dis,.nsw .nsw-row.off{opacity:.55;}
+  .nsw .nsw-i{font-size:17px; flex:none;}
+  .nsw .nsw-t{flex:1; min-width:0;}
+  .nsw .nsw-t b{display:block; font-size:13px; font-weight:700;}
+  .nsw .nsw-t i{display:block; font-size:10.5px; color:var(--faint); font-style:normal;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .nsw .nsw-s{flex:none; font-size:11px; font-weight:700; color:var(--muted);}
+  .nsw .nsw-row.on .nsw-s{color:var(--accent-2);}
+  .nsw .nsw-btns{display:flex; gap:6px; margin-top:11px;}
+  .nsw .nsw-btns .mini{flex:1; justify-content:center;}
+  .nsw .nsw-note{font-size:10.5px; color:var(--faint); margin-top:9px; line-height:1.5;}
+  .nsw .nsw-err{font-size:10.5px; color:var(--danger); margin-top:7px; line-height:1.5; word-break:break-all;}
+
+  .nsw .nsw-foot{display:flex; align-items:center; gap:8px; margin-top:9px;}
+  .nsw .nsw-foot .nsw-note{flex:1; margin-top:0;}
+  .nsw .nsw-diag{flex:none; font-size:10.5px; padding:3px 9px; border-radius:999px;
+    border:1px solid var(--border); background:var(--card-2); color:var(--muted); cursor:pointer;}
+  .nsw .nsw-diag:hover{border-color:var(--accent); color:var(--text);}
+  .nsw .nsw-dt{font-size:12px; font-weight:700; color:var(--accent-2); margin-bottom:8px;}
+  .nsw .nsw-d{display:flex; gap:8px; align-items:flex-start; padding:6px 0; border-bottom:1px solid var(--border);}
+  .nsw .nsw-d span{flex:none; font-size:11px; width:14px;}
+  .nsw .nsw-d.ok span{color:var(--good);} .nsw .nsw-d.no span{color:var(--danger);}
+  .nsw .nsw-d b{display:block; font-size:12px; font-weight:600;}
+  .nsw .nsw-d i{display:block; font-size:10.5px; color:var(--faint); font-style:normal; line-height:1.5; margin-top:2px; word-break:break-all;}
+  .nsw .nsw-tip{font-size:11px; color:var(--danger); margin-top:10px; line-height:1.6;}
+  .nsw .nsw-tip.ok{color:var(--good);}
+
   .toast{position:fixed; z-index:2200; left:50%; bottom:30px; transform:translateX(-50%) translateY(16px); background:var(--text); border:none; color:var(--bg); padding:12px 18px; border-radius:13px; font-size:13.5px; font-weight:600; box-shadow:var(--shadow-lift); opacity:0; pointer-events:none; transition:opacity .2s var(--ease), transform .2s var(--ease);}
   .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
 
@@ -1515,6 +1569,10 @@
     <div class="sheet">
       <h2>위젯 추가</h2>
       <p class="s">원하는 위젯을 골라 보드에 올리세요. 카드 제목줄을 끌면 자유롭게 옮기고, 오른쪽 아래 모서리를 끌면 크기를 바꿀 수 있어요. <span id="verTag" class="vertag"></span></p>
+      <div class="ptabs" id="pTabs">
+        <button data-pt="basic" class="on">기본 위젯</button>
+        <button data-pt="special">특수 기능</button>
+      </div>
       <div class="palette" id="palette"></div>
     </div>
   </div>
@@ -1610,6 +1668,126 @@ function toast(m){const t=$("#toast"); t.textContent=m; t.classList.add("on"); c
 
 /* ===== 위젯 정의 (시계/날씨/할일/급식/디데이/바로가기) ===== */
 const WIDGETS = {
+  netswitch:{ title:"인터넷 전환", icon:"🔌", desc:"유선과 무선(와이파이)을 버튼 하나로 전환합니다.", special:true,
+    defaultCfg:()=>({}),
+    mount(b,w){ b.classList.add("nsw");
+      b.innerHTML=`<div class="nsw-body" data-body><div class="empty"><span class="spin"></span> 확인 중…</div></div>`;
+      this.load(b,w);
+      if(w._timer) clearInterval(w._timer);
+      w._timer=setInterval(()=>{ if(!document.body.contains(b)){ clearInterval(w._timer); w._timer=null; return; } this.load(b,w,true); }, 20000); },
+    async diagnose(b,w){ const out=$("[data-body]",b);
+      out.innerHTML=`<div class="empty"><span class="spin"></span> 진단 중…</div>`;
+      let r=null; try{ r=await window.pywebview.api.net_diagnose(); }catch(e){}
+      if(!r){ out.innerHTML=`<div class="empty">진단하지 못했어요.</div>`; return; }
+      let h=`<div class="nsw-dt">진단 결과</div>`;
+      (r.steps||[]).forEach(x=>{
+        h+=`<div class="nsw-d ${x.ok?"ok":"no"}"><span>${x.ok?"✔":"✕"}</span>
+          <div><b>${escapeHtml(x.name)}</b>${x.note?`<i>${escapeHtml(x.note)}</i>`:""}</div></div>`; });
+      const bad=(r.steps||[]).filter(x=>!x.ok);
+      if(bad.length){
+        const tip = bad.some(x=>x.name.indexOf("실행 정책")>=0) ? "PowerShell 실행이 차단되어 있습니다. 학교 보안 정책일 수 있어요."
+          : bad.some(x=>x.name.indexOf("어댑터")>=0) ? "유선 또는 무선 어댑터를 찾지 못했습니다."
+          : bad.some(x=>x.name.indexOf("마지막 오류")>=0) ? "위 오류 내용을 알려 주시면 원인을 찾을 수 있어요."
+          : "위 항목 중 X 표시된 부분이 원인입니다.";
+        h+=`<div class="nsw-tip">${tip}</div>`;
+      } else {
+        h+=`<div class="nsw-tip ok">문제가 없어 보입니다. 다시 전환해 보세요.</div>`;
+      }
+      h+=`<div class="nsw-btns" style="margin-top:10px"><button class="mini" data-back>돌아가기</button></div>`;
+      out.innerHTML=h;
+      const bb=$("[data-back]",out); if(bb) bb.onclick=()=>this.load(b,w); },
+    async load(b,w,quiet){ const out=$("[data-body]",b);
+      if(!hasApi("net_status")){ out.innerHTML=`<div class="empty">설치형(exe)에서만 동작해요.</div>`; return; }
+      let r=null; try{ r=await window.pywebview.api.net_status(); }catch(e){}
+      if(!r||!r.ok||(!r.wired&&!r.wifi)){ out.innerHTML=`<div class="empty">네트워크 어댑터를 찾지 못했어요.</div>`; return; }
+      this.draw(b,w,r); },
+    draw(b,w,r){ const out=$("[data-body]",b);
+      const row=(o,label,icon)=>{ if(!o) return `<div class="nsw-row off"><span class="nsw-i">${icon}</span><div class="nsw-t"><b>${label}</b><i>없음</i></div></div>`;
+        const on=o.up, dis=o.disabled;
+        return `<div class="nsw-row ${on?"on":(dis?"dis":"")}"><span class="nsw-i">${icon}</span>
+          <div class="nsw-t"><b>${label}</b><i>${escapeHtml(o.name)}</i></div>
+          <span class="nsw-s">${on?"연결됨":(dis?"꺼짐":"대기")}</span></div>`; };
+      out.innerHTML = row(r.wired,"유선","🖧") + row(r.wifi,"무선","📶") +
+        `<div class="nsw-btns">
+           <button class="mini" data-go="wired">유선만</button>
+           <button class="mini" data-go="wifi">무선만</button>
+           <button class="mini" data-go="both">둘 다</button>
+         </div>
+         <div class="nsw-foot"><span class="nsw-note">전환할 때 Windows 권한 확인 창이 한 번 뜹니다.</span>
+           <button class="nsw-diag" data-diag>진단</button></div>`;
+      const db=$("[data-diag]",out);
+      if(db) db.onclick=()=>this.diagnose(b,w);
+      [...out.querySelectorAll("[data-go]")].forEach(btn=>{
+        btn.onclick=async()=>{
+          const all=[...out.querySelectorAll("[data-go]")];
+          all.forEach(x=>x.disabled=true); btn.textContent="전환 중…";
+          let res=null; try{ res=await window.pywebview.api.net_switch(btn.dataset.go); }catch(e){}
+          if(res&&res.ok){ toast("전환 완료"); this.draw(b,w,res.status); }
+          else {
+            const rs=(res&&res.reason)||"failed";
+            const msg = rs==="denied" ? "권한 승인이 취소되었어요"
+                      : rs==="timeout" ? "시간이 초과되었어요. 다시 시도해 주세요"
+                      : rs==="no_adapter" ? "전환할 어댑터를 찾지 못했어요"
+                      : "전환하지 못했어요";
+            toast(msg);
+            all.forEach(x=>x.disabled=false);
+            this.load(b,w);
+            if(res&&res.detail){ const d=$(".nsw-err",out)||el("div","nsw-err"); d.textContent=res.detail;
+              if(!d.isConnected) out.appendChild(d); }
+          }
+        }; }); } },
+
+  aiusage:{ title:"AI 사용량", icon:"📊", desc:"Claude 구독 사용량(5시간·주간)을 확인합니다.", special:true,
+    defaultCfg:()=>({}),
+    mount(b,w){ b.classList.add("aiu");
+      b.innerHTML=`<div class="aiu-body" data-body><div class="empty"><span class="spin"></span> 불러오는 중…</div></div>`;
+      this.load(b,w);
+      if(w._timer) clearInterval(w._timer);
+      w._timer=setInterval(()=>{ if(!document.body.contains(b)){ clearInterval(w._timer); w._timer=null; return; } this.load(b,w); }, 300000); },
+    toMs(ts){
+      if(ts===null||ts===undefined||ts==="") return 0;
+      if(typeof ts==="number"){ return ts>1e12 ? ts : ts*1000; }
+      const str=String(ts).trim();
+      if(/^\d+$/.test(str)){ const n=Number(str); return n>1e12 ? n : n*1000; }
+      const t=Date.parse(str);
+      return isNaN(t) ? 0 : t;
+    },
+    fmtLeft(ts){
+      const at=this.toMs(ts); if(!at) return "";
+      const ms=at-Date.now(); if(ms<=0) return "곧 초기화";
+      const m=Math.floor(ms/60000), h=Math.floor(m/60), d=Math.floor(h/24);
+      if(!isFinite(m)) return "";
+      if(d>=1) return `${d}일 ${h%24}시간 후 초기화`;
+      if(h>=1) return `${h}시간 ${m%60}분 후 초기화`;
+      return `${m}분 후 초기화`; },
+    async load(b,w){ const out=$("[data-body]",b);
+      if(!hasApi("ai_usage")){ out.innerHTML=`<div class="empty">설치형(exe)에서만 동작해요.</div>`; return; }
+      let r=null; try{ r=await window.pywebview.api.ai_usage(false); }catch(e){}
+      if(!r||!r.ok){
+        const why=(r&&r.reason)||"offline";
+        if(why==="no_login"||why==="expired"){
+          out.innerHTML=`<div class="aiu-guide"><div class="aiu-gi">🔐</div>
+            <div class="aiu-gt">Claude에 로그인하면 사용량이 표시됩니다</div>
+            <div class="aiu-gs">Claude Code를 설치하고 로그인하면<br>5시간·주간 사용량을 자동으로 보여줍니다.</div>
+            <button class="mini" data-help>설치 방법 보기</button></div>`;
+          const hb=$("[data-help]",out); if(hb) hb.onclick=()=>openLink("https://code.claude.com/docs/ko/quickstart");
+          return; }
+        if(why==="rate_limited"){ out.innerHTML=`<div class="empty">조회가 잠시 제한되었습니다. 잠시 후 자동으로 다시 확인해요.</div>`; return; }
+        out.innerHTML=`<div class="empty">사용량을 불러오지 못했어요.</div>`; return; }
+
+      const ws=(r.windows||[]);
+      if(!ws.length){ out.innerHTML=`<div class="empty">표시할 사용량 정보가 없어요. Claude Code에서 한 번 대화한 뒤 다시 확인해 주세요.</div>`; return; }
+      let h="";
+      ws.forEach(x=>{
+        const lv = x.pct>=95 ? "danger" : (x.pct>=80 ? "warn" : "ok");
+        h+=`<div class="aiu-row">
+          <div class="aiu-top"><span class="aiu-lb">${escapeHtml(x.label)}</span><span class="aiu-pc ${lv}">${x.pct}%</span></div>
+          <div class="aiu-bar"><i class="${lv}" style="width:${x.pct}%"></i></div>
+          <div class="aiu-sub">${escapeHtml(this.fmtLeft(x.resets_at))}</div></div>`; });
+      const when=r.at? new Date(r.at*1000) : new Date();
+      h+=`<div class="aiu-foot">${r.stale?"이전 정보 · ":""}${when.getHours()}시 ${pad(when.getMinutes())}분 기준</div>`;
+      out.innerHTML=h; } },
+
   clock:{ title:"시계", icon:"🕑", desc:"현재 시각과 오늘 날짜를 큼직하게.",
     mount(b){ b.classList.add("clock"); b.innerHTML=`<div class="time" data-clock-time>00:00<span class="sec">00</span></div><div class="sub" data-clock-date>—</div>`; tickClock(); } },
 
@@ -2387,7 +2565,7 @@ const PRESETS=[
   {a:["트론","trx"],src:"coin",code:"KRW-TRX",name:"트론"}
 ];
 
-const DEF_SIZE={ clock:{w:300,h:150}, weather:{w:340,h:400}, todo:{w:320,h:300}, meal:{w:344,h:320}, dday:{w:308,h:236}, links:{w:344,h:180}, memo:{w:300,h:240}, shortcuts:{w:320,h:220}, stocks:{w:332,h:288}, neis:{w:344,h:360}, files:{w:320,h:240}, news:{w:340,h:340}, quote:{w:320,h:170}, dict:{w:320,h:300}, history:{w:340,h:340}, country:{w:320,h:300}, encyc:{w:340,h:340}, roster:{w:330,h:320}, timetable:{w:360,h:420}, contacts:{w:330,h:330} };
+const DEF_SIZE={ clock:{w:300,h:150}, weather:{w:340,h:400}, todo:{w:320,h:300}, meal:{w:344,h:320}, dday:{w:308,h:236}, links:{w:344,h:180}, memo:{w:300,h:240}, shortcuts:{w:320,h:220}, stocks:{w:332,h:288}, neis:{w:344,h:360}, files:{w:320,h:240}, news:{w:340,h:340}, quote:{w:320,h:170}, dict:{w:320,h:300}, history:{w:340,h:340}, country:{w:320,h:300}, encyc:{w:340,h:340}, roster:{w:330,h:320}, timetable:{w:360,h:420}, aiusage:{w:300,h:270}, netswitch:{w:300,h:260}, contacts:{w:330,h:330} };
 
 function wcode(c, isDay){ const m={0:["☀️","맑음"],1:["🌤️","대체로 맑음"],2:["⛅","구름 많음"],3:["☁️","흐림"],45:["🌫️","안개"],48:["🌫️","짙은 안개"],51:["🌦️","약한 이슬비"],53:["🌦️","이슬비"],55:["🌧️","강한 이슬비"],56:["🌧️","약한 어는 이슬비"],57:["🌧️","어는 이슬비"],61:["🌧️","약한 비"],63:["🌧️","비"],65:["🌧️","강한 비"],66:["🌧️","약한 어는 비"],67:["🌧️","어는 비"],71:["🌨️","약한 눈"],73:["🌨️","눈"],75:["❄️","강한 눈"],77:["🌨️","싸락눈"],80:["🌦️","약한 소나기"],81:["🌧️","소나기"],82:["⛈️","강한 소나기"],85:["🌨️","약한 눈 소나기"],86:["🌨️","강한 눈 소나기"],95:["⛈️","뇌우"],96:["⛈️","뇌우·약한 우박"],99:["⛈️","뇌우·강한 우박"]};
   const v=m[c]||["🌡️","—"]; let e=v[0];
@@ -3098,10 +3276,23 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-09-12.5";
+const APP_VER="2026-09-13.7";
+let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`;
-    if(hasApi("get_versions")){ window.pywebview.api.get_versions().then(v=>{ if(v&&v.app&&vt.isConnected) vt.textContent=`화면 ${APP_VER} · 프로그램 ${v.app} · 위젯 ${Object.keys(WIDGETS).length}개`; }).catch(()=>{}); } } Object.keys(WIDGETS).forEach(type=>{ const d=WIDGETS[type]; const c=el("div","pcard",`<div class="pi">${d.icon}</div><div><div class="pt">${d.title}</div><div class="pd">${d.desc}</div></div>`); c.onclick=()=>addWidget(type); p.appendChild(c); }); }
+    if(hasApi("get_versions")){ window.pywebview.api.get_versions().then(v=>{ if(v&&v.app&&vt.isConnected) vt.textContent=`화면 ${APP_VER} · 프로그램 ${v.app} · 위젯 ${Object.keys(WIDGETS).length}개`; }).catch(()=>{}); } }
+  [...document.querySelectorAll("[data-pt]")].forEach(btn=>{
+    btn.className=(btn.dataset.pt===_palTab)?"on":"";
+    btn.onclick=()=>{ _palTab=btn.dataset.pt; buildPalette(); }; });
+  const keys=Object.keys(WIDGETS).filter(t=>!!WIDGETS[t].special===(_palTab==="special"));
+  if(_palTab==="special"){
+    const note=el("div","pnote","내 컴퓨터의 다른 프로그램과 연결해 쓰는 기능입니다. 해당 프로그램이 설치·로그인되어 있어야 동작해요.");
+    p.appendChild(note); }
+  if(!keys.length){ p.appendChild(el("div","empty","표시할 항목이 없어요.")); return; }
+  keys.forEach(type=>{ const d=WIDGETS[type];
+    const c=el("div","pcard",`<div class="pi">${d.icon}</div><div><div class="pt">${d.title}</div><div class="pd">${d.desc}</div></div>`);
+    c.onclick=()=>addWidget(type); p.appendChild(c); });
+}
 function openSheet(){ $("#scrim").classList.add("on"); }
 function closeSheet(){ $("#scrim").classList.remove("on"); }
 $("#addBtn").onclick=openSheet; $("#scrim").onclick=e=>{ if(e.target===$("#scrim")) closeSheet(); };
