@@ -4,5 +4,5 @@
   "app_version": "1.2.4",
   "app_url": "https://github.com/EricKOR1/dashboard/releases/latest/download/MyDashboard.zip",
   "page_url": "https://github.com/EricKOR1/dashboard/releases",
-  "notes": "AI 사용량에서 초기화 시간이 NaN으로 표시되던 문제를 수정했습니다."
+  "notes": "위젯에 특수 기능(AI사용량 표기 위젯, 유무선 원클릭 위젯) 추가하였습니다."
 }
