@@ -4,19 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>My Dashboard</title>
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-<link rel="stylesheet" as="style" crossorigin
-  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-<link rel="stylesheet" as="style" crossorigin
-  href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/complete/WantedSansVariable.min.css" />
-<link rel="stylesheet" as="style" crossorigin
-  href="https://cdn.jsdelivr.net/gh/sunn-us/SUIT@v1.0.1/fonts/variable/woff2/SUIT.css" />
-<link rel="stylesheet" as="style" crossorigin
-  href="https://cdn.jsdelivr.net/gh/spoqa/spoqa-han-sans@01ff0283e4f36e159768cbb9bcb4bf3f6a45d9c9/css/SpoqaHanSansNeo.css" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/Cafe24Ssurround.css" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Nanum+Gothic:wght@400;700&family=Noto+Serif+KR:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" />
 <style>
   :root{
     --bg:#F3EFE6; --bg-soft:#FBF9F2;
@@ -1944,6 +1931,16 @@
     .notice,#updBar{transform:none !important; opacity:1 !important;}
   }
 
+  .aiu .aiu-foot{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .aiu .aiu-rf{flex:none; font-size:10px; padding:3px 9px; border-radius:999px;
+    border:1px solid var(--border); background:var(--card-2); color:var(--muted); cursor:pointer;}
+  .aiu .aiu-rf:hover{border-color:var(--accent); color:var(--text);}
+  .aiu .aiu-rf:disabled{opacity:.6; cursor:default;}
+
+  .aiu .aiu-paste{margin-top:14px; padding-top:12px; border-top:1px solid var(--border); text-align:left;}
+  .aiu .aiu-pl{font-size:10.5px; color:var(--faint); margin-bottom:6px;}
+  .aiu .aiu-paste input{font-size:11px;}
+
   .toast{position:fixed; z-index:2200; left:50%; bottom:30px; transform:translateX(-50%) translateY(16px); background:var(--text); border:none; color:var(--bg); padding:12px 18px; border-radius:13px; font-size:13.5px; font-weight:600; box-shadow:var(--shadow-lift); opacity:0; pointer-events:none; transition:opacity .2s var(--ease), transform .2s var(--ease);}
   .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
 
@@ -2100,6 +2097,39 @@ const WIDGETS = {
       this.load(b,w);
       if(w._timer) clearInterval(w._timer);
       w._timer=setInterval(()=>{ if(!document.body.contains(b)){ clearInterval(w._timer); w._timer=null; return; } this.load(b,w,true); }, 20000); },
+    showConnect(b,w,msg){ const out=$("[data-body]",b);
+      out.innerHTML=`<div class="aiu-guide"><div class="aiu-gi">🔐</div>
+        <div class="aiu-gt">처음 한 번만 연결하면 됩니다</div>
+        <div class="aiu-gs">${msg||"아래 [연결하기]를 누르면 창이 열립니다.<br>브라우저에서 로그인하면 <b>토큰</b>이 나와요."}</div>
+        <button class="mini go" data-conn>연결하기</button>
+        <div class="aiu-paste">
+          <div class="aiu-pl">토큰을 받으셨나요? 여기에 붙여넣으세요</div>
+          <div class="row"><input data-tok placeholder="sk-ant-oat01-..." ><button class="mini" data-save>저장</button></div>
+        </div>
+        <button class="aiu-rf" data-help style="margin-top:10px">Claude Code 설치 방법</button></div>`;
+      const cb=$("[data-conn]",out);
+      if(cb) cb.onclick=async()=>{
+        cb.disabled=true; cb.textContent="창 여는 중…";
+        let rr=null; try{ rr=await window.pywebview.api.claude_login(); }catch(e){}
+        cb.disabled=false; cb.textContent="연결하기";
+        if(rr&&rr.ok){ toast("열린 창에서 로그인한 뒤 토큰을 붙여넣으세요"); }
+        else if(rr&&rr.reason==="not_installed"){
+          this.showConnect(b,w,"Claude Code가 설치되어 있지 않습니다.<br>아래 [설치 방법]을 먼저 확인해 주세요."); }
+        else toast("창을 열지 못했어요");
+      };
+      const sb=$("[data-save]",out), ti=$("[data-tok]",out);
+      const doSave=async()=>{
+        const v=(ti.value||"").trim(); if(!v){ toast("토큰을 붙여넣어 주세요"); return; }
+        sb.disabled=true; sb.textContent="확인 중…";
+        let rr=null; try{ rr=await window.pywebview.api.save_ai_token(v); }catch(e){}
+        if(rr&&rr.ok){ toast("연결되었습니다"); this.load(b,w); return; }
+        sb.disabled=false; sb.textContent="저장";
+        toast(rr&&rr.reason==="invalid"?"토큰이 올바르지 않아요":"저장하지 못했어요");
+      };
+      if(sb) sb.onclick=doSave;
+      if(ti) ti.addEventListener("keydown",e=>{ if(e.key==="Enter") doSave(); });
+      const hb=$("[data-help]",out); if(hb) hb.onclick=()=>openLink("https://code.claude.com/docs/ko/quickstart");
+    },
     async diagnose(b,w){ const out=$("[data-body]",b);
       out.innerHTML=`<div class="empty"><span class="spin"></span> 진단 중…</div>`;
       let r=null; try{ r=await window.pywebview.api.net_diagnose(); }catch(e){}
@@ -2190,13 +2220,24 @@ const WIDGETS = {
       let r=null; try{ r=await window.pywebview.api.ai_usage(false); }catch(e){}
       if(!r||!r.ok){
         const why=(r&&r.reason)||"offline";
-        if(why==="no_login"||why==="expired"){
-          out.innerHTML=`<div class="aiu-guide"><div class="aiu-gi">🔐</div>
-            <div class="aiu-gt">Claude에 로그인하면 사용량이 표시됩니다</div>
-            <div class="aiu-gs">Claude Code를 설치하고 로그인하면<br>5시간·주간 사용량을 자동으로 보여줍니다.</div>
-            <button class="mini" data-help>설치 방법 보기</button></div>`;
-          const hb=$("[data-help]",out); if(hb) hb.onclick=()=>openLink("https://code.claude.com/docs/ko/quickstart");
+        if(why==="expired"){
+          out.innerHTML=`<div class="aiu-guide"><div class="aiu-gi">🔄</div>
+            <div class="aiu-gt">로그인이 만료되었습니다</div>
+            <div class="aiu-gs">아래 버튼을 누르면 자동으로 다시 연결합니다.<br>잠시 걸릴 수 있어요.</div>
+            <button class="mini go" data-refresh>다시 연결</button></div>`;
+          const rb=$("[data-refresh]",out);
+          if(rb) rb.onclick=async()=>{
+            rb.disabled=true; rb.textContent="연결 중…";
+            let rr=null; try{ rr=await window.pywebview.api.claude_refresh(); }catch(e){}
+            if(rr&&rr.ok){ toast("다시 연결되었습니다"); this.load(b,w); }
+            else if(rr&&rr.reason==="not_installed"){
+              rb.disabled=false; rb.textContent="다시 연결";
+              toast("Claude Code가 설치되어 있지 않아요"); }
+            else { rb.disabled=false; rb.textContent="다시 연결";
+              toast("Claude Code를 한 번 실행한 뒤 다시 시도해 주세요"); }
+          };
           return; }
+        if(why==="no_login"){ this.showConnect(b,w); return; }
         if(why==="rate_limited"){ out.innerHTML=`<div class="empty">조회가 잠시 제한되었습니다. 잠시 후 자동으로 다시 확인해요.</div>`; return; }
         out.innerHTML=`<div class="empty">사용량을 불러오지 못했어요.</div>`; return; }
 
@@ -2210,8 +2251,12 @@ const WIDGETS = {
           <div class="aiu-bar"><i class="${lv}" style="width:${x.pct}%"></i></div>
           <div class="aiu-sub">${escapeHtml(this.fmtLeft(x.resets_at))}</div></div>`; });
       const when=r.at? new Date(r.at*1000) : new Date();
-      h+=`<div class="aiu-foot">${r.stale?"이전 정보 · ":""}${when.getHours()}시 ${pad(when.getMinutes())}분 기준</div>`;
-      out.innerHTML=h; } },
+      h+=`<div class="aiu-foot"><span>${r.stale?"이전 정보 · ":""}${when.getHours()}시 ${pad(when.getMinutes())}분 기준</span><button class="aiu-rf" data-now>새로고침</button></div>`;
+      out.innerHTML=h;
+      const nb=$("[data-now]",out);
+      if(nb) nb.onclick=async()=>{ nb.disabled=true; nb.textContent="확인 중…";
+        try{ await window.pywebview.api.ai_usage(true); }catch(e){}
+        this.load(b,w); }; } },
 
   clock:{ title:"시계", icon:"🕑", desc:"현재 시각과 오늘 날짜를 큼직하게.",
     mount(b){ b.classList.add("clock"); b.innerHTML=`<div class="time" data-clock-time>00:00<span class="sec">00</span></div><div class="sub" data-clock-date>—</div>`; tickClock(); } },
@@ -3263,7 +3308,8 @@ function mountCard(w){
   const body=el("div","body"); const rsz=el("div","rsz");
   card.appendChild(head); card.appendChild(body); card.appendChild(rsz);
   applyCardFont(card,w);
-  def.mount(body,w);
+  if(_bootPhase){ _mountQ.push(()=>{ try{ def.mount(body,w); }catch(e){} }); }
+  else { try{ def.mount(body,w); }catch(e){} }
   enableMove(card,head,w); enableResize(card,rsz,w);
   card.addEventListener("pointerdown",()=>bringFront(card,w));
   return card;
@@ -3327,10 +3373,40 @@ function assignLayouts(){
     if(!w.layout || typeof w.layout.x!=="number"){ const d=DEF_SIZE[w.type]||{w:320,h:240}; const spot=findFreeSpot(d.w,d.h); w.layout={x:spot.x,y:spot.y,w:d.w,h:d.h,z:++maxZ}; }
   });
 }
+
+/* 시작할 때 위젯을 한꺼번에 띄우면 느려져서, 순서대로 나눠 띄웁니다 */
+let _bootPhase=false, _mountQ=[];
+function runMountQueue(){
+  if(!_mountQ.length){ _bootPhase=false; return; }
+  const batch=_mountQ.splice(0,2);
+  batch.forEach(fn=>fn());
+  if(_mountQ.length) setTimeout(runMountQueue, 90);
+  else _bootPhase=false;
+}
 function renderAll(){ board.innerHTML=""; state.widgets.forEach(w=>{ const c=mountCard(w); if(c) board.appendChild(c); }); growBoard(); }
 function clampAll(){ state.widgets.forEach(w=>{ const c=cardOf(w.id); if(c) applyPos(c,w); }); growBoard(); }
 
 /* ===== 테마 / 시계 / 상단 ===== */
+/* 폰트는 실제로 고른 것만 그때 내려받습니다 (시작 속도 개선) */
+const FONT_CSS={
+ "":"https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css",
+ wanted:"https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/complete/WantedSansVariable.min.css",
+ suit:"https://cdn.jsdelivr.net/gh/sunn-us/SUIT@v1.0.1/fonts/variable/woff2/SUIT.css",
+ spoqa:"https://cdn.jsdelivr.net/gh/spoqa/spoqa-han-sans@01ff0283e4f36e159768cbb9bcb4bf3f6a45d9c9/css/SpoqaHanSansNeo.css",
+ cafe24:"https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/Cafe24Ssurround.css",
+ nanum:"https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700&display=swap",
+ gowun:"https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap",
+ serif:"https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&display=swap",
+ mono:"https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
+};
+const _fontLoaded={};
+function loadFont(key){
+  const url=FONT_CSS[key]; if(!url||_fontLoaded[key]) return;
+  _fontLoaded[key]=true;
+  const l=document.createElement("link"); l.rel="stylesheet"; l.href=url; l.crossOrigin="anonymous";
+  document.head.appendChild(l);
+}
+
 /* ===== 위젯별 글꼴·글자 크기 ===== */
 const FONTS=[
  ["","기본 (Pretendard)",""],
@@ -3349,6 +3425,7 @@ const FSIZES=[["xs","아주 작게",.75],["sm","작게",.88],["md","보통",1],[
 
 function applyCardFont(card,w){
   const f=FONTS.find(x=>x[0]===(w.font||""));
+  loadFont(w.font||"");
   FONTS.forEach(x=>{ if(x[0]) card.classList.remove("f-"+x[0]); });
   if(f&&f[2]){ card.style.setProperty("font-family", f[2], "important"); card.classList.add("hasfont","f-"+f[0]); }
   else { card.style.removeProperty("font-family"); card.classList.remove("hasfont"); }
@@ -3405,8 +3482,13 @@ const THEMES={
        ["console","데이터 콘솔","#0E1116","#151A21","#00E0FF","청록 포인트 · 데이터 느낌"],
        ["dark","클래식 다크","#181510","#231E15","#E7BD54","어두운 기본"]]
 };
+const THEME_FONT={academia:"serif", zen:"serif", vintage:"serif", notion:"serif",
+  blueprint:"mono", hud:"mono", sketch:"gowun", swiss:"wanted"};
 function applyTheme(){
-  document.documentElement.setAttribute("data-theme", state.theme||"light");
+  const th=state.theme||"light";
+  document.documentElement.setAttribute("data-theme", th);
+  loadFont("");
+  if(THEME_FONT[th]) loadFont(THEME_FONT[th]);
 }
 function buildThemePicker(){
   const mk=(key,name,bg,card,acc,desc)=>{
@@ -3770,7 +3852,7 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-09-16.2";
+const APP_VER="2026-09-17.2";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`;
@@ -3787,7 +3869,7 @@ function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#ver
     const c=el("div","pcard",`<div class="pi">${d.icon}</div><div><div class="pt">${d.title}</div><div class="pd">${d.desc}</div></div>`);
     c.onclick=()=>addWidget(type); p.appendChild(c); });
 }
-function openSheet(){ $("#scrim").classList.add("on"); }
+function openSheet(){ buildPalette(); $("#scrim").classList.add("on"); }
 function closeSheet(){ $("#scrim").classList.remove("on"); }
 $("#addBtn").onclick=openSheet; $("#scrim").onclick=e=>{ if(e.target===$("#scrim")) closeSheet(); };
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeSheet(); });
@@ -3806,7 +3888,8 @@ async function boot(){
   await loadState(); if(!state.theme)state.theme="light"; ensureDefaults(); assignLayouts();
   if(hasApi("is_maximized")){ try{ if(await window.pywebview.api.is_maximized()){ isMax=true; mode="max"; } }catch(e){} }
   const _mb=$("#winMax"); if(_mb){ _mb.textContent=isMax?"❐":"▢"; _mb.title=isMax?"이전 크기로":"최대화"; }
-  applyTheme(); updateTopbar(); buildPalette(); renderAll(); _ready=true; setTimeout(runNotices,1200); setTimeout(()=>checkUpdate(false),2500); }
+  applyTheme(); updateTopbar(); _bootPhase=true; renderAll(); requestAnimationFrame(()=>runMountQueue());
+  _ready=true; setTimeout(runNotices,1500); setTimeout(()=>checkUpdate(false),2500); }
 window.addEventListener("pywebviewready",()=>{ document.body.classList.add("app"); boot(); });
 window.addEventListener("DOMContentLoaded",()=>{ updateTopbar(); setTimeout(()=>{ if(!window.pywebview) boot(); },1500); });
 </script>
