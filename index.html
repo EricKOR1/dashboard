@@ -1941,6 +1941,46 @@
   .aiu .aiu-pl{font-size:10.5px; color:var(--faint); margin-bottom:6px;}
   .aiu .aiu-paste input{font-size:11px;}
 
+  .aiu .aiu-steps{text-align:left; margin-top:12px; font-size:10.5px; color:var(--muted); line-height:1.9;}
+
+  .aiu .aiu-btns{display:flex; gap:6px; justify-content:center; margin-top:12px;}
+  .aiu .aiu-btns .mini{flex:1; justify-content:center;}
+  .aiu .aiu-dt{font-size:12px; font-weight:700; color:var(--accent-2); margin-bottom:8px;}
+  .aiu .aiu-d{display:flex; gap:8px; align-items:flex-start; padding:6px 0; border-bottom:1px solid var(--border);}
+  .aiu .aiu-d span{flex:none; font-size:11px; width:14px;}
+  .aiu .aiu-d.ok span{color:var(--good);} .aiu .aiu-d.no span{color:var(--danger);}
+  .aiu .aiu-d b{display:block; font-size:12px; font-weight:600;}
+  .aiu .aiu-d i{display:block; font-size:10.5px; color:var(--faint); font-style:normal; line-height:1.5; margin-top:2px; word-break:break-all;}
+
+  .aiu .aiu-err{font-size:10.5px; color:var(--danger); margin-top:11px; line-height:1.6;
+    text-align:left; word-break:break-all; background:var(--card-2); padding:9px 10px; border-radius:8px;}
+
+  /* 아이콘을 끌 때 원본 크기 미리보기가 뜨는 문제 방지 */
+  img,.ic-img,.fav,.apps img,.links img,.files img{
+    -webkit-user-drag:none; -khtml-user-drag:none; user-drag:none; user-select:none;}
+
+  /* ===== 구글 드라이브 동기화 ===== */
+  .btn.sync{gap:6px; padding:0 13px; font-size:12.5px; font-weight:600;}
+  .btn.sync .sy-i{font-size:15px;}
+  .btn.sync.on .sy-i{color:var(--good);}
+  .btn.sync.busy .sy-i{opacity:.55;}
+  .btn.sync.err .sy-i{color:var(--danger);}
+  .sync-sheet{width:min(460px,100%);}
+  .sync-sheet .sy-box{display:flex; align-items:center; gap:11px; padding:12px 14px; border-radius:14px;
+    background:var(--accent-soft); border:1px solid var(--border); margin:14px 0 12px;}
+  .sync-sheet .sy-box b{display:block; font-size:13.5px;}
+  .sync-sheet .sy-box i{display:block; font-size:11.5px; color:var(--muted); font-style:normal; margin-top:2px; word-break:break-all;}
+  .sync-sheet .sy-btns{display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;}
+  .sync-sheet .sy-btns .mini{flex:1; justify-content:center; min-width:120px;}
+  .sync-sheet .sy-note{font-size:11.5px; color:var(--muted); line-height:1.75; margin-top:14px;
+    padding-top:12px; border-top:1px solid var(--border);}
+  .sync-sheet .mini.danger{background:var(--danger); color:#fff; border-color:transparent; font-weight:700;}
+  .sync-sheet .sy-warn{font-size:12px; color:var(--text); line-height:1.7; background:var(--card-2);
+    border-radius:12px; padding:11px 13px; margin:12px 0;}
+
+  /* 끌거나 크기를 바꾸는 동안에는 항상 맨 위에 보이게 */
+  .card.moving,.card.sizing{z-index:2147483000 !important;}
+
   .toast{position:fixed; z-index:2200; left:50%; bottom:30px; transform:translateX(-50%) translateY(16px); background:var(--text); border:none; color:var(--bg); padding:12px 18px; border-radius:13px; font-size:13.5px; font-weight:600; box-shadow:var(--shadow-lift); opacity:0; pointer-events:none; transition:opacity .2s var(--ease), transform .2s var(--ease);}
   .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
 
@@ -1969,6 +2009,7 @@
         <div class="greet" id="greet">반가워요</div>
       </div>
       <div class="actions">
+        <button class="btn sync" id="syncBtn" title="다른 컴퓨터와 내용 맞추기"><span class="sy-i">☁</span><span id="syncTxt">동기화</span></button>
         <button class="btn icon" id="themeBtn" title="화면 꾸미기">🎨</button>
         <button class="btn primary" id="addBtn">＋ 위젯 추가</button>
       </div>
@@ -1977,6 +2018,9 @@
   </div>
 
 
+  <div class="scrim" id="syncScrim">
+    <div class="sheet sync-sheet" id="syncSheet"></div>
+  </div>
   <div class="scrim" id="themeScrim">
     <div class="sheet">
       <h2>화면 꾸미기</h2>
@@ -2010,7 +2054,15 @@ let booted = false, maxZ = 1;
 function hasApi(n){ return !!(window.pywebview && window.pywebview.api && window.pywebview.api[n]); }
 async function persist(){
   if(!_ready) return;
+  snapshotLays();
   state.savedAt = Date.now();
+  const data = JSON.stringify(state);
+  try{ localStorage.setItem("dash.state", data); }catch(e){}
+  if(hasApi("save_state")){ try{ await window.pywebview.api.save_state(data); }catch(e){} }
+  if(typeof Sync!=="undefined") Sync.queuePush();
+}
+/* 다른 컴퓨터에서 가져온 내용을 저장할 때: 저장 시각을 바꾸지 않아 다시 올리지 않음 */
+async function saveLocalOnly(){
   const data = JSON.stringify(state);
   try{ localStorage.setItem("dash.state", data); }catch(e){}
   if(hasApi("save_state")){ try{ await window.pywebview.api.save_state(data); }catch(e){} }
@@ -2097,39 +2149,6 @@ const WIDGETS = {
       this.load(b,w);
       if(w._timer) clearInterval(w._timer);
       w._timer=setInterval(()=>{ if(!document.body.contains(b)){ clearInterval(w._timer); w._timer=null; return; } this.load(b,w,true); }, 20000); },
-    showConnect(b,w,msg){ const out=$("[data-body]",b);
-      out.innerHTML=`<div class="aiu-guide"><div class="aiu-gi">🔐</div>
-        <div class="aiu-gt">처음 한 번만 연결하면 됩니다</div>
-        <div class="aiu-gs">${msg||"아래 [연결하기]를 누르면 창이 열립니다.<br>브라우저에서 로그인하면 <b>토큰</b>이 나와요."}</div>
-        <button class="mini go" data-conn>연결하기</button>
-        <div class="aiu-paste">
-          <div class="aiu-pl">토큰을 받으셨나요? 여기에 붙여넣으세요</div>
-          <div class="row"><input data-tok placeholder="sk-ant-oat01-..." ><button class="mini" data-save>저장</button></div>
-        </div>
-        <button class="aiu-rf" data-help style="margin-top:10px">Claude Code 설치 방법</button></div>`;
-      const cb=$("[data-conn]",out);
-      if(cb) cb.onclick=async()=>{
-        cb.disabled=true; cb.textContent="창 여는 중…";
-        let rr=null; try{ rr=await window.pywebview.api.claude_login(); }catch(e){}
-        cb.disabled=false; cb.textContent="연결하기";
-        if(rr&&rr.ok){ toast("열린 창에서 로그인한 뒤 토큰을 붙여넣으세요"); }
-        else if(rr&&rr.reason==="not_installed"){
-          this.showConnect(b,w,"Claude Code가 설치되어 있지 않습니다.<br>아래 [설치 방법]을 먼저 확인해 주세요."); }
-        else toast("창을 열지 못했어요");
-      };
-      const sb=$("[data-save]",out), ti=$("[data-tok]",out);
-      const doSave=async()=>{
-        const v=(ti.value||"").trim(); if(!v){ toast("토큰을 붙여넣어 주세요"); return; }
-        sb.disabled=true; sb.textContent="확인 중…";
-        let rr=null; try{ rr=await window.pywebview.api.save_ai_token(v); }catch(e){}
-        if(rr&&rr.ok){ toast("연결되었습니다"); this.load(b,w); return; }
-        sb.disabled=false; sb.textContent="저장";
-        toast(rr&&rr.reason==="invalid"?"토큰이 올바르지 않아요":"저장하지 못했어요");
-      };
-      if(sb) sb.onclick=doSave;
-      if(ti) ti.addEventListener("keydown",e=>{ if(e.key==="Enter") doSave(); });
-      const hb=$("[data-help]",out); if(hb) hb.onclick=()=>openLink("https://code.claude.com/docs/ko/quickstart");
-    },
     async diagnose(b,w){ const out=$("[data-body]",b);
       out.innerHTML=`<div class="empty"><span class="spin"></span> 진단 중…</div>`;
       let r=null; try{ r=await window.pywebview.api.net_diagnose(); }catch(e){}
@@ -2192,13 +2211,13 @@ const WIDGETS = {
           }
         }; }); } },
 
-  aiusage:{ title:"AI 사용량", icon:"📊", desc:"Claude 구독 사용량(5시간·주간)을 확인합니다.", special:true,
+  aiusage:{ title:"Claude 사용량", icon:"📊", desc:"Claude 구독의 5시간·주간 사용량을 확인합니다.", special:true,
     defaultCfg:()=>({}),
     mount(b,w){ b.classList.add("aiu");
       b.innerHTML=`<div class="aiu-body" data-body><div class="empty"><span class="spin"></span> 불러오는 중…</div></div>`;
       this.load(b,w);
       if(w._timer) clearInterval(w._timer);
-      w._timer=setInterval(()=>{ if(!document.body.contains(b)){ clearInterval(w._timer); w._timer=null; return; } this.load(b,w); }, 300000); },
+      w._timer=setInterval(()=>{ if(!document.body.contains(b)){ clearInterval(w._timer); w._timer=null; return; } this.load(b,w); }, 600000); },
     toMs(ts){
       if(ts===null||ts===undefined||ts==="") return 0;
       if(typeof ts==="number"){ return ts>1e12 ? ts : ts*1000; }
@@ -2215,32 +2234,114 @@ const WIDGETS = {
       if(d>=1) return `${d}일 ${h%24}시간 후 초기화`;
       if(h>=1) return `${h}시간 ${m%60}분 후 초기화`;
       return `${m}분 후 초기화`; },
+    async aiDiag(b,w){ const out=$("[data-body]",b);
+      out.innerHTML=`<div class="empty"><span class="spin"></span> 진단 중…</div>`;
+      let r=null; try{ r=await window.pywebview.api.ai_diagnose(); }catch(e){}
+      if(!r){ out.innerHTML=`<div class="empty">진단하지 못했어요.</div>`; return; }
+      let h=`<div class="aiu-dt">진단 결과</div>`;
+      (r.steps||[]).forEach(x=>{
+        h+=`<div class="aiu-d ${x.ok?"ok":"no"}"><span>${x.ok?"✔":"✕"}</span>
+          <div><b>${escapeHtml(x.name)}</b>${x.note?`<i>${escapeHtml(x.note)}</i>`:""}</div></div>`; });
+      h+=`<div class="aiu-btns" style="margin-top:11px">
+            <button class="mini" data-back>돌아가기</button>
+            <button class="mini" data-copy>내용 복사</button>
+            <button class="mini" data-conn3>다시 연결</button></div>`;
+      out.innerHTML=h;
+      const bb=$("[data-back]",out); if(bb) bb.onclick=()=>this.load(b,w);
+      const c3=$("[data-conn3]",out); if(c3) c3.onclick=()=>this.showConnect(b,w);
+      const cb=$("[data-copy]",out);
+      if(cb) cb.onclick=()=>{
+        const txt=(r.steps||[]).map(x=>`${x.ok?"OK":"실패"} | ${x.name} | ${x.note}`).join("\n");
+        try{ navigator.clipboard.writeText(txt); toast("복사했습니다"); }catch(e){ toast("복사하지 못했어요"); }
+      };
+    },
+    showInstall(b,w){ const out=$("[data-body]",b);
+      out.innerHTML=`<div class="aiu-guide"><div class="aiu-gi">📦</div>
+        <div class="aiu-gt">Claude Code 설치가 필요합니다</div>
+        <div class="aiu-gs">사용량을 가져오려면 <b>Claude Code</b>가 있어야 합니다.<br>한 번만 설치하면 됩니다.</div>
+        <div class="aiu-steps">
+          <div>1. 아래 [설치 페이지 열기] 클릭</div>
+          <div>2. 안내대로 설치 (5분 정도)</div>
+          <div>3. 이 위젯으로 돌아와 [연결하기]</div>
+        </div>
+        <button class="mini go" data-open style="margin-top:12px">설치 페이지 열기</button>
+        <button class="aiu-rf" data-back style="margin-top:10px">돌아가기</button></div>`;
+      const ob=$("[data-open]",out); if(ob) ob.onclick=()=>openLink("https://code.claude.com/docs/ko/quickstart");
+      const bb=$("[data-back]",out); if(bb) bb.onclick=()=>this.showConnect(b,w);
+    },
+    showConnect(b,w,msg){ const out=$("[data-body]",b);
+      out.innerHTML=`<div class="aiu-guide"><div class="aiu-gi">🔐</div>
+        <div class="aiu-gt">Claude Code에 로그인하면 표시됩니다</div>
+        <div class="aiu-gs">${msg||"아래 버튼을 누르면 Claude Code가 열립니다.<br>로그인한 뒤 창을 닫고 돌아오시면 됩니다."}</div>
+        <div class="aiu-btns">
+          <button class="mini go" data-conn>연결하기</button>
+          <button class="mini" data-recheck>확인</button>
+        </div>
+        <button class="aiu-rf" data-help style="margin-top:10px">Claude Code 설치 방법</button></div>`;
+      const cb=$("[data-conn]",out);
+      if(cb) cb.onclick=async()=>{
+        cb.disabled=true; cb.textContent="여는 중…";
+        let rr=null; try{ rr=await window.pywebview.api.claude_refresh(); }catch(e){}
+        cb.disabled=false; cb.textContent="연결하기";
+        if(rr&&rr.ok) toast("열린 창에서 로그인한 뒤 [확인]을 눌러 주세요");
+        else if(rr&&rr.reason==="not_installed") this.showInstall(b,w);
+        else toast("창을 열지 못했어요");
+      };
+      const rc=$("[data-recheck]",out);
+      if(rc) rc.onclick=async()=>{
+        rc.disabled=true; rc.textContent="확인 중…";
+        try{ await window.pywebview.api.ai_retry_now(); }catch(e){}
+        this.load(b,w);
+      };
+      const hb=$("[data-help]",out); if(hb) hb.onclick=()=>this.showInstall(b,w);
+    },
     async load(b,w){ const out=$("[data-body]",b);
       if(!hasApi("ai_usage")){ out.innerHTML=`<div class="empty">설치형(exe)에서만 동작해요.</div>`; return; }
       let r=null; try{ r=await window.pywebview.api.ai_usage(false); }catch(e){}
       if(!r||!r.ok){
         const why=(r&&r.reason)||"offline";
         if(why==="expired"){
-          out.innerHTML=`<div class="aiu-guide"><div class="aiu-gi">🔄</div>
-            <div class="aiu-gt">로그인이 만료되었습니다</div>
-            <div class="aiu-gs">아래 버튼을 누르면 자동으로 다시 연결합니다.<br>잠시 걸릴 수 있어요.</div>
-            <button class="mini go" data-refresh>다시 연결</button></div>`;
-          const rb=$("[data-refresh]",out);
-          if(rb) rb.onclick=async()=>{
-            rb.disabled=true; rb.textContent="연결 중…";
-            let rr=null; try{ rr=await window.pywebview.api.claude_refresh(); }catch(e){}
-            if(rr&&rr.ok){ toast("다시 연결되었습니다"); this.load(b,w); }
-            else if(rr&&rr.reason==="not_installed"){
-              rb.disabled=false; rb.textContent="다시 연결";
-              toast("Claude Code가 설치되어 있지 않아요"); }
-            else { rb.disabled=false; rb.textContent="다시 연결";
-              toast("Claude Code를 한 번 실행한 뒤 다시 시도해 주세요"); }
-          };
+          this.showConnect(b,w,"로그인이 만료되었습니다.<br>[연결하기]로 Claude Code를 열어 로그인한 뒤<br>[확인]을 눌러 주세요.");
           return; }
-        if(why==="no_login"){ this.showConnect(b,w); return; }
-        if(why==="rate_limited"){ out.innerHTML=`<div class="empty">조회가 잠시 제한되었습니다. 잠시 후 자동으로 다시 확인해요.</div>`; return; }
-        out.innerHTML=`<div class="empty">사용량을 불러오지 못했어요.</div>`; return; }
+        if(why==="no_login"){
+          let has=true;
+          if(hasApi("claude_code_path")){ try{ has=!!(await window.pywebview.api.claude_code_path()); }catch(e){} }
+          if(has) this.showConnect(b,w); else this.showInstall(b,w);
+          return; }
+        if(why==="rate_limited"){
+          const left = r.next_at ? Math.max(0, Math.round((r.next_at*1000-Date.now())/60000)) : null;
+          out.innerHTML=`<div class="aiu-guide"><div class="aiu-gi">⏳</div>
+            <div class="aiu-gt">조회가 잠시 제한되었습니다</div>
+            <div class="aiu-gs">토큰은 정상입니다. 서버가 잠시 막아둔 상태예요.<br>
+              ${left!==null?`약 <b>${left}분</b> 뒤 자동으로 다시 확인합니다.`:"잠시 후 자동으로 다시 확인합니다."}</div>
+            <div class="aiu-btns">
+              <button class="mini" data-now2>지금 확인</button>
+              <button class="mini" data-diag2>진단</button>
+            </div></div>`;
+          const n2=$("[data-now2]",out);
+          if(n2) n2.onclick=async()=>{
+            n2.disabled=true; n2.textContent="확인 중…";
+            let rr=null; try{ rr=await window.pywebview.api.ai_retry_now(); }catch(e){}
+            if(rr&&rr.ok){ toast("불러왔습니다"); this.draw(b,w,rr); return; }
+            this.load(b,w);
+          };
+          const g2=$("[data-diag2]",out); if(g2) g2.onclick=()=>this.aiDiag(b,w);
+          return; }
+        out.innerHTML=`<div class="aiu-guide"><div class="aiu-gi">⚠️</div>
+          <div class="aiu-gt">사용량을 불러오지 못했어요</div>
+          <div class="aiu-gs">아래 [진단]을 누르면 어디서 막히는지 알 수 있습니다.</div>
+          <div class="aiu-btns">
+            <button class="mini" data-retry>다시 시도</button>
+            <button class="mini" data-diag>진단</button>
+            <button class="mini" data-conn2>다시 연결</button>
+          </div></div>`;
+        const rb=$("[data-retry]",out); if(rb) rb.onclick=()=>this.load(b,w);
+        const db=$("[data-diag]",out); if(db) db.onclick=()=>this.aiDiag(b,w);
+        const c2=$("[data-conn2]",out); if(c2) c2.onclick=()=>this.showConnect(b,w);
+        return; }
 
+      this.draw(b,w,r); },
+    draw(b,w,r){ const out=$("[data-body]",b);
       const ws=(r.windows||[]);
       if(!ws.length){ out.innerHTML=`<div class="empty">표시할 사용량 정보가 없어요. Claude Code에서 한 번 대화한 뒤 다시 확인해 주세요.</div>`; return; }
       let h="";
@@ -2268,7 +2369,7 @@ const WIDGETS = {
     openSettings(b,w){
       const old=$(".wxset",b); if(old){ old.remove(); return; }
       const box=el("div","wxset"); box.style.marginBottom="4px";
-      box.innerHTML=`<div class="row"><input placeholder="지역 (예: 포항, 강남, Tokyo)" data-q value="${w.config.name||''}"><button class="mini go" data-find>검색</button></div><div class="sresult" data-res></div>`;
+      box.innerHTML=`<div class="row"><input placeholder="지역 (예: 포항, 강남, Tokyo)" data-q value="${escapeHtml(w.config.name||'')}"><button class="mini go" data-find>검색</button></div><div class="sresult" data-res></div>`;
       b.insertBefore(box, b.firstChild);
       const q=$("[data-q]",box), res=$("[data-res]",box);
       const pick=(name,lat,lon)=>{ w.config={name:name,lat:lat,lon:lon}; persist(); box.remove(); this.load(b,w); toast(`${name} 날씨로 변경`); };
@@ -2277,7 +2378,7 @@ const WIDGETS = {
         if(kr.length){ res.innerHTML=""; kr.forEach(p=>{ const it=el("div","si",`<div class="sn">${p.n}</div><div class="sr">${p.r}</div>`); it.onclick=()=>pick(p.n,p.lat,p.lon); res.appendChild(it); }); return; }
         try{ const d=JSON.parse(await httpGet(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=10&language=ko&format=json`)); res.innerHTML="";
           if(!d.results||!d.results.length){res.innerHTML=`<div class="empty">검색 결과가 없어요. 시·군·구 이름으로 다시 시도해 보세요.</div>`; return;}
-          d.results.forEach(r=>{const it=el("div","si",`<div class="sn">${r.name}</div><div class="sr">${[r.admin2,r.admin1,r.country].filter(Boolean).join(" · ")}</div>`);
+          d.results.forEach(r=>{const it=el("div","si",`<div class="sn">${escapeHtml(r.name)}</div><div class="sr">${[r.admin2,r.admin1,r.country].filter(Boolean).join(" · ")}</div>`);
             it.onclick=()=>pick(r.name,r.latitude,r.longitude); res.appendChild(it);});
         }catch(e){res.innerHTML=`<div class="empty">검색 실패. 인터넷 연결을 확인하세요.</div>`;} };
       $("[data-find]",box).onclick=find;
@@ -2320,7 +2421,7 @@ const WIDGETS = {
             hr+=`<div class="h"${i===s?' data-hnow="1"':''}><div class="hh">${i===s?"지금":hh+"시"}</div><div class="he">${wi.e}</div><div class="ht">${Math.round(hy.temperature_2m[i])}°</div><div class="hp${(pp!=null&&pp>=30)?' wet':''}">${pp!=null?pp+"%":"-"}</div></div>`;
           }
         }
-        main.innerHTML=`<div class="now"><div class="emoji">${wc.e}</div><div><div class="temp">${Math.round(cur.temperature_2m)}<small>°C</small></div><div class="desc wxloc" title="지역 변경">📍 ${c.name} · ${wc.k}</div></div></div>
+        main.innerHTML=`<div class="now"><div class="emoji">${wc.e}</div><div><div class="temp">${Math.round(cur.temperature_2m)}<small>°C</small></div><div class="desc wxloc" title="지역 변경">📍 ${escapeHtml(c.name)} · ${wc.k}</div></div></div>
           <div class="meta"><span>체감 <b>${Math.round(cur.apparent_temperature)}°</b></span>${(tmax!=null)?`<span>최고·최저 <b>${tmax}° / ${tmin}°</b></span>`:""}<span>습도 <b>${cur.relative_humidity_2m}%</b></span><span>바람 <b>${cur.wind_speed_10m.toFixed(1)}㎧</b></span>${(rain!=null)?`<span>강수확률 <b>${rain}%</b></span>`:""}</div><div class="air" data-air></div>${hr?`<div class="hrs">${hr}</div>`:""}<div class="fc">${fc}</div><div class="wsrc">${usedKma?"기상청(KMA) 모델 · 1.5km":"글로벌 모델"} · ${new Date().getHours()}시 ${pad(new Date().getMinutes())}분 기준</div>`;
         const lc=$(".wxloc",main); if(lc) lc.onclick=()=>this.openSettings(b,w);
         this.loadAir(main,c);
@@ -2414,7 +2515,7 @@ const WIDGETS = {
     defaultCfg:()=>({school:null,offset:0,key:""}),
     mount(b,w){ b.classList.add("meal"); if(!w.config.school) this.searchUI(b,w); else this.draw(b,w); },
     openSettings(b,w){ this.searchUI(b,w); },
-    searchUI(b,w){ b.innerHTML=`<div class="row"><input placeholder="학교 이름 검색 (예: 구리고등학교)" data-q value="${w.config.school?w.config.school.name:''}"><button class="mini go" data-find>검색</button></div><div class="sresult" data-res></div>`;
+    searchUI(b,w){ b.innerHTML=`<div class="row"><input placeholder="학교 이름 검색 (예: 구리고등학교)" data-q value="${escapeHtml(w.config.school?w.config.school.name:'')}"><button class="mini go" data-find>검색</button></div><div class="sresult" data-res></div>`;
       const q=$("[data-q]",b), res=$("[data-res]",b);
       const find=async()=>{const name=q.value.trim(); if(!name)return; res.innerHTML=`<div class="empty"><span class="spin"></span> 학교 검색 중…</div>`;
         try{ let url=`https://open.neis.go.kr/hub/schoolInfo?Type=json&pSize=15&SCHUL_NM=${encodeURIComponent(name)}`; if(w.config.key)url+=`&KEY=${w.config.key}`;
@@ -2426,7 +2527,7 @@ const WIDGETS = {
       $("[data-find]",b).onclick=find; q.addEventListener("keydown",e=>{if(e.key==="Enter")find();}); },
     async draw(b,w){ const sc=w.config.school; const d=new Date(); d.setDate(d.getDate()+(w.config.offset||0)); const days=["일","월","화","수","목","금","토"];
       const label=(w.config.offset===0?"오늘":w.config.offset===1?"내일":w.config.offset===-1?"어제":`${d.getMonth()+1}.${d.getDate()}`);
-      b.innerHTML=`<div class="datebar"><div class="dd">${sc.name}</div><div class="nav"><button data-prev>‹</button><button data-today>${label}</button><button data-next>›</button></div></div><div data-body><span class="spin"></span> 급식 불러오는 중…</div>`;
+      b.innerHTML=`<div class="datebar"><div class="dd">${escapeHtml(sc.name)}</div><div class="nav"><button data-prev>‹</button><button data-today>${label}</button><button data-next>›</button></div></div><div data-body><span class="spin"></span> 급식 불러오는 중…</div>`;
       $("[data-prev]",b).onclick=()=>{w.config.offset--; persist(); this.draw(b,w);}; $("[data-next]",b).onclick=()=>{w.config.offset++; persist(); this.draw(b,w);}; $("[data-today]",b).onclick=()=>{w.config.offset=0; persist(); this.draw(b,w);};
       const out=$("[data-body]",b);
       try{ let url=`https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&ATPT_OFCDC_SC_CODE=${sc.atpt}&SD_SCHUL_CODE=${sc.code}&MLSV_YMD=${ymd(d)}`; if(w.config.key)url+=`&KEY=${w.config.key}`;
@@ -2440,9 +2541,9 @@ const WIDGETS = {
     mount(b,w){ b.classList.add("neis"); if(!w.config.school) this.setupUI(b,w); else this.draw(b,w); },
     openSettings(b,w){ this.setupUI(b,w); },
     setupUI(b,w){ const sc=w.config.school;
-      b.innerHTML=`<div class="row"><input placeholder="학교 이름 검색 (예: 포항제철중학교)" data-q value="${sc?sc.name:''}"><button class="mini go" data-find>검색</button></div><div class="sresult" data-res></div>
+      b.innerHTML=`<div class="row"><input placeholder="학교 이름 검색 (예: 포항제철중학교)" data-q value="${escapeHtml(sc?sc.name:'')}"><button class="mini go" data-find>검색</button></div><div class="sresult" data-res></div>
         <div class="neis-set" data-set style="${sc?'':'display:none'}">
-          <div class="setrow"><span>학교</span><b data-scn>${sc?sc.name:''}</b></div>
+          <div class="setrow"><span>학교</span><b data-scn>${escapeHtml(sc?sc.name:'')}</b></div>
           <div class="setrow"><span>인증키</span><input data-key value="${w.config.key||''}" placeholder="선택 (없어도 동작)"></div>
           <button class="mini go" data-done>완료</button>
           <div class="setnote">학교만 정하면 학사일정이 나옵니다. 자주 끊기면 NEIS 인증키를 넣어 주세요.</div>
@@ -2844,7 +2945,7 @@ const WIDGETS = {
     draw(b,w){ const list=$("[data-list]",b); list.innerHTML=""; if(!w.config.events.length){list.innerHTML=`<div class="empty">기념일·마감일을 추가해 보세요.</div>`; return;}
       const today=new Date(); today.setHours(0,0,0,0);
       w.config.events.forEach(ev=>{const t=new Date(ev.date+"T00:00"); const diff=Math.round((t-today)/86400000); const txt=diff===0?"D-DAY":diff>0?`D-${diff}`:`D+${-diff}`; const cls=diff===0?"soon":diff<0?"past":diff<=7?"soon":"";
-        const it=el("div","item",`<div class="nm"></div><div class="dv ${cls}">${txt}</div><div class="x">✕</div>`); it.dataset.rid=ev.id; $(".nm",it).innerHTML=`${ev.name}<small>${ev.date}</small>`; $(".x",it).onclick=()=>{w.config.events=w.config.events.filter(x=>x.id!==ev.id); persist(); this.draw(b,w);}; list.appendChild(it);});
+        const it=el("div","item",`<div class="nm"></div><div class="dv ${cls}">${txt}</div><div class="x">✕</div>`); it.dataset.rid=ev.id; $(".nm",it).innerHTML=`${escapeHtml(ev.name)}<small>${ev.date}</small>`; $(".x",it).onclick=()=>{w.config.events=w.config.events.filter(x=>x.id!==ev.id); persist(); this.draw(b,w);}; list.appendChild(it);});
       enableListDnD(list, w.config.events, persist); } },
 
   links:{ title:"바로가기", icon:"🔗", desc:"자주 가는 사이트 모음.",
@@ -2853,7 +2954,7 @@ const WIDGETS = {
       const add=()=>{const n=$("[data-n]",b).value.trim(); let u=$("[data-u]",b).value.trim(); if(!n||!u){toast("이름과 주소를 입력하세요"); return;} if(!/^https?:\/\//.test(u))u="https://"+u; w.config.items.push({id:uid(),name:n,url:u}); $("[data-n]",b).value=""; $("[data-u]",b).value=""; persist(); this.draw(b,w);};
       $("[data-add]",b).onclick=add; this.draw(b,w); },
     draw(b,w){ const list=$("[data-list]",b); list.innerHTML=""; if(!w.config.items.length){list.innerHTML=`<div class="empty">자주 쓰는 사이트를 추가해 보세요.</div>`; return;}
-      w.config.items.forEach(it=>{const a=el("a",null,`<span class="fav">${it.name.slice(0,1)}</span><span class="lk-nm"></span><span class="rx">✕</span>`); a.dataset.rid=it.id; a.href="#"; a.draggable=false; $(".lk-nm",a).textContent=it.name; a.onclick=e=>{e.preventDefault(); openLink(it.url);}; $(".rx",a).onclick=e=>{e.preventDefault(); e.stopPropagation(); w.config.items=w.config.items.filter(x=>x.id!==it.id); persist(); this.draw(b,w);}; inlineRename($(".lk-nm",a), ()=>it.name, v=>{it.name=v;}, ()=>{persist(); this.draw(b,w);}); list.appendChild(a);});
+      w.config.items.forEach(it=>{const a=el("a",null,`<span class="fav">${escapeHtml(it.name.slice(0,1))}</span><span class="lk-nm"></span><span class="rx">✕</span>`); a.dataset.rid=it.id; a.href="#"; a.draggable=false; $(".lk-nm",a).textContent=it.name; a.onclick=e=>{e.preventDefault(); openLink(it.url);}; $(".rx",a).onclick=e=>{e.preventDefault(); e.stopPropagation(); w.config.items=w.config.items.filter(x=>x.id!==it.id); persist(); this.draw(b,w);}; inlineRename($(".lk-nm",a), ()=>it.name, v=>{it.name=v;}, ()=>{persist(); this.draw(b,w);}); list.appendChild(a);});
       enableListDnD(list, w.config.items, persist); } },
 
   memo:{ title:"메모", icon:"📝", desc:"자유롭게 적는 메모장. URL은 클릭하면 열려요.",
@@ -2876,7 +2977,7 @@ const WIDGETS = {
     draw(b,w){ const list=$("[data-list]",b); list.innerHTML=""; if(!w.config.items.length){list.innerHTML=`<div class="empty">사이트를 추가하면 아이콘으로 모여요.</div>`; return;}
       w.config.items.forEach(it=>{let host=""; try{host=new URL(it.url).hostname;}catch(e){}
         const tile=el("div","ic"); tile.title=it.name; tile.dataset.rid=it.id;
-        tile.innerHTML=`<div class="ic-img"><span class="ic-fb">${it.name.slice(0,1)}</span><img alt="" draggable="false" style="display:none"></div><div class="ic-nm">${it.name}</div><div class="ic-x">✕</div>`;
+        tile.innerHTML=`<div class="ic-img"><span class="ic-fb">${escapeHtml(it.name.slice(0,1))}</span><img alt="" draggable="false" style="display:none"></div><div class="ic-nm">${escapeHtml(it.name)}</div><div class="ic-x">✕</div>`;
         const img=$("img",tile), fb=$(".ic-fb",tile); setFavicon(img, fb, it.url, host);
         tile.onclick=()=>openLink(it.url); $(".ic-x",tile).onclick=e=>{e.stopPropagation(); w.config.items=w.config.items.filter(x=>x.id!==it.id); persist(); this.draw(b,w);};
         inlineRename($(".ic-nm",tile), ()=>it.name, v=>{it.name=v;}, ()=>{persist(); this.draw(b,w);});
@@ -2906,7 +3007,7 @@ const WIDGETS = {
     draw(b,w){ const list=$("[data-list]",b); list.innerHTML=""; if(!w.config.items.length){list.innerHTML=`<div class="empty">폴더·파일·프로그램을 추가하면 아이콘으로 모여요.</div>`; return;}
       w.config.items.forEach(it=>{ const kind=it.kind||this.kindOf(it.path);
         const tile=el("div","ic"); tile.title=it.path; tile.dataset.rid=it.id;
-        tile.innerHTML=`<div class="ic-img"><span class="ic-emoji">${this.iconFor(kind)}</span></div><div class="ic-nm">${it.name}</div><div class="ic-x">✕</div>`;
+        tile.innerHTML=`<div class="ic-img"><span class="ic-emoji">${this.iconFor(kind)}</span></div><div class="ic-nm">${escapeHtml(it.name)}</div><div class="ic-x">✕</div>`;
         tile.onclick=()=>openPath(it.path); $(".ic-x",tile).onclick=e=>{e.stopPropagation(); w.config.items=w.config.items.filter(x=>x.id!==it.id); persist(); this.draw(b,w);};
         inlineRename($(".ic-nm",tile), ()=>it.name, v=>{it.name=v;}, ()=>{persist(); this.draw(b,w);});
         list.appendChild(tile);});
@@ -2946,7 +3047,7 @@ const WIDGETS = {
           if(coins&&coins.length){
             const exact=coins.find(c=>c.name===raw||c.code.split("-")[1]===raw.toUpperCase());
             if(exact){ addItem({src:"coin",code:exact.code,name:exact.name}); return; }
-            res.innerHTML=""; coins.forEach(c=>{ const e=el("div","si",`<div class="sn">${c.name}</div><div class="sr">코인 · ${c.code.split("-")[1]}</div>`); e.onclick=()=>addItem({src:"coin",code:c.code,name:c.name}); res.appendChild(e); }); return;
+            res.innerHTML=""; coins.forEach(c=>{ const e=el("div","si",`<div class="sn">${escapeHtml(c.name)}</div><div class="sr">코인 · ${c.code.split("-")[1]}</div>`); e.onclick=()=>addItem({src:"coin",code:c.code,name:c.name}); res.appendChild(e); }); return;
           }
           if(/^[\^A-Za-z][A-Za-z0-9.\-=]*$/.test(raw)){ addItem({src:"yahoo",code:raw.toUpperCase(),name:raw.toUpperCase()}); return; }
           res.innerHTML=`<div class="empty">못 찾았어요. 예) 삼성전자·005930, AAPL, 비트코인·BTC, 달러, WTI, 금</div>`;
@@ -3045,11 +3146,17 @@ function cleanDish(s){ return String(s||"").split(/<br\s*\/?>/i).map(x=>x.replac
 function fmtMoney(v,cur){ if(cur==="KRW")return "₩"+Math.round(v).toLocaleString(); if(cur==="USD")return "$"+v.toFixed(2); if(cur==="EUR")return "€"+v.toFixed(2); if(cur==="JPY")return "¥"+Math.round(v).toLocaleString(); if(cur==="GBP")return "£"+v.toFixed(2); return v.toLocaleString(undefined,{maximumFractionDigits:2})+(cur?(" "+cur):""); }
 function fmtNum(v){ return v>=100?Math.round(v).toLocaleString():v.toFixed(2); }
 
-function escapeHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function escapeHtml(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
 function linkify(text){ return escapeHtml(text).replace(/(https?:\/\/[^\s<]+|www\.[^\s<]+)/g, m=>{ let tail=""; const mt=m.match(/[.,!?)\]]+$/); if(mt){ tail=mt[0]; m=m.slice(0,-tail.length); } const url=(m.startsWith("http")?m:("https://"+m)).replace(/"/g,"&quot;"); return `<a href="#" data-url="${url}">${m}</a>${tail}`; }); }
 
 const _favCache={};
-function applyFav(img, fb, src, host){ img.onload=()=>{ fb.style.display="none"; img.style.display="block"; }; img.onerror=()=>{ fallbackChain(img, fb, host, 0); }; img.src=src; }
+/* 위젯 안 이미지를 끌 때 브라우저가 원본 크기 그림을 띄우지 않도록 */
+document.addEventListener("dragstart", e=>{
+  const t=e.target;
+  if(t && (t.tagName==="IMG" || (t.closest && t.closest(".card")))) e.preventDefault();
+}, true);
+
+function applyFav(img, fb, src, host){ try{ img.draggable=false; }catch(e){} img.onload=()=>{ fb.style.display="none"; img.style.display="block"; }; img.onerror=()=>{ fallbackChain(img, fb, host, 0); }; img.src=src; }
 async function setFavicon(img, fb, url, host){
   if(!host){ fb.style.display="grid"; return; }
   if(_favCache[host]){ applyFav(img, fb, _favCache[host], host); return; }
@@ -3181,9 +3288,10 @@ function attachAutocomplete(input, opts){
   if(input._acPop){ try{input._acPop.remove();}catch(e){} }
   const pop=el("div","ac-pop"); document.body.appendChild(pop); pop.style.display="none"; input._acPop=pop;
   let items=[], active=-1, timer=null, seq=0;
-  const close=()=>{ pop.style.display="none"; active=-1; };
+  const close=()=>{ pop.style.display="none"; active=-1; clearTimeout(timer); seq++;   /* 대기 중·진행 중 검색 무효화 */
+    if(!input.isConnected){ try{ pop.remove(); }catch(e){} } };
   const place=()=>{ const r=input.getBoundingClientRect(); pop.style.left=r.left+"px"; pop.style.top=(r.bottom+4)+"px"; pop.style.minWidth=r.width+"px"; };
-  const render=()=>{ if(!items.length){ close(); return; } pop.innerHTML=""; items.forEach((it,i)=>{ const r2=el("div","ac-item"+(i===active?" on":"")); const l=el("span","ac-l"); l.textContent=it.label; r2.appendChild(l); if(it.sub){ const s=el("span","ac-s"); s.textContent=it.sub; r2.appendChild(s); } r2.onmousedown=(e)=>{ e.preventDefault(); pick(it); }; pop.appendChild(r2); }); place(); pop.style.display="block"; };
+  const render=()=>{ if(!items.length||!input.isConnected||document.activeElement!==input){ close(); return; } pop.innerHTML=""; items.forEach((it,i)=>{ const r2=el("div","ac-item"+(i===active?" on":"")); const l=el("span","ac-l"); l.textContent=it.label; r2.appendChild(l); if(it.sub){ const s=el("span","ac-s"); s.textContent=it.sub; r2.appendChild(s); } r2.onmousedown=(e)=>{ e.preventDefault(); pick(it); }; pop.appendChild(r2); }); place(); pop.style.display="block"; };
   const pick=(it)=>{ close(); opts.onPick(it.value,it); };
   const run=async()=>{ const qv=input.value.trim(); if(qv.length<(opts.min||1)){ items=[]; close(); return; } const my=++seq; let r=[]; try{ r=await opts.source(qv); }catch(e){ r=[]; } if(my!==seq)return; items=(r||[]).slice(0,8); active=-1; render(); };
   input.addEventListener("input",()=>{ clearTimeout(timer); timer=setTimeout(run,opts.delay||170); });
@@ -3365,8 +3473,78 @@ function addWidget(type){
 }
 function removeWidget(w,card){ card.remove(); state.widgets=state.widgets.filter(x=>x.id!==w.id); growBoard(); persist(); toast("위젯을 삭제했어요"); }
 
+/* ===== 화면 크기별 배치 기억 + 새 화면 자동 맞춤 ===== */
+function screenKey(){ return Math.round(screen.availWidth||1920)+"x"+Math.round(screen.availHeight||1040); }
+function _numL(L){
+  if(!L||typeof L!=="object") return null;
+  const n=(v,lo,hi)=>{ v=Number(v); v=isFinite(v)?Math.round(v):lo; return Math.min(hi,Math.max(lo,v)); };
+  return {x:n(L.x,0,20000), y:n(L.y,0,20000), w:n(L.w,120,6000), h:n(L.h,90,6000), z:n(L.z||1,1,100000)};
+}
+/* 지금 배치를 이 화면용으로 기록 (저장할 때마다) */
+function snapshotLays(){
+  const k=screenKey();
+  (state.widgets||[]).forEach(w=>{
+    if(!w.lays||typeof w.lays!=="object"||Array.isArray(w.lays)) w.lays={};
+    w.lays[k]={layout:_numL(w.layout), layoutMax:_numL(w.layoutMax)};
+    const keys=Object.keys(w.lays);                 /* 화면 종류는 최근 6개까지만 */
+    if(keys.length>6) keys.filter(x=>x!==k).slice(0,keys.length-6).forEach(x=>delete w.lays[x]);
+  });
+  state.lastKey=k;
+}
+/* 이 화면용 배치가 있으면 그것을, 없으면 다른 화면 배치를 비율로 맞춰 만든다 */
+function adaptLayouts(){
+  const k=screenKey(); const [tw,th]=k.split("x").map(Number);
+  const derived=[];
+  (state.widgets||[]).forEach(w=>{
+    const lays=(w.lays&&typeof w.lays==="object"&&!Array.isArray(w.lays))?w.lays:null;
+    if(!lays) return;                                /* 예전 데이터: 그대로 둠 */
+    const mine=lays[k];
+    if(mine&&(mine.layout||mine.layoutMax)){
+      const fit=(L)=>{ L=_numL(L); if(!L) return null; L.w=Math.min(L.w,tw); L.x=Math.min(L.x,Math.max(0,tw-L.w)); return L; };
+      if(mine.layout) w.layout=fit(mine.layout);
+      if(mine.layoutMax) w.layoutMax=fit(mine.layoutMax);
+      return;
+    }
+    const keys=Object.keys(lays).filter(x=>/^\d{3,5}x\d{3,5}$/.test(x));
+    if(!keys.length) return;
+    const src=keys.includes(state.lastKey)?state.lastKey:keys[keys.length-1];
+    const [sw,sh]=src.split("x").map(Number); const S=lays[src]||{};
+    const sx=tw/sw, sy=th/sh, sc=Math.min(sx,sy);
+    const scale=(L)=>{ L=_numL(L); if(!L) return null;
+      return {x:Math.round(L.x*sx), y:Math.round(L.y*sy),
+              w:Math.max(200,Math.round(L.w*sc)), h:Math.max(130,Math.round(L.h*sc)), z:L.z}; };
+    w.layout=scale(S.layout||S.layoutMax); w.layoutMax=scale(S.layoutMax||S.layout);
+    derived.push(w);
+  });
+  if(derived.length){ ["layout","layoutMax"].forEach(f=>_settle(derived,f,tw)); }
+  return derived.length;
+}
+/* 맞춰 만든 위젯이 화면 밖으로 나가거나 겹치면 정리 */
+function _settle(derived,f,tw){
+  const bw=Math.max(400,(boardW&&boardW())||tw-60);
+  const placed=(state.widgets||[]).filter(w=>!derived.includes(w)&&w[f]).map(w=>w[f]);
+  derived.slice().sort((a,b)=>((a[f]||{}).y-(b[f]||{}).y)||((a[f]||{}).x-(b[f]||{}).x)).forEach(w=>{
+    const L=w[f]; if(!L) return;
+    if(L.w>bw) L.w=bw;
+    if(L.x+L.w>bw) L.x=Math.max(0,bw-L.w);
+    for(let guard=0; guard<200; guard++){
+      const hit=placed.find(o=>overlap(L,o)); if(!hit) break;
+      L.y=hit.y+hit.h+12;
+    }
+    placed.push(L);
+  });
+}
+
+/* 위젯 겹침 순서를 1..N으로 다시 매김 (일반·최대화 배치 각각). 숫자가 끝없이 커지는 것도 방지 */
+function normalizeZ(){
+  ["layout","layoutMax"].forEach(f=>{
+    state.widgets.filter(w=>w[f]).sort((a,b)=>(a[f].z||1)-(b[f].z||1)).forEach((w,i)=>{ w[f].z=i+1; });
+  });
+  maxZ=state.widgets.length+1;
+}
+
 function assignLayouts(){
-  maxZ=1; state.widgets.forEach(w=>{ if(w.layout&&w.layout.z) maxZ=Math.max(maxZ,w.layout.z); });
+  normalizeZ();
   state.widgets.forEach(w=>{
     if(!w.config){ const def=WIDGETS[w.type]; w.config=def&&def.defaultCfg?def.defaultCfg():{}; }
     if(w.type==="weather" && (!w.config||w.config.lat==null)){ w.config={name:w.name||"서울",lat:w.lat||37.5665,lon:w.lon||126.9780}; }
@@ -3406,6 +3584,191 @@ function loadFont(key){
   const l=document.createElement("link"); l.rel="stylesheet"; l.href=url; l.crossOrigin="anonymous";
   document.head.appendChild(l);
 }
+
+/* ================= 구글 드라이브 동기화 ================= */
+function relTime(ms){
+  if(!ms) return "아직 없음";
+  const d=Math.max(0, Date.now()-ms), m=Math.floor(d/60000);
+  if(m<1) return "방금"; if(m<60) return m+"분 전";
+  const h=Math.floor(m/60); if(h<24) return h+"시간 전";
+  return Math.floor(h/24)+"일 전";
+}
+/* 받아온 내용은 그대로 믿지 않고 검사한 뒤 적용 */
+function applyRemoteState(json){
+  let rs; try{ rs=JSON.parse(json); }catch(e){ return false; }
+  if(!rs||typeof rs!=="object"||!Array.isArray(rs.widgets)) return false;
+  const known=new Set(Object.keys(WIDGETS));
+  rs.widgets=rs.widgets.filter(w=>w&&typeof w==="object"&&known.has(w.type)
+    &&typeof w.id==="string"&&w.id.length>0&&w.id.length<80);
+  rs.widgets.forEach(w=>{
+    if(!w.config||typeof w.config!=="object"||Array.isArray(w.config)) w.config={};
+    if(typeof w.title!=="undefined"&&typeof w.title!=="string") delete w.title;
+    if(Array.isArray(w.config.items)){
+      w.config.items=w.config.items.filter(it=>!(it&&typeof it==="object"&&"url" in it)
+        || /^https?:\/\//i.test(String(it.url)));
+    }
+    if(w.type==="files"){            /* 폴더·파일 경로는 컴퓨터마다 다르므로 이 컴퓨터 것 유지 */
+      const mine=(state.widgets||[]).find(x=>x.id===w.id);
+      w.config.items=(mine&&mine.config&&Array.isArray(mine.config.items))?mine.config.items:[];
+    }
+  });
+  if(typeof rs.theme!=="string"||!/^[a-z0-9_-]{1,24}$/i.test(rs.theme)) rs.theme=state.theme;
+  state=rs;
+  adaptLayouts(); assignLayouts(); snapshotLays();
+  saveLocalOnly();
+  applyTheme(); updateTopbar(); renderAll();
+  return true;
+}
+const Sync={
+  on:false, busy:false, email:"", timer:null, pushTimer:null, lastOk:0, conflict:false, err:"",
+  api(){ return window.pywebview.api; },
+  async init(){
+    if(!hasApi("gdrive_status")){ const b=$("#syncBtn"); if(b) b.style.display="none"; return; }
+    try{ const s=await this.api().gdrive_status(); this.on=!!s.connected; this.email=s.email||"";
+      this.lastOk=(s.last_sync||0)*1000; }catch(e){}
+    this.badge();
+    window.addEventListener("focus",()=>this.tick());
+    document.addEventListener("visibilitychange",()=>{ this.schedule(); if(!document.hidden) this.tick(); });
+    this.schedule();
+    if(this.on) this.tick();
+  },
+  schedule(){ clearInterval(this.timer); if(!this.on) return;
+    this.timer=setInterval(()=>this.tick(), document.hidden?120000:10000); },
+  queuePush(){ if(!this.on) return; clearTimeout(this.pushTimer); this.pushTimer=setTimeout(()=>this.tick(),3000); },
+  badge(){
+    const b=$("#syncBtn"), t=$("#syncTxt"); if(!b||!t) return;
+    b.classList.toggle("on", this.on&&!this.err); b.classList.toggle("busy", this.busy);
+    b.classList.toggle("err", this.on&&!!this.err);
+    t.textContent = !this.on ? "동기화" : (this.err ? "동기화 확인 필요" : "맞춤 완료 · "+relTime(this.lastOk));
+    b.title = this.on ? `${this.email} 계정과 동기화 중` : "다른 컴퓨터와 내용 맞추기";
+  },
+  async tick(){
+    if(!this.on||this.busy||this.conflict) return;
+    this.busy=true; this.badge();
+    try{
+      const c=await this.api().gdrive_check();
+      if(!c||!c.ok){
+        if(c&&c.reason==="not_connected"){ this.on=false; this.schedule(); toast("구글 드라이브 연결이 끊어졌어요"); }
+        else this.err=(c&&c.reason)||"offline";
+        return;
+      }
+      this.err="";
+      const dirty=(state.savedAt||0) > (c.pushed_savedAt||0);
+      if(c.exists && c.changed && !c.mine){
+        if(dirty) this.askConflict(c.remote_device_name, c.remote_savedAt);
+        else await this.pull(true);
+      } else if(dirty || !c.exists || c.excel_dirty){
+        await this.push(false);
+      } else { this.lastOk=Date.now(); }
+      this.first=false;
+    }catch(e){ this.err="error"; }
+    finally{ this.busy=false; this.badge(); }
+  },
+  async push(force){
+    snapshotLays();
+    const r=await this.api().gdrive_push(JSON.stringify(state), !!force);
+    if(r&&r.ok){ this.lastOk=Date.now(); this.err=""; }
+    else if(r&&r.reason==="conflict"){ this.askConflict(r.remote_device_name, r.remote_savedAt); }
+    else this.err=(r&&r.reason)||"upload";
+    return r;
+  },
+  async pull(auto){
+    const r=await this.api().gdrive_pull();
+    if(!r||!r.ok){ this.err=(r&&r.reason)||"download"; return false; }
+    if(!applyRemoteState(r.state)){ this.err="bad_state"; return false; }
+    try{ await this.api().gdrive_mark(state.savedAt||0); }catch(e){}
+    this.lastOk=Date.now(); this.err="";
+    toast(auto ? `${r.device_name||"다른 컴퓨터"}의 변경 내용을 가져왔어요` : "클라우드 내용을 가져왔어요");
+    return true;
+  },
+  askConflict(dev, at){
+    this.conflict=true;
+    const sh=$("#syncSheet"), who=escapeHtml(dev||"다른 컴퓨터");
+    const when=at?escapeHtml(new Date(at).toLocaleString("ko-KR")):"시각 모름";
+    const first=this.first;
+    sh.innerHTML = first
+      ? `<h2>클라우드에 이미 저장된 내용이 있습니다</h2>
+         <div class="sy-box"><div><b>${who} · ${when}</b>
+         <i>이 계정으로 먼저 연결한 컴퓨터의 내용입니다. 어느 쪽을 쓸지 골라 주세요.</i></div></div>`
+      : `<h2>다른 컴퓨터에서 수정된 내용이 있습니다</h2>
+         <div class="sy-box"><div><b>${who} · ${when}</b>
+         <i>이 컴퓨터에도 아직 올리지 않은 변경이 있어요. 어느 쪽을 쓸지 골라 주세요.</i></div></div>`;
+    sh.innerHTML += `<div class="sy-btns"><button class="mini go" data-pull>${who}의 내용 가져오기</button>
+        <button class="mini" data-keep>이 컴퓨터 것 유지</button></div>
+      <div class="sy-note"><b>가져오기</b>: 이 컴퓨터의 위젯 배치와 내용이 ${who}의 것으로 바뀝니다.<br>
+      <b>이 컴퓨터 것 유지</b>: 클라우드와 ${who}의 내용이 이 컴퓨터 것으로 바뀝니다.<br>
+      두 내용은 합쳐지지 않고 한쪽이 선택됩니다.</div>`;
+    $("#syncScrim").classList.add("on");
+    const done=()=>{ this.conflict=false; this.first=false; $("#syncScrim").classList.remove("on"); this.badge(); };
+    $("[data-pull]",sh).onclick=async()=>{ this.busy=true; this.badge(); await this.pull(false); this.busy=false; done(); };
+    $("[data-keep]",sh).onclick=()=>{
+      sh.innerHTML=`<h2>정말 이 컴퓨터 것으로 맞출까요?</h2>
+        <div class="sy-warn">⚠ <b>${who}의 내용이 사라집니다.</b><br>
+        ${who}에만 있던 할 일·메모·위젯은 다음 확인 때 이 컴퓨터 내용으로 <b>자동으로 바뀌며 되돌릴 수 없습니다.</b><br><br>
+        ${who}의 내용이 필요하면 [돌아가기]를 누르고 가져오기를 선택하세요.</div>
+        <div class="sy-btns"><button class="mini" data-back>돌아가기</button>
+        <button class="mini danger" data-yes>이 컴퓨터 것으로 맞추기</button></div>`;
+      $("[data-back]",sh).onclick=()=>{ this.conflict=false; this.askConflict(dev, at); };
+      $("[data-yes]",sh).onclick=async()=>{ this.busy=true; this.badge(); const r=await this.push(true);
+        this.busy=false; if(r&&r.ok) toast("이 컴퓨터 내용으로 맞췄어요"); done(); };
+    };
+  },
+  openPanel(){
+    const sh=$("#syncSheet");
+    if(!this.on){
+      sh.innerHTML=`<h2>다른 컴퓨터와 내용 맞추기</h2>
+        <p class="s">구글 계정으로 연결하면 위젯 배치·할 일·메모·설정·엑셀 파일이 같은 계정을 쓰는 모든 컴퓨터에서 똑같이 보입니다.</p>
+        <div class="sy-btns" style="margin-top:16px"><button class="mini go" data-conn>구글 계정으로 연결</button></div>
+        <div class="sy-note">· 저장 위치: 내 구글 드라이브의 <b>앱 전용 숨김 폴더</b> (드라이브의 다른 파일은 보지 않습니다)<br>
+        · 컴퓨터마다 따로 유지: 창 위치·크기, 폴더·파일 바로가기<br>
+        · 학생 정보가 포함되므로 <b>학교 구글 계정</b> 사용을 권장합니다<br>
+        · 공용 컴퓨터에서는 사용 후 연결을 해제해 주세요</div>`;
+      $("[data-conn]",sh).onclick=async(e)=>{
+        const b=e.currentTarget; b.disabled=true; b.textContent="브라우저에서 계정을 선택해 주세요…";
+        let r=null; try{ r=await this.api().gdrive_connect(); }catch(err){}
+        if(r&&r.ok){
+          this.on=true; this.email=r.email||""; this.err=""; this.first=true;
+          toast(`${this.email||"구글 계정"}에 연결되었습니다`);
+          $("#syncScrim").classList.remove("on"); this.schedule(); this.badge(); this.tick(); return;
+        }
+        b.disabled=false; b.textContent="구글 계정으로 연결";
+        const why=(r&&r.reason)||"failed";
+        toast(why==="denied"?"허용하지 않아 연결되지 않았어요"
+          : why==="timeout"?"시간이 지나 연결을 취소했어요. 다시 시도해 주세요"
+          : why==="scope"?"드라이브 권한이 허용되지 않았어요. 권한에 체크한 뒤 다시 시도해 주세요"
+          : "연결하지 못했어요");
+      };
+    } else {
+      sh.innerHTML=`<h2>다른 컴퓨터와 내용 맞추기</h2>
+        <div class="sy-box"><div><b>${escapeHtml(this.email||"연결됨")}</b>
+        <i>마지막 동기화: ${relTime(this.lastOk)}${this.err?" · 확인 필요 ("+escapeHtml(this.err)+")":""}</i></div></div>
+        <div class="sy-btns"><button class="mini go" data-now>지금 동기화</button><button class="mini" data-off>연결 해제</button></div>
+        <div class="sy-note">창을 띄워 두면 10초마다, 최소화하면 2분마다 다른 컴퓨터의 변경을 확인합니다.<br>
+        창을 클릭하는 순간에도 바로 확인합니다.</div>`;
+      $("[data-now]",sh).onclick=async(e)=>{ const b=e.currentTarget; b.disabled=true; b.textContent="확인 중…";
+        await this.tick(); b.disabled=false; b.textContent="지금 동기화";
+        if(!this.err) toast("최신 상태입니다"); this.openPanel(); };
+      $("[data-off]",sh).onclick=()=>this.confirmOff();
+    }
+    $("#syncScrim").classList.add("on");
+  },
+  confirmOff(){
+    const sh=$("#syncSheet");
+    sh.innerHTML=`<h2>연결을 해제할까요?</h2>
+      <div class="sy-warn">이 컴퓨터에 저장된 로그인 정보가 지워지고, 구글 계정의 권한도 취소됩니다.<br>
+      이 컴퓨터의 위젯과 내용은 그대로 남습니다.</div>
+      <div class="sy-btns"><button class="mini" data-o1>연결만 해제</button><button class="mini" data-o2>클라우드 내용도 삭제</button><button class="mini" data-o3>취소</button></div>`;
+    const off=async(del)=>{ try{ await this.api().gdrive_disconnect(!!del); }catch(e){}
+      this.on=false; this.email=""; this.err=""; this.schedule(); this.badge();
+      $("#syncScrim").classList.remove("on"); toast(del?"연결을 해제하고 클라우드 내용을 지웠어요":"연결을 해제했어요"); };
+    $("[data-o1]",sh).onclick=()=>off(false);
+    $("[data-o2]",sh).onclick=()=>off(true);
+    $("[data-o3]",sh).onclick=()=>this.openPanel();
+  }
+};
+$("#syncBtn").onclick=()=>Sync.openPanel();
+$("#syncScrim").onclick=(e)=>{ if(e.target.id==="syncScrim" && !Sync.conflict) $("#syncScrim").classList.remove("on"); };
+setInterval(()=>Sync.badge(), 30000);
 
 /* ===== 위젯별 글꼴·글자 크기 ===== */
 const FONTS=[
@@ -3852,7 +4215,7 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-09-17.2";
+const APP_VER="2026-09-21.4";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`;
@@ -3885,11 +4248,11 @@ var bootedWithApi=false, _ready=false;
 async function boot(){
   if(booted && (bootedWithApi || !hasApi("load_state"))) return;
   booted=true; bootedWithApi=hasApi("load_state"); _ready=false;
-  await loadState(); if(!state.theme)state.theme="light"; ensureDefaults(); assignLayouts();
+  await loadState(); if(!state.theme)state.theme="light"; ensureDefaults(); adaptLayouts(); assignLayouts();
   if(hasApi("is_maximized")){ try{ if(await window.pywebview.api.is_maximized()){ isMax=true; mode="max"; } }catch(e){} }
   const _mb=$("#winMax"); if(_mb){ _mb.textContent=isMax?"❐":"▢"; _mb.title=isMax?"이전 크기로":"최대화"; }
   applyTheme(); updateTopbar(); _bootPhase=true; renderAll(); requestAnimationFrame(()=>runMountQueue());
-  _ready=true; setTimeout(runNotices,1500); setTimeout(()=>checkUpdate(false),2500); }
+  _ready=true; setTimeout(runNotices,1500); setTimeout(()=>Sync.init(),1800); setTimeout(()=>checkUpdate(false),2500); }
 window.addEventListener("pywebviewready",()=>{ document.body.classList.add("app"); boot(); });
 window.addEventListener("DOMContentLoaded",()=>{ updateTopbar(); setTimeout(()=>{ if(!window.pywebview) boot(); },1500); });
 </script>
