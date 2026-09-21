@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; connect-src https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://accounts.google.com https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net; img-src 'self' data:; frame-src https://accounts.google.com">
+<meta name="theme-color" content="#F7F6F2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="대시보드">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<title>My Dashboard</title>
+<style>
+  :root{
+    --paper:#F7F6F2; --sheet:#FFFFFF; --ink:#1F2A44; --muted:#5B6478; --faint:#8A93A6;
+    --line:#E4E3DC; --marker:#FFD84D; --danger:#B83A32; --ok:#2E7D5B;
+    --r:14px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --paper:#12151C; --sheet:#1A1F29; --ink:#E6EAF2; --muted:#A3ABBB; --faint:#7E8799;
+      --line:#2A303C; --marker:#E0B92E; --danger:#E27A72; --ok:#6CC49A; }
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0; background:var(--paper); color:var(--ink);}
+  body{font-family:"Pretendard","Malgun Gothic",-apple-system,sans-serif; font-size:16px; line-height:1.5;
+    -webkit-text-size-adjust:100%; padding-bottom:env(safe-area-inset-bottom);}
+  button,input,textarea{font:inherit; color:inherit;}
+  button{cursor:pointer;}
+  :focus-visible{outline:2px solid var(--ink); outline-offset:2px;}
+  .wrap{max-width:560px; margin:0 auto; padding:0 18px 48px;}
+
+  /* 상단 */
+  .bar{position:sticky; top:0; z-index:10; background:var(--paper); padding:calc(10px + env(safe-area-inset-top)) 18px 10px;
+    display:flex; align-items:center; gap:10px; max-width:560px; margin:0 auto;}
+  .bar .who{flex:1; min-width:0; font-size:13px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .bar .st{font-size:12.5px; color:var(--faint);}
+  .bar .st.err{color:var(--danger);}
+  .iconbtn{width:40px; height:40px; border-radius:12px; border:1px solid var(--line); background:var(--sheet);
+    display:grid; place-items:center; font-size:17px;}
+
+  /* 오늘 */
+  .today{padding:6px 0 26px;}
+  .today .date{font-size:34px; font-weight:800; letter-spacing:-.8px; line-height:1.15; margin:0;
+    display:inline; background:linear-gradient(transparent 62%, var(--marker) 62%, var(--marker) 92%, transparent 92%);}
+  .today .sum{margin:12px 0 0; color:var(--muted); font-size:15px;}
+
+  /* 구역 */
+  .sec{margin-top:26px;}
+  .sec h2{font-size:17px; font-weight:700; margin:0 0 10px; display:flex; align-items:center; gap:8px;}
+  .sec h2 .tool{margin-left:auto; font-size:13px; font-weight:600; color:var(--muted); background:none; border:none; padding:6px 4px;}
+  .panel{background:var(--sheet); border:1px solid var(--line); border-radius:var(--r); overflow:hidden;}
+
+  /* 할 일 */
+  .row{display:flex; align-items:center; gap:12px; min-height:52px; padding:8px 12px 8px 14px; border-top:1px solid var(--line);}
+  .row:first-child{border-top:none;}
+  .chk{flex:none; width:26px; height:26px; border-radius:50%; border:2px solid var(--faint); background:none; padding:0;
+    display:grid; place-items:center;}
+  .chk svg{width:14px; height:14px; opacity:0;}
+  .row.done .chk{background:var(--ink); border-color:var(--ink);}
+  .row.done .chk svg{opacity:1;}
+  .row.done .txt{color:var(--faint); text-decoration:line-through;}
+  .txt{flex:1; min-width:0; word-break:break-word; padding:4px 0; background:none; border:none; text-align:left;}
+  .txt input{width:100%; border:none; border-bottom:2px solid var(--ink); background:transparent; padding:2px 0; outline:none;}
+  .due{flex:none; font-size:12.5px; color:var(--muted); font-variant-numeric:tabular-nums;}
+  .due.now{color:var(--ink); font-weight:700; background:linear-gradient(transparent 55%, var(--marker) 55%);}
+  .due.late{color:var(--danger); font-weight:600;}
+  .del{flex:none; width:34px; height:34px; border:none; background:none; color:var(--faint); font-size:15px; border-radius:10px;}
+  .more{width:100%; min-height:46px; border:none; border-top:1px solid var(--line); background:none; color:var(--muted);
+    font-size:14px; text-align:left; padding:0 14px;}
+  .add{display:flex; gap:8px; padding:10px; border-top:1px solid var(--line); background:var(--paper);}
+  .add input{flex:1; min-width:0; height:44px; border:1px solid var(--line); border-radius:11px; padding:0 12px; background:var(--sheet);}
+  .add input[type=date]{flex:none; width:128px; padding:0 8px; font-size:14px;}
+  .add button{flex:none; height:44px; padding:0 16px; border:none; border-radius:11px; background:var(--ink); color:var(--paper); font-weight:700;}
+  .empty{padding:18px 16px; color:var(--faint); font-size:14.5px;}
+
+  /* 메모 */
+  .memo{display:block; width:100%; min-height:132px; border:none; padding:14px 16px; background:var(--sheet);
+    resize:none; line-height:1.65; outline:none;}
+  .memo-st{font-size:12px; color:var(--faint); padding:0 16px 10px; background:var(--sheet); min-height:22px;}
+
+  /* D-Day */
+  .dd{display:flex; align-items:center; gap:12px; min-height:52px; padding:8px 12px 8px 16px; border-top:1px solid var(--line);}
+  .dd:first-child{border-top:none;}
+  .dd .n{flex:1; min-width:0; word-break:break-word;}
+  .dd .d{font-size:13px; color:var(--faint); font-variant-numeric:tabular-nums;}
+  .dd .v{flex:none; font-size:20px; font-weight:800; letter-spacing:-.4px; font-variant-numeric:tabular-nums;}
+  .dd .v.soon{color:var(--danger);}
+  .dd .v.past{color:var(--faint); font-weight:600;}
+
+  /* 바로가기 */
+  .links{display:flex; flex-wrap:wrap; gap:8px; padding:12px;}
+  .lk{display:flex; align-items:center; gap:6px; min-height:44px; padding:0 14px; border-radius:22px; border:1px solid var(--line);
+    background:var(--paper); font-size:15px; max-width:100%;}
+  .lk span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .lk .x{border:none; background:none; color:var(--faint); padding:0 0 0 4px; font-size:14px;}
+
+  .pconly{margin-top:34px; font-size:13.5px; color:var(--faint); line-height:1.7;}
+
+  /* 안내 화면 */
+  .hello{padding:12vh 4px 0;}
+  .hello h1{font-size:30px; line-height:1.25; letter-spacing:-.6px; margin:0 0 12px;}
+  .hello p{color:var(--muted); margin:0 0 26px;}
+  .big{display:block; width:100%; height:54px; border:none; border-radius:14px; background:var(--ink); color:var(--paper);
+    font-size:17px; font-weight:700;}
+  .big.sub{background:none; color:var(--muted); border:1px solid var(--line); margin-top:10px; font-size:15px; font-weight:600;}
+  .note{margin-top:22px; font-size:13.5px; color:var(--muted); line-height:1.75;}
+  .alert{margin:0 0 16px; padding:12px 14px; border-radius:12px; background:var(--sheet); border:1px solid var(--danger);
+    color:var(--danger); font-size:14px;}
+  .toast{position:fixed; left:50%; bottom:calc(22px + env(safe-area-inset-bottom)); transform:translateX(-50%);
+    background:var(--ink); color:var(--paper); padding:11px 18px; border-radius:12px; font-size:14px; z-index:50;
+    max-width:calc(100% - 36px); display:none;}
+  .toast.on{display:block;}
+  .menu{position:fixed; inset:0; z-index:40; background:rgba(0,0,0,.28); display:none; align-items:flex-end;}
+  .menu.on{display:flex;}
+  .menu .sheet{width:100%; max-width:560px; margin:0 auto; background:var(--sheet); border-radius:18px 18px 0 0;
+    padding:18px 18px calc(18px + env(safe-area-inset-bottom));}
+  .menu .sheet p{margin:0 0 14px; color:var(--muted); font-size:14px; word-break:break-all;}
+  @media (prefers-reduced-motion: no-preference){ .toast.on{animation:up .18s ease-out;} @keyframes up{from{opacity:0; transform:translate(-50%,8px);}} }
+</style>
+</head>
+<body>
+<div class="bar" id="bar" hidden>
+  <div class="who" id="who"></div>
+  <div class="st" id="st"></div>
+  <button class="iconbtn" id="refreshBtn" aria-label="새로고침">↻</button>
+  <button class="iconbtn" id="menuBtn" aria-label="계정">⋯</button>
+</div>
+<main class="wrap" id="app"></main>
+<div class="menu" id="menu"><div class="sheet">
+  <p id="menuWho"></p>
+  <button class="big sub" id="logoutBtn">로그아웃</button>
+  <button class="big sub" id="closeMenu">닫기</button>
+</div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* ===== 설정 ===== */
+const WEB_CLIENT_ID = "622539583074-7g3ukd52d3s740o32n3sfv4s21rj0elc.apps.googleusercontent.com";          // 구글 클라우드 '웹 애플리케이션' 클라이언트 ID
+const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
+const SCOPE = DRIVE_SCOPE + " openid email";
+const STATE_NAME = "dashboard_state.json";
+const API = "https://www.googleapis.com/drive/v3", UP = "https://www.googleapis.com/upload/drive/v3";
+const TITLES = {clock:"시계",weather:"날씨",todo:"할 일",meal:"급식",neis:"학사일정",quote:"오늘의 명언",dict:"사전",
+  encyc:"백과사전",history:"오늘의 역사",country:"세계 국가정보",timetable:"시간표",contacts:"교사 연락처",roster:"학생 찾기",
+  dday:"D-Day",links:"바로가기",memo:"메모",shortcuts:"아이콘 바로가기",files:"폴더·파일",news:"경제 뉴스",stocks:"시세",
+  netswitch:"인터넷 전환",aiusage:"Claude 사용량"};
+const SUPPORTED = new Set(["todo","memo","dday","links","shortcuts"]);
+
+/* ===== 도구 ===== */
+const $ = (s, r=document) => r.querySelector(s);
+function h(tag, attrs, ...kids){                        // 글자는 항상 textContent로 넣음
+  const e = document.createElement(tag);
+  for(const [k,v] of Object.entries(attrs||{})){
+    if(v==null || v===false) continue;
+    if(k==="class") e.className=v; else if(k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if(k==="text") e.textContent=v; else e.setAttribute(k, v===true?"":v);
+  }
+  kids.flat().forEach(c=>{ if(c==null||c===false) return; e.appendChild(typeof c==="string"?document.createTextNode(c):c); });
+  return e;
+}
+const uid = () => Math.random().toString(36).slice(2,9);
+const pad = n => String(n).padStart(2,"0");
+const DOW = ["일","월","화","수","목","금","토"];
+function ymdNow(){ const d=new Date(); return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`; }
+function isoNow(){ const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function safeUrl(u){ u=String(u||"").trim(); return /^https?:\/\//i.test(u) ? u : ""; }
+let _tt=null;
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove("on"),2200); }
+function status(msg, err){ const s=$("#st"); s.textContent=msg||""; s.classList.toggle("err", !!err); }
+
+/* ===== 로그인 (구글 공식 방식: 토큰은 1시간짜리, 이 기기에만 보관) ===== */
+const S = { tok:null, exp:0, email:"", file:null, data:null, pending:[], flushing:false, flushT:null };
+const dev = (()=>{ try{ let d=localStorage.getItem("m.dev"); if(!d){ d="m-"+uid()+uid(); localStorage.setItem("m.dev",d); } return d; }catch(e){ return "m-"+uid(); } })();
+function saveAuth(){ try{ localStorage.setItem("m.auth", JSON.stringify({tok:S.tok, exp:S.exp, email:S.email})); }catch(e){} }
+function loadAuth(){ try{ const a=JSON.parse(localStorage.getItem("m.auth")||"null"); if(a){ S.email=a.email||""; if(a.tok && a.exp>Date.now()+60000){ S.tok=a.tok; S.exp=a.exp; } } }catch(e){} }
+let tokenClient=null;
+function initGis(){
+  if(tokenClient || !window.google || !google.accounts || !google.accounts.oauth2) return !!tokenClient;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: WEB_CLIENT_ID, scope: SCOPE,
+    callback: async (r)=>{
+      if(r.error){ showHello(r.error==="access_denied" ? "허용하지 않아 연결되지 않았어요." : "로그인하지 못했어요. 다시 시도해 주세요."); return; }
+      if(!google.accounts.oauth2.hasGrantedAllScopes(r, DRIVE_SCOPE)){ showHello("드라이브 권한에 체크한 뒤 다시 로그인해 주세요."); return; }
+      S.tok=r.access_token; S.exp=Date.now()+(Number(r.expires_in||3600)-60)*1000;
+      try{ const u=await (await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+S.tok}})).json(); S.email=u.email||S.email; }catch(e){}
+      saveAuth(); startMain();
+    },
+    error_callback: (e)=>{ showHello(e && e.type==="popup_closed" ? "로그인 창이 닫혔어요. 다시 시도해 주세요." : "로그인 창을 열지 못했어요. 팝업 차단을 확인해 주세요."); }
+  });
+  return true;
+}
+function login(){
+  if(!initGis()){ toast("잠시 후 다시 눌러 주세요"); return; }
+  tokenClient.requestAccessToken(S.email ? {prompt:"", login_hint:S.email} : {prompt:"select_account"});
+}
+function logout(){
+  try{ if(S.tok && window.google) google.accounts.oauth2.revoke(S.tok, ()=>{}); }catch(e){}
+  S.tok=null; S.exp=0; S.email=""; S.data=null; S.file=null;
+  try{ localStorage.removeItem("m.auth"); }catch(e){}
+  $("#menu").classList.remove("on"); showHello();
+}
+
+/* ===== 구글 드라이브 ===== */
+class AuthError extends Error{}
+async function api(url, opts={}){
+  if(!S.tok || Date.now()>S.exp) throw new AuthError("expired");
+  const r = await fetch(url, Object.assign({}, opts, {headers:Object.assign({Authorization:"Bearer "+S.tok}, opts.headers||{})}));
+  if(r.status===401){ S.tok=null; throw new AuthError("expired"); }
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r;
+}
+async function findFile(){
+  const r = await api(`${API}/files?spaces=appDataFolder&pageSize=200&fields=files(id,name,modifiedTime)`);
+  const j = await r.json(); return (j.files||[]).find(f=>f.name===STATE_NAME) || null;
+}
+async function fileMeta(id){ const r=await api(`${API}/files/${encodeURIComponent(id)}?fields=id,modifiedTime`); return r.json(); }
+async function download(id){ const r=await api(`${API}/files/${encodeURIComponent(id)}?alt=media`); return r.json(); }
+async function upload(id, data){                       // PC 프로그램과 같은 형식으로 저장
+  const b = "----mdash"+Date.now();
+  const meta = {appProperties:{savedAt:String(data.savedAt||0), device:dev, device_name:"모바일"}};
+  const body = `--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n`
+    + `--${b}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(data)}\r\n--${b}--`;
+  const r = await api(`${UP}/files/${encodeURIComponent(id)}?uploadType=multipart&fields=id,modifiedTime`,
+    {method:"PATCH", headers:{"Content-Type":"multipart/related; boundary="+b}, body});
+  return r.json();
+}
+function valid(d){ return d && typeof d==="object" && Array.isArray(d.widgets); }
+
+/* ===== 불러오기 / 저장 ===== */
+async function refresh(force){
+  if(!S.tok || S.pending.length || S.flushing) return;
+  if(!force && document.activeElement && document.activeElement.classList.contains("memo")) return;   // 메모 쓰는 중엔 건드리지 않음
+  try{
+    if(S.file && !force){ const m=await fileMeta(S.file.id); if(m.modifiedTime===S.file.modifiedTime){ status("최신"); return; } }
+    status("불러오는 중…");
+    const f = await findFile();
+    if(!f){ S.file=null; S.data=null; renderEmpty(); status(""); return; }
+    const d = await download(f.id);
+    if(!valid(d)) throw new Error("bad");
+    S.file={id:f.id, modifiedTime:f.modifiedTime}; S.data=d; render(); status("최신");
+  }catch(e){
+    if(e instanceof AuthError){ needLogin(); return; }
+    status("연결 확인 필요", true);
+  }
+}
+/* 바꾼 내용은 '무엇을 바꿨는지'로 기록해 두었다가, 저장 직전 최신본에 다시 적용 → PC에서 같이 고쳐도 안 덮어씀 */
+function commit(op, delay){
+  if(!S.data) return;
+  op(S.data); S.data.savedAt=Date.now(); render();
+  S.pending.push(op); status("저장 대기…");
+  clearTimeout(S.flushT); S.flushT=setTimeout(flush, delay==null?700:delay);
+}
+async function flush(){
+  if(S.flushing || !S.pending.length) return;
+  S.flushing=true; const ops=S.pending.splice(0);
+  try{
+    status("저장 중…");
+    const f = await findFile();
+    if(!f) throw new Error("gone");
+    const latest = await download(f.id);
+    if(!valid(latest)) throw new Error("bad");
+    ops.forEach(o=>o(latest));
+    latest.savedAt = Date.now();
+    const r = await upload(f.id, latest);
+    S.file={id:r.id||f.id, modifiedTime:r.modifiedTime}; S.data=latest;
+    status("저장됨");
+    if(!(document.activeElement && document.activeElement.classList.contains("memo"))) render();
+  }catch(e){
+    S.pending.unshift(...ops);
+    if(e instanceof AuthError){ needLogin(); }
+    else { status("저장 실패 · 다시 시도 중", true); clearTimeout(S.flushT); S.flushT=setTimeout(flush, 5000); }
+  }finally{ S.flushing=false; if(S.pending.length && !S.flushT) S.flushT=setTimeout(flush,700); }
+}
+function W(d, wid){ return (d.widgets||[]).find(w=>w.id===wid); }
+function cfg(w){ if(!w.config||typeof w.config!=="object") w.config={}; return w.config; }
+
+/* ===== 할 일 (PC와 같은 순서 규칙) ===== */
+const Todo = {
+  toggle:(wid,id,done)=>d=>{ const w=W(d,wid); if(!w) return; const a=cfg(w).items||(cfg(w).items=[]);
+    const i=a.findIndex(x=>x.id===id); if(i<0) return; const it=a[i]; if(!!it.done===done) return;
+    if(done){ let prev=null; for(let k=i-1;k>=0;k--){ if(!a[k].done){ prev=a[k].id; break; } } it._prevId=prev; it.done=true; a.splice(i,1); a.push(it); }
+    else { it.done=false; a.splice(i,1); let at; if(it._prevId){ const pi=a.findIndex(x=>x.id===it._prevId&&!x.done); at=pi>=0?pi+1:a.findIndex(x=>x.done); } else at=0; if(at<0) at=a.length; a.splice(at,0,it); it._prevId=null; } },
+  add:(wid,it)=>d=>{ const w=W(d,wid); if(!w) return; const a=cfg(w).items||(cfg(w).items=[]); if(a.some(x=>x.id===it.id)) return;
+    const firstDone=a.findIndex(x=>x.done); if(firstDone<0) a.push(it); else a.splice(firstDone,0,it); },
+  edit:(wid,id,text)=>d=>{ const w=W(d,wid); const it=w&&(cfg(w).items||[]).find(x=>x.id===id); if(it) it.text=text; },
+  del:(wid,id)=>d=>{ const w=W(d,wid); if(w&&Array.isArray(cfg(w).items)) cfg(w).items=cfg(w).items.filter(x=>x.id!==id); },
+};
+const Memo = { set:(wid,text)=>d=>{ const w=W(d,wid); if(w) cfg(w).text=text; } };
+const List = {                                         // D-Day(events) · 바로가기(items)
+  add:(wid,key,it)=>d=>{ const w=W(d,wid); if(!w) return; const a=cfg(w)[key]||(cfg(w)[key]=[]); if(!a.some(x=>x.id===it.id)) a.push(it); },
+  del:(wid,key,id)=>d=>{ const w=W(d,wid); if(w&&Array.isArray(cfg(w)[key])) cfg(w)[key]=cfg(w)[key].filter(x=>x.id!==id); },
+};
+
+/* ===== 화면 ===== */
+const openDone = new Set(), editing = new Set();
+function orderWidgets(d){
+  const L=w=>w.layoutMax||w.layout||{x:0,y:0};
+  return (d.widgets||[]).slice().sort((a,b)=>(L(a).y-L(b).y)||(L(a).x-L(b).x));
+}
+function fmtDue(ymd){
+  if(!/^\d{8}$/.test(ymd||"")) return null;
+  const y=+ymd.slice(0,4), m=+ymd.slice(4,6), dd=+ymd.slice(6,8), dt=new Date(y,m-1,dd);
+  const today=ymdNow(); return {label:`${m}/${dd}(${DOW[dt.getDay()]})`, cls: ymd===today?"now":(ymd<today?"late":"")};
+}
+const CHECK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5" stroke="#fff"/></svg>';
+
+function render(){
+  const app=$("#app"); app.innerHTML="";
+  const d=S.data; if(!d){ renderEmpty(); return; }
+  const now=new Date(), today=ymdNow();
+  const todos=(d.widgets||[]).filter(w=>w.type==="todo").flatMap(w=>(w.config&&w.config.items)||[]);
+  const left=todos.filter(t=>!t.done && t.date===today).length, late=todos.filter(t=>!t.done && t.date && t.date<today).length;
+  app.appendChild(h("section",{class:"today"},
+    h("h1",{class:"date", text:`${now.getMonth()+1}월 ${now.getDate()}일 ${DOW[now.getDay()]}요일`}),
+    h("p",{class:"sum", text: left||late ? (left&&late ? `오늘 할 일 ${left}개와 지난 할 일 ${late}개가 남았어요.` : left ? `오늘 할 일이 ${left}개 남았어요.` : `지난 할 일이 ${late}개 남았어요.`) : "오늘 남은 할 일이 없어요."})));
+  const skip=[];
+  orderWidgets(d).forEach(w=>{
+    if(!SUPPORTED.has(w.type)){ skip.push(TITLES[w.type]||w.type); return; }
+    const title=(typeof w.title==="string"&&w.title.trim())?w.title:TITLES[w.type];
+    const sec=h("section",{class:"sec"}); app.appendChild(sec);
+    if(w.type==="todo") drawTodo(sec,w,title);
+    else if(w.type==="memo") drawMemo(sec,w,title);
+    else if(w.type==="dday") drawDday(sec,w,title);
+    else drawLinks(sec,w,title);
+  });
+  if(skip.length) app.appendChild(h("p",{class:"pconly", text:`PC에서만 볼 수 있는 위젯: ${[...new Set(skip)].join(", ")}`}));
+}
+
+function drawTodo(sec,w,title){
+  const items=(cfg(w).items||[]).filter(x=>x&&typeof x==="object");
+  const undone=items.filter(x=>!x.done), done=items.filter(x=>x.done);
+  sec.appendChild(h("h2",{text:title}));
+  const p=h("div",{class:"panel"}); sec.appendChild(p);
+  const row=(it)=>{
+    const due=fmtDue(it.date);
+    const r=h("div",{class:"row"+(it.done?" done":"")});
+    const chk=h("button",{class:"chk","aria-label":it.done?"완료 취소":"완료", onclick:()=>commit(Todo.toggle(w.id,it.id,!it.done))});
+    chk.innerHTML=CHECK;
+    const tx=h("button",{class:"txt", text:String(it.text||"")});
+    tx.addEventListener("click",()=>{
+      if(it.done) return;
+      const inp=h("input",{value:String(it.text||""), "aria-label":"할 일 수정"}); tx.textContent=""; tx.appendChild(inp); inp.focus();
+      let fin=false; const end=(save)=>{ if(fin) return; fin=true; const v=inp.value.trim();
+        if(save && v && v!==it.text) commit(Todo.edit(w.id,it.id,v)); else render(); };
+      inp.addEventListener("keydown",e=>{ if(e.key==="Enter") end(true); else if(e.key==="Escape") end(false); });
+      inp.addEventListener("blur",()=>end(true));
+    });
+    r.append(chk, tx);
+    if(due) r.appendChild(h("span",{class:"due "+(it.done?"":due.cls), text:due.label}));
+    r.appendChild(h("button",{class:"del","aria-label":"삭제", text:"✕",
+      onclick:()=>{ if(confirm(`"${String(it.text||"").slice(0,30)}"을(를) 지울까요?`)) commit(Todo.del(w.id,it.id)); }}));
+    return r;
+  };
+  if(!undone.length && !done.length) p.appendChild(h("div",{class:"empty", text:"할 일을 적어 보세요."}));
+  undone.forEach(it=>p.appendChild(row(it)));
+  if(done.length){
+    const open=openDone.has(w.id);
+    p.appendChild(h("button",{class:"more", text:`${open?"▾":"▸"} 완료됨 ${done.length}`, onclick:()=>{ open?openDone.delete(w.id):openDone.add(w.id); render(); }}));
+    if(open) done.forEach(it=>p.appendChild(row(it)));
+  }
+  const tIn=h("input",{placeholder:"할 일 입력", "aria-label":"새 할 일"}), dIn=h("input",{type:"date", value:isoNow(), "aria-label":"날짜"});
+  const add=()=>{ const v=tIn.value.trim(); if(!v) return; const date=(dIn.value||isoNow()).replace(/-/g,"");
+    commit(Todo.add(w.id,{id:uid(), text:v, done:false, date})); };
+  tIn.addEventListener("keydown",e=>{ if(e.key==="Enter") add(); });
+  p.appendChild(h("div",{class:"add"}, tIn, dIn, h("button",{text:"추가", onclick:add})));
+}
+
+function drawMemo(sec,w,title){
+  sec.appendChild(h("h2",{text:title}));
+  const p=h("div",{class:"panel"}); sec.appendChild(p);
+  const ta=h("textarea",{class:"memo", placeholder:"메모를 적어 보세요", "aria-label":title});
+  ta.value=String(cfg(w).text||"");
+  const st=h("div",{class:"memo-st"});
+  const grow=()=>{ ta.style.height="auto"; ta.style.height=Math.max(132,ta.scrollHeight)+"px"; };
+  let t=null;
+  ta.addEventListener("input",()=>{ grow(); st.textContent="입력 중…"; clearTimeout(t);
+    t=setTimeout(()=>{ commit(Memo.set(w.id, ta.value), 0); st.textContent="저장됨"; }, 1200); });
+  ta.addEventListener("blur",()=>{ if(t){ clearTimeout(t); t=null; if(ta.value!==String(cfg(w).text||"")) commit(Memo.set(w.id, ta.value), 0); } });
+  p.append(ta, st); (window.requestAnimationFrame||setTimeout)(grow);
+}
+
+function drawDday(sec,w,title){
+  const evs=(cfg(w).events||[]).filter(x=>x&&typeof x==="object");
+  const ed=editing.has(w.id);
+  sec.appendChild(h("h2",{}, title, h("button",{class:"tool", text:ed?"완료":"편집", onclick:()=>{ ed?editing.delete(w.id):editing.add(w.id); render(); }})));
+  const p=h("div",{class:"panel"}); sec.appendChild(p);
+  if(!evs.length) p.appendChild(h("div",{class:"empty", text:"기념일이나 마감일을 추가해 보세요."}));
+  const t0=new Date(); t0.setHours(0,0,0,0);
+  evs.forEach(ev=>{
+    const dt=new Date(String(ev.date||"")+"T00:00"); const ok=!isNaN(dt);
+    const n=ok?Math.round((dt-t0)/86400000):null;
+    const v=n===null?"":(n===0?"D-Day":(n>0?`D-${n}`:`D+${-n}`));
+    const row=h("div",{class:"dd"},
+      h("div",{class:"n"}, String(ev.name||""), h("div",{class:"d", text:String(ev.date||"")})),
+      h("div",{class:"v"+(n!==null&&n>=0&&n<=7?" soon":"")+(n!==null&&n<0?" past":""), text:v}));
+    if(ed) row.appendChild(h("button",{class:"del","aria-label":"삭제",text:"✕", onclick:()=>{ if(confirm(`"${String(ev.name||"")}"을(를) 지울까요?`)) commit(List.del(w.id,"events",ev.id)); }}));
+    p.appendChild(row);
+  });
+  const nIn=h("input",{placeholder:"이름", "aria-label":"D-Day 이름"}), dIn=h("input",{type:"date", value:isoNow(), "aria-label":"날짜"});
+  const add=()=>{ const v=nIn.value.trim(); if(!v||!dIn.value) return; commit(List.add(w.id,"events",{id:uid(), name:v, date:dIn.value})); };
+  nIn.addEventListener("keydown",e=>{ if(e.key==="Enter") add(); });
+  p.appendChild(h("div",{class:"add"}, nIn, dIn, h("button",{text:"추가", onclick:add})));
+}
+
+function drawLinks(sec,w,title){
+  const items=(cfg(w).items||[]).filter(x=>x&&typeof x==="object");
+  const ed=editing.has(w.id);
+  sec.appendChild(h("h2",{}, title, h("button",{class:"tool", text:ed?"완료":"편집", onclick:()=>{ ed?editing.delete(w.id):editing.add(w.id); render(); }})));
+  const p=h("div",{class:"panel"}); sec.appendChild(p);
+  const box=h("div",{class:"links"}); p.appendChild(box);
+  if(!items.length) box.appendChild(h("div",{class:"empty", text:"자주 가는 사이트를 추가해 보세요."}));
+  items.forEach(it=>{
+    const url=safeUrl(it.url);
+    const b=h("button",{class:"lk", title:url||"열 수 없는 주소", onclick:(e)=>{ if(e.target.classList.contains("x")) return;
+      if(url) window.open(url,"_blank","noopener"); else toast("웹 주소가 아니라 열 수 없어요"); }}, h("span",{text:String(it.name||url||"이름 없음")}));
+    if(ed) b.appendChild(h("button",{class:"x","aria-label":"삭제",text:"✕", onclick:(e)=>{ e.stopPropagation();
+      if(confirm(`"${String(it.name||"")}"을(를) 지울까요?`)) commit(List.del(w.id,"items",it.id)); }}));
+    box.appendChild(b);
+  });
+  if(ed){
+    const nIn=h("input",{placeholder:"이름", "aria-label":"사이트 이름"}), uIn=h("input",{placeholder:"주소", inputmode:"url", "aria-label":"사이트 주소"});
+    const add=()=>{ const n=nIn.value.trim(); let u=uIn.value.trim(); if(!n||!u) return; if(!/^https?:\/\//i.test(u)) u="https://"+u;
+      commit(List.add(w.id,"items",{id:uid(), name:n, url:u})); };
+    p.appendChild(h("div",{class:"add"}, nIn, uIn, h("button",{text:"추가", onclick:add})));
+  }
+}
+
+function renderEmpty(){
+  const app=$("#app"); app.innerHTML="";
+  app.appendChild(h("section",{class:"hello"},
+    h("h1",{text:"아직 저장된 내용이 없어요"}),
+    h("p",{text:`${S.email||"이 계정"}으로 PC에서 동기화한 내용이 여기에 보입니다.`}),
+    h("div",{class:"note"},
+      "1. PC의 My Dashboard 위쪽 [☁ 동기화]를 누르세요.", h("br"),
+      "2. 이 폰과 같은 구글 계정으로 연결하세요.", h("br"),
+      "3. 연결되면 이 화면을 새로고침하세요."),
+    h("button",{class:"big", style:"margin-top:24px", text:"새로고침", onclick:()=>refresh(true)}),
+    h("button",{class:"big sub", text:"다른 계정으로 로그인", onclick:logout})));
+}
+function showHello(err){
+  $("#bar").hidden=true; const app=$("#app"); app.innerHTML="";
+  if(WEB_CLIENT_ID.indexOf("WEB_CLIENT_ID")===0){
+    app.appendChild(h("section",{class:"hello"}, h("h1",{text:"설정이 필요해요"}),
+      h("p",{text:"배포자가 index.html 위쪽의 WEB_CLIENT_ID를 아직 넣지 않았어요."}))); return;
+  }
+  app.appendChild(h("section",{class:"hello"},
+    err ? h("div",{class:"alert", text:err}) : null,
+    h("h1",{text:"PC 대시보드를 폰에서 봅니다"}),
+    h("p",{text:"할 일·메모·D-Day·바로가기를 보고 고칠 수 있어요. 바꾼 내용은 PC에도 곧 반영됩니다."}),
+    h("button",{class:"big", text:S.email?`${S.email}(으)로 계속`:"구글로 로그인", onclick:login}),
+    S.email ? h("button",{class:"big sub", text:"다른 계정으로 로그인", onclick:()=>{ S.email=""; saveAuth(); login(); }}) : null,
+    h("div",{class:"note"}, "PC 프로그램에서 동기화를 켠 것과 같은 구글 계정으로 로그인하세요.", h("br"),
+      "내용은 내 구글 드라이브의 앱 전용 폴더에만 저장됩니다.", h("br"),
+      "학생 정보가 보일 수 있으니 폰 화면 잠금을 꼭 설정해 주세요.")));
+}
+function needLogin(){ status(""); showHello("로그인 시간이 지났어요. 다시 계속해 주세요."); }
+function startMain(){
+  $("#bar").hidden=false; $("#who").textContent=S.email||"";
+  $("#app").innerHTML=""; $("#app").appendChild(h("p",{class:"empty", text:"불러오는 중…"}));
+  refresh(true);
+}
+
+/* ===== 시작 ===== */
+$("#refreshBtn").onclick=()=>refresh(true);
+$("#menuBtn").onclick=()=>{ $("#menuWho").textContent=S.email?`${S.email}로 로그인됨`:""; $("#menu").classList.add("on"); };
+$("#closeMenu").onclick=()=>$("#menu").classList.remove("on");
+$("#menu").addEventListener("click",e=>{ if(e.target.id==="menu") $("#menu").classList.remove("on"); });
+$("#logoutBtn").onclick=logout;
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden && S.tok) refresh(false); });
+setInterval(()=>{ if(!document.hidden && S.tok) refresh(false); }, 15000);
+setInterval(()=>{ if(S.tok && Date.now()>S.exp){ S.tok=null; needLogin(); } }, 30000);
+window.addEventListener("beforeunload",()=>{ if(S.pending.length) flush(); });
+loadAuth();
+if(S.tok) startMain(); else showHello();
+(function loadGis(){
+  const s=document.createElement("script"); s.src="https://accounts.google.com/gsi/client"; s.async=true; s.defer=true;
+  s.onload=initGis; document.head.appendChild(s);
+})();
+</script>
+</body>
+</html>
