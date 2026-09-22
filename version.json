@@ -1,8 +1,8 @@
 {
-  "ui_version": "2026-09-22.2",
+  "ui_version": "2026-09-22.5",
   "ui_url": "https://raw.githubusercontent.com/EricKOR1/dashboard/main/index.html",
-  "app_version": "1.5.2",
+  "app_version": "1.5.3",
   "app_url": "https://github.com/EricKOR1/dashboard/releases/latest/download/MyDashboard.zip",
   "page_url": "https://github.com/EricKOR1/dashboard/releases",
-  "notes": "동기화 전 설정으로 돌아가는 '기존 설정 이용하기' 추가. 동기화 끊김 문제 수정."
+  "notes": "동기화할 항목 고르기(위젯·메모·화면 꾸미기). 메모 목록(컬러노트처럼 골라 띄우기·색). 서로 다른 위젯은 자동으로 합침. 원본 엑셀을 고치면 다른 컴퓨터에도 반영."
 }

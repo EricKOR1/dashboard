@@ -1774,6 +1774,36 @@
   .memo-view a:hover{text-decoration:none;}
   .memo-view .memo-empty{color:var(--faint);}
   .memo-edit{width:100%; height:100%; min-height:90px; resize:none; line-height:1.55; border-radius:12px;}
+/* 메모 목록 (컬러노트처럼) */
+.card .body.memo{display:flex; flex-direction:column; gap:6px;}
+.memo [hidden]{display:none !important;}
+.memo .mm-bar{display:flex; align-items:center; gap:6px; flex:none; min-height:26px;}
+.memo .mm-b{flex:none; width:26px; height:26px; padding:0; border:none; border-radius:8px; background:transparent; color:var(--muted); font-size:13px; line-height:26px; cursor:pointer;}
+.memo .mm-b:hover{background:var(--card-2); color:var(--text);}
+.memo .mm-dot{flex:none; width:10px; height:10px; border-radius:50%; background:var(--mm,transparent); box-shadow:inset 0 0 0 1px var(--border);}
+.memo .mm-ttl{flex:1; min-width:0; font-size:12.5px; font-weight:700; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.memo .mm-pal{display:flex; flex-wrap:wrap; gap:7px; flex:none; padding:2px 0 4px;}
+.memo .mm-c{width:22px; height:22px; padding:0; border-radius:50%; border:2px solid transparent; background:var(--mm,transparent); box-shadow:inset 0 0 0 1px var(--border); cursor:pointer;}
+.memo .mm-c.on{border-color:var(--text);}
+.memo .mm-main{flex:1; min-height:0; display:flex; flex-direction:column; border-radius:12px;}
+.memo.mm-tint .mm-main{background:color-mix(in srgb, var(--mm) 16%, transparent); box-shadow:inset 3px 0 0 var(--mm); padding:8px 10px;}
+.memo .mm-main .memo-view{flex:1; height:auto; min-height:0;}
+.memo .mm-main .memo-edit{flex:1; height:auto;}
+.memo .mm-listv{flex:1; min-height:0; display:flex; flex-direction:column; gap:8px;}
+.memo .mm-lhead{display:flex; align-items:center; gap:6px; flex:none; flex-wrap:wrap;}
+.memo .mm-lhead b{font-size:13px;}
+.memo .mm-lhead span{flex:1; font-size:11.5px; color:var(--faint);}
+.memo .mm-hint{flex:none; font-size:11.5px; line-height:1.6; color:var(--muted); background:var(--card-2); border-radius:10px; padding:7px 10px;}
+.memo .mm-items{flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column; gap:6px;}
+.memo .mm-item{display:flex; align-items:center; gap:9px; padding:8px 10px; border:1px solid var(--border); border-radius:10px; cursor:pointer;
+  background:color-mix(in srgb, var(--mm) 14%, var(--card)); box-shadow:inset 3px 0 0 var(--mm);}
+.memo .mm-item:hover, .memo .mm-item.on{border-color:var(--accent);}
+.memo .mm-tx{flex:1; min-width:0;}
+.memo .mm-tx b{display:block; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.memo .mm-tx small{display:block; font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.memo .mm-item em{flex:none; font-style:normal; font-size:11px; color:var(--faint);}
+.memo .mm-x{flex:none; padding:3px 6px; border:none; border-radius:8px; background:transparent; color:var(--muted); font-size:12px; cursor:pointer;}
+.memo .mm-x.sure{background:var(--danger); color:#fff; font-weight:700;}
 
   .apps .grid-ic{display:flex; flex-wrap:wrap; gap:12px;}
   .apps .ic{width:64px; cursor:pointer; text-align:center; position:relative;}
@@ -1989,6 +2019,17 @@
   .sync-sheet .sy-item:hover{border-color:var(--accent);}
   .sync-sheet .sy-item b{display:block; font-size:13.5px;}
   .sync-sheet .sy-item i{display:block; font-style:normal; font-size:11.5px; color:var(--muted); margin-top:2px;}
+  .sync-sheet .sy-chk{display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--border); border-radius:12px;
+    background:var(--card); cursor:pointer;}
+  .sync-sheet .sy-chk:hover{border-color:var(--accent);}
+  .sync-sheet .sy-chk input{width:18px; height:18px; flex:none; margin:0; accent-color:var(--accent); cursor:pointer;}
+  .sync-sheet .sy-chk .ic{flex:none; width:22px; text-align:center; font-size:16px;}
+  .sync-sheet .sy-chk .tx{min-width:0;}
+  .sync-sheet .sy-chk b{display:block; font-size:13.5px;}
+  .sync-sheet .sy-chk i{display:block; font-style:normal; font-size:11.5px; color:var(--muted); margin-top:1px;}
+  .sync-sheet .sy-sub{font-size:11.5px; font-weight:700; color:var(--muted); margin:6px 2px 0;}
+  .sync-sheet .sy-chk.sm{padding:8px 12px;}
+  .sync-sheet .sy-dot{display:inline-block; width:12px; height:12px; border-radius:50%; box-shadow:inset 0 0 0 1px var(--border); vertical-align:middle;}
   .sync-sheet .sy-empty{font-size:12.5px; color:var(--muted); line-height:1.7; padding:14px; text-align:center;
     border:1px dashed var(--border); border-radius:12px;}
   .sync-sheet .mini.danger{background:var(--danger); color:#fff; border-color:transparent; font-weight:700;}
@@ -2069,18 +2110,24 @@ let state = { theme:"dark", widgets:[] };
 let booted = false, maxZ = 1;
 
 function hasApi(n){ return !!(window.pywebview && window.pywebview.api && window.pywebview.api[n]); }
+/* 저장·동기화용 문자열: 위젯에 붙은 임시 데이터(_로 시작 — 엑셀을 읽은 결과, 타이머 번호 등)는 뺀다.
+   빼지 않으면 시간표·명렬표 전체가 저장할 때마다 파일에 쓰이고 클라우드로 오가서 느려진다. */
+function stateJSON(){
+  const ws=new Set(state.widgets||[]);
+  return JSON.stringify(state, function(k,v){ return (k && k.charCodeAt(0)===95 && ws.has(this)) ? undefined : v; });
+}
 async function persist(){
   if(!_ready) return;
   snapshotLays();
   state.savedAt = Date.now();
-  const data = JSON.stringify(state);
+  const data = stateJSON();
   try{ localStorage.setItem("dash.state", data); }catch(e){}
   if(hasApi("save_state")){ try{ await window.pywebview.api.save_state(data); }catch(e){} }
   if(typeof Sync!=="undefined") Sync.queuePush();
 }
 /* 다른 컴퓨터에서 가져온 내용을 저장할 때: 저장 시각을 바꾸지 않아 다시 올리지 않음 */
 async function saveLocalOnly(){
-  const data = JSON.stringify(state);
+  const data = stateJSON();
   try{ localStorage.setItem("dash.state", data); }catch(e){}
   if(hasApi("save_state")){ try{ await window.pywebview.api.save_state(data); }catch(e){} }
 }
@@ -2158,6 +2205,48 @@ let toastTimer=null;
 function toast(m){const t=$("#toast"); t.textContent=m; t.classList.add("on"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("on"),1700);}
 
 /* ===== 위젯 정의 (시계/날씨/할일/급식/디데이/바로가기) ===== */
+/* 인터넷 상태 확인(파워셸 실행)은 무거워서: 동시에 여러 번 부르면 한 번만 실행하고, 15초 안의 결과는 재사용 */
+let _netQ=null, _netAt=0, _netLast=null;
+function netStatusOnce(fresh){
+  if(_netQ) return _netQ;
+  if(!fresh && _netLast && Date.now()-_netAt<15000) return Promise.resolve(_netLast);
+  _netQ=(async()=>{ let r=null; try{ r=await window.pywebview.api.net_status(); }catch(e){}
+    _netQ=null; _netAt=Date.now(); if(r&&r.ok) _netLast=r; return r; })();
+  return _netQ;
+}
+/* 창이 다시 보이면, 마지막 확인 뒤 1분이 지났을 때만 바로 확인 */
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden || Date.now()-_netAt<60000) return;
+  board.querySelectorAll('.card[data-type="netswitch"]').forEach(c=>{
+    const w=(state.widgets||[]).find(x=>x.id===c.dataset.id), b=$(".body",c);
+    if(w&&b) WIDGETS.netswitch.load(b,w,true,true); });
+});
+/* ===== 메모 목록 (컬러노트처럼: 메모는 목록에 모아 두고, 위젯마다 띄울 메모를 고름) ===== */
+const NOTE_COLORS={"":"", yellow:"#F2C94C", orange:"#F2994A", red:"#EB6F6F", pink:"#F29BC4",
+  purple:"#A98BEA", blue:"#6FA8F0", green:"#6FC48C", gray:"#9AA3B2"};
+function noteColor(k){ return Object.prototype.hasOwnProperty.call(NOTE_COLORS,k||"") ? NOTE_COLORS[k||""] : ""; }
+function notes(){ if(!Array.isArray(state.notes)) state.notes=[]; return state.notes; }
+function getNote(id){ return id ? (notes().find(n=>n.id===id)||null) : null; }
+function noteTitle(n){ const t=String((n&&n.text)||"").trim().split("\n")[0].trim(); return t ? (t.length>40?t.slice(0,40)+"…":t) : "(빈 메모)"; }
+function newNote(text){ const n={id:"n"+uid()+uid(), text:text||"", color:"", at:Date.now()}; notes().push(n);
+  const o=syncOpts(); if(o.notesAll===false){ o.notePick=o.notePick||{}; o.notePick[n.id]=true; }   /* 새로 만든 메모는 맞춤 대상 */
+  return n; }
+/* 예전 메모 위젯(글이 위젯 안에 있던 것) → 메모 목록으로. 컴퓨터마다 같은 결과가 나오게 번호를 위젯 번호로 만듦 */
+function ensureNotes(st){ st=st||state;
+  if(!Array.isArray(st.notes)) st.notes=[];
+  (st.widgets||[]).forEach(w=>{ if(!w||w.type!=="memo") return;
+    const c=(w.config&&typeof w.config==="object"&&!Array.isArray(w.config))?w.config:(w.config={});
+    if(typeof c.noteId!=="string") c.noteId="";
+    if(typeof c.text==="string"){ const id=c.noteId||("n_"+w.id);
+      if(!st.notes.some(n=>n.id===id)) st.notes.push({id, text:c.text, color:"", at:0});
+      c.noteId=id; delete c.text; } });
+  return st; }
+/* 같은 메모를 띄운 다른 메모 위젯도 새로 그림 (noteId 없으면 전부) */
+function refreshMemoCards(noteId, exceptBody){
+  board.querySelectorAll('.card[data-type="memo"] .body').forEach(b=>{
+    if(b===exceptBody||typeof b._memoDraw!=="function") return;
+    if(noteId && b._memoNote && b._memoNote()!==noteId) return;
+    b._memoDraw(); }); }
 const WIDGETS = {
   netswitch:{ title:"인터넷 전환", icon:"🔌", desc:"유선과 무선(와이파이)을 버튼 하나로 전환합니다.", special:true,
     defaultCfg:()=>({}),
@@ -2165,7 +2254,9 @@ const WIDGETS = {
       b.innerHTML=`<div class="nsw-body" data-body><div class="empty"><span class="spin"></span> 확인 중…</div></div>`;
       this.load(b,w);
       if(w._timer) clearInterval(w._timer);
-      w._timer=setInterval(()=>{ if(!document.body.contains(b)){ clearInterval(w._timer); w._timer=null; return; } this.load(b,w,true); }, 20000); },
+      w._timer=setInterval(()=>{ if(!document.body.contains(b)){ clearInterval(w._timer); w._timer=null; return; }
+        if(document.hidden) return;                 /* 창이 안 보일 땐 확인하지 않음 */
+        this.load(b,w,true,true); }, 60000); },
     async diagnose(b,w){ const out=$("[data-body]",b);
       out.innerHTML=`<div class="empty"><span class="spin"></span> 진단 중…</div>`;
       let r=null; try{ r=await window.pywebview.api.net_diagnose(); }catch(e){}
@@ -2187,9 +2278,11 @@ const WIDGETS = {
       h+=`<div class="nsw-btns" style="margin-top:10px"><button class="mini" data-back>돌아가기</button></div>`;
       out.innerHTML=h;
       const bb=$("[data-back]",out); if(bb) bb.onclick=()=>this.load(b,w); },
-    async load(b,w,quiet){ const out=$("[data-body]",b);
+    async load(b,w,quiet,fresh){ const out=$("[data-body]",b);
       if(!hasApi("net_status")){ out.innerHTML=`<div class="empty">설치형(exe)에서만 동작해요.</div>`; return; }
-      let r=null; try{ r=await window.pywebview.api.net_status(); }catch(e){}
+      if(quiet && out.querySelector("[data-go]:disabled, .nsw-dt")) return;   /* 전환·진단 중이면 건드리지 않음 */
+      const r=await netStatusOnce(fresh);
+      if(quiet && out.querySelector("[data-go]:disabled, .nsw-dt")) return;
       if(!r||!r.ok||(!r.wired&&!r.wifi)){ out.innerHTML=`<div class="empty">네트워크 어댑터를 찾지 못했어요.</div>`; return; }
       this.draw(b,w,r); },
     draw(b,w,r){ const out=$("[data-body]",b);
@@ -2213,7 +2306,7 @@ const WIDGETS = {
           const all=[...out.querySelectorAll("[data-go]")];
           all.forEach(x=>x.disabled=true); btn.textContent="전환 중…";
           let res=null; try{ res=await window.pywebview.api.net_switch(btn.dataset.go); }catch(e){}
-          if(res&&res.ok){ toast("전환 완료"); this.draw(b,w,res.status); }
+          if(res&&res.ok){ toast("전환 완료"); _netLast=res.status; _netAt=Date.now(); this.draw(b,w,res.status); }
           else {
             const rs=(res&&res.reason)||"failed";
             const msg = rs==="denied" ? "권한 승인이 취소되었어요"
@@ -2222,7 +2315,7 @@ const WIDGETS = {
                       : "전환하지 못했어요";
             toast(msg);
             all.forEach(x=>x.disabled=false);
-            this.load(b,w);
+            this.load(b,w,false,true);
             if(res&&res.detail){ const d=$(".nsw-err",out)||el("div","nsw-err"); d.textContent=res.detail;
               if(!d.isConnected) out.appendChild(d); }
           }
@@ -2974,17 +3067,77 @@ const WIDGETS = {
       w.config.items.forEach(it=>{const a=el("a",null,`<span class="fav">${escapeHtml(it.name.slice(0,1))}</span><span class="lk-nm"></span><span class="rx">✕</span>`); a.dataset.rid=it.id; a.href="#"; a.draggable=false; $(".lk-nm",a).textContent=it.name; a.onclick=e=>{e.preventDefault(); openLink(it.url);}; $(".rx",a).onclick=e=>{e.preventDefault(); e.stopPropagation(); w.config.items=w.config.items.filter(x=>x.id!==it.id); persist(); this.draw(b,w);}; inlineRename($(".lk-nm",a), ()=>it.name, v=>{it.name=v;}, ()=>{persist(); this.draw(b,w);}); list.appendChild(a);});
       enableListDnD(list, w.config.items, persist); } },
 
-  memo:{ title:"메모", icon:"📝", desc:"자유롭게 적는 메모장. URL은 클릭하면 열려요.",
-    defaultCfg:()=>({text:""}),
+  memo:{ title:"메모", icon:"📝", desc:"컬러노트처럼 여러 메모를 목록에 모아 두고, 골라서 띄워요. URL은 클릭하면 열려요.",
+    defaultCfg:()=>({noteId: notes().length ? "" : newNote().id}),   /* 메모가 없으면 새로 만들고, 있으면 목록에서 고르기 */
     mount(b,w){ b.classList.add("memo");
-      const view=el("div","memo-view"); const ta=el("textarea","memo-edit"); ta.placeholder="여기에 메모를 적으세요…"; ta.value=w.config.text||""; ta.style.display="none";
-      b.appendChild(view); b.appendChild(ta);
-      const render=()=>{ const t=w.config.text||""; if(!t.trim()){ view.innerHTML=`<span class="memo-empty">여기에 메모를 적으세요…</span>`; } else { view.innerHTML=linkify(t); view.querySelectorAll("a[data-url]").forEach(a=>{ a.draggable=false; a.onclick=e=>{ e.preventDefault(); openLink(a.dataset.url); }; }); } };
-      view.addEventListener("click",e=>{ if(e.target.closest("a"))return; ta.style.display="block"; view.style.display="none"; ta.value=w.config.text||""; ta.focus(); });
-      let tm=null; ta.addEventListener("input",()=>{ w.config.text=ta.value; clearTimeout(tm); tm=setTimeout(persist,400); });
-      ta.addEventListener("blur",()=>{ w.config.text=ta.value; persist(); render(); ta.style.display="none"; view.style.display="block"; });
-      render(); },
-    print(w){ const T=w.title||this.title; const t=w.config.text||""; return {title:T, html:`<h1>${escapeHtml(T)}</h1><div class="pt-memo">${escapeHtml(t)||"(내용 없음)"}</div>`}; } },
+      b.innerHTML=`<div class="mm-bar"><button class="mm-b" data-list title="메모 목록">☰</button><i class="mm-dot"></i><span class="mm-ttl"></span>
+          <button class="mm-b" data-col title="색 바꾸기">🎨</button><button class="mm-b" data-new title="새 메모">＋</button></div>
+        <div class="mm-pal" hidden></div>
+        <div class="mm-main"><div class="memo-view"></div><textarea class="memo-edit" placeholder="여기에 메모를 적으세요…" style="display:none"></textarea></div>
+        <div class="mm-listv" hidden></div>`;
+      const bar=$(".mm-bar",b), pal=$(".mm-pal",b), main=$(".mm-main",b), lv=$(".mm-listv",b), view=$(".memo-view",b), ta=$(".memo-edit",b);
+      const cur=()=>getNote(w.config.noteId);
+      let mode="note";                                    /* note: 메모 보기 · list: 목록 · pick: 띄울 메모 고르기 */
+      const paint=()=>{ const n=cur(), c=n?noteColor(n.color):"";
+        b.style.setProperty("--mm", c||"transparent"); b.classList.toggle("mm-tint", !!c && mode==="note");
+        $(".mm-ttl",b).textContent=n?noteTitle(n):""; };
+      const drawNote=()=>{ const n=cur(), t=(n&&n.text)||"";
+        if(!t.trim()) view.innerHTML=`<span class="memo-empty">여기에 메모를 적으세요…</span>`;
+        else { view.innerHTML=linkify(t); view.querySelectorAll("a[data-url]").forEach(a=>{ a.draggable=false; a.onclick=e=>{ e.preventDefault(); openLink(a.dataset.url); }; }); }
+        paint(); };
+      const usedElsewhere=id=>(state.widgets||[]).some(x=>x!==w&&x.type==="memo"&&x.config&&x.config.noteId===id);
+      const dropIfEmpty=id=>{ const n=getNote(id); if(n&&!String(n.text||"").trim()&&!usedElsewhere(id)) state.notes=notes().filter(x=>x.id!==id); };   /* 빈 메모는 목록에 남기지 않음 */
+      const showNote=()=>{ if(!cur()){ showList(true); return; }
+        mode="note"; lv.hidden=true; bar.hidden=false; main.hidden=false; pal.hidden=true;
+        ta.style.display="none"; view.style.display="block"; drawNote(); };
+      const startEdit=()=>{ const n=cur(); if(!n) return; pal.hidden=true; ta.value=n.text||""; ta.style.display="block"; view.style.display="none"; ta.focus(); };
+      const open=(id,edit)=>{ const prev=w.config.noteId; w.config.noteId=id; if(prev&&prev!==id) dropIfEmpty(prev);
+        persist(); showNote(); if(edit) startEdit(); };
+      const delNote=id=>{ state.notes=notes().filter(x=>x.id!==id);
+        (state.widgets||[]).forEach(x=>{ if(x.type==="memo"&&x.config&&x.config.noteId===id) x.config.noteId=""; });
+        persist(); toast("메모를 지웠어요"); refreshMemoCards(null,b); showList(!cur()); };
+      const showList=pick=>{
+        mode=pick?"pick":"list"; bar.hidden=true; main.hidden=true; pal.hidden=true; lv.hidden=false; b.classList.remove("mm-tint");
+        const all=notes().slice().sort((x,y)=>(y.at||0)-(x.at||0));
+        const lost=pick && w.config.noteId && !cur();
+        lv.innerHTML=`<div class="mm-lhead"><b>${lost?"이 컴퓨터에 없는 메모예요":(pick?"띄울 메모를 고르세요":"메모 목록")}</b><span>${all.length}개</span>
+            <button class="mini go" data-add>＋ 새 메모</button>${pick?"":`<button class="mini" data-close>닫기</button>`}</div>
+          ${lost?`<div class="mm-hint">이 컴퓨터로 가져오지 않은 메모일 수 있어요. 다른 메모를 고르거나 ☁ 동기화 → 동기화 항목 고르기에서 가져오세요.</div>`:""}
+          <div class="mm-items">${all.length ? all.map(n=>{ const c=noteColor(n.color), ls=String(n.text||"").trim().split("\n");
+              return `<div class="mm-item${n.id===w.config.noteId?" on":""}" data-id="${escapeHtml(n.id)}" style="--mm:${c||"transparent"}">
+                <i class="mm-dot"></i><div class="mm-tx"><b>${escapeHtml(noteTitle(n))}</b><small>${escapeHtml(ls.slice(1).join(" ").trim().slice(0,80))}</small></div>
+                <em>${n.at?escapeHtml(new Date(n.at).toLocaleDateString("ko-KR",{month:"numeric",day:"numeric"})):""}</em>
+                <button class="mm-x" data-del title="메모 삭제">🗑</button></div>`; }).join("")
+            : `<div class="memo-empty">메모가 없어요. ＋ 새 메모로 시작하세요.</div>`}</div>`;
+        $("[data-add]",lv).onclick=()=>open(newNote().id,true);
+        const cl=$("[data-close]",lv); if(cl) cl.onclick=()=>showNote();
+        lv.querySelectorAll(".mm-item").forEach(it=>{
+          it.onclick=e=>{ if(e.target.closest("[data-del]")) return; open(it.dataset.id); };
+          const x=$("[data-del]",it);
+          x.onclick=e=>{ e.stopPropagation();
+            if(!x.classList.contains("sure")){ x.classList.add("sure"); x.textContent="삭제?";      /* 한 번 더 눌러야 지움 */
+              setTimeout(()=>{ if(x.isConnected){ x.classList.remove("sure"); x.textContent="🗑"; } },2500); return; }
+            delNote(it.dataset.id); }; });
+      };
+      view.addEventListener("click",e=>{ if(e.target.closest("a")) return; startEdit(); });
+      let tm=null;
+      ta.addEventListener("input",()=>{ const n=cur(); if(!n) return; n.text=ta.value; n.at=Date.now(); paint();
+        clearTimeout(tm); tm=setTimeout(()=>{ persist(); refreshMemoCards(n.id,b); },400); });
+      ta.addEventListener("blur",()=>{ clearTimeout(tm); const n=cur();
+        if(n&&n.text!==ta.value){ n.text=ta.value; n.at=Date.now(); }
+        persist(); if(n) refreshMemoCards(n.id,b);
+        ta.style.display="none"; view.style.display="block"; drawNote(); });
+      $("[data-list]",b).onclick=()=>showList(false);
+      $("[data-new]",b).onclick=()=>open(newNote().id,true);
+      $("[data-col]",b).onclick=()=>{ const n=cur(); if(!n) return; pal.hidden=!pal.hidden; if(pal.hidden) return;
+        pal.innerHTML=Object.keys(NOTE_COLORS).map(k=>`<button class="mm-c${(n.color||"")===k?" on":""}" data-c="${k}" title="${k?"":"색 없음"}" style="--mm:${NOTE_COLORS[k]||"transparent"}"></button>`).join("");
+        pal.querySelectorAll("[data-c]").forEach(x=>x.onclick=()=>{ const m=cur(); if(!m) return; m.color=x.dataset.c; m.at=Date.now();
+          pal.hidden=true; persist(); drawNote(); refreshMemoCards(m.id,b); }); };
+      b._memoNote=()=>w.config.noteId;
+      b._memoDraw=()=>{ if(document.activeElement===ta) return; if(mode==="list") showList(false); else showNote(); };
+      showNote(); },
+    print(w){ const T=w.title||this.title; const n=getNote(w.config.noteId), t=(n&&n.text)||"";
+      return {title:T, html:`<h1>${escapeHtml(T)}</h1><div class="pt-memo">${escapeHtml(t)||"(내용 없음)"}</div>`}; } },
 
   shortcuts:{ title:"아이콘 바로가기", icon:"🚀", desc:"사이트 아이콘을 눌러 바로 이동.",
     defaultCfg:()=>({items:[]}),
@@ -3433,7 +3586,7 @@ function mountCard(w){
   const body=el("div","body"); const rsz=el("div","rsz");
   card.appendChild(head); card.appendChild(body); card.appendChild(rsz);
   applyCardFont(card,w);
-  if(_bootPhase){ _mountQ.push(()=>{ try{ def.mount(body,w); }catch(e){} }); }
+  if(_bootPhase){ _mountQ.push(()=>{ if(!card.isConnected) return; try{ def.mount(body,w); }catch(e){} }); }
   else { try{ def.mount(body,w); }catch(e){} }
   enableMove(card,head,w); enableResize(card,rsz,w);
   card.addEventListener("pointerdown",()=>bringFront(card,w));
@@ -3616,13 +3769,15 @@ function relTime(ms){
   return Math.floor(h/24)+"일 전";
 }
 /* 받아온 내용은 그대로 믿지 않고 검사한 뒤 적용 */
-function applyRemoteState(json){
-  let rs; try{ rs=JSON.parse(json); }catch(e){ return false; }
-  if(!rs||typeof rs!=="object"||!Array.isArray(rs.widgets)) return false;
+/* 클라우드에서 받은 내용 검사: 알 수 없는 위젯·이상한 링크 제거, 폴더 경로는 이 컴퓨터 것 유지 */
+function sanitizeRemote(json){
+  let rs; try{ rs=JSON.parse(json); }catch(e){ return null; }
+  if(!rs||typeof rs!=="object"||!Array.isArray(rs.widgets)) return null;
   const known=new Set(Object.keys(WIDGETS));
   rs.widgets=rs.widgets.filter(w=>w&&typeof w==="object"&&known.has(w.type)
     &&typeof w.id==="string"&&w.id.length>0&&w.id.length<80);
   rs.widgets.forEach(w=>{
+    Object.keys(w).forEach(k=>{ if(k.charAt(0)==="_") delete w[k]; });   /* 다른 컴퓨터의 임시 데이터는 버림 */
     if(!w.config||typeof w.config!=="object"||Array.isArray(w.config)) w.config={};
     if(typeof w.title!=="undefined"&&typeof w.title!=="string") delete w.title;
     if(Array.isArray(w.config.items)){
@@ -3633,13 +3788,213 @@ function applyRemoteState(json){
       const mine=(state.widgets||[]).find(x=>x.id===w.id);
       w.config.items=(mine&&mine.config&&Array.isArray(mine.config.items))?mine.config.items:[];
     }
+    w.sync=true;                     /* 클라우드에 있는 위젯 = 동기화 대상 */
   });
-  if(typeof rs.theme!=="string"||!/^[a-z0-9_-]{1,24}$/i.test(rs.theme)) rs.theme=state.theme;
-  state=rs;
+  const nseen=new Set();
+  rs.notes=(Array.isArray(rs.notes)?rs.notes:[]).filter(n=>n&&typeof n==="object"&&typeof n.id==="string"&&n.id.length>0&&n.id.length<80&&!nseen.has(n.id)&&nseen.add(n.id))
+    .map(n=>({id:n.id, text:typeof n.text==="string"?n.text:"", color:Object.prototype.hasOwnProperty.call(NOTE_COLORS,n.color||"")?(n.color||""):"", at:+n.at||0}));
+  ensureNotes(rs);
+  if(typeof rs.theme!=="string"||!/^[a-z0-9_-]{1,24}$/i.test(rs.theme)) delete rs.theme;
+  rs.unshared=(Array.isArray(rs.unshared)?rs.unshared:[]).filter(x=>typeof x==="string"&&x.length<80).slice(-300);
+  if(typeof rs.lastKey!=="string"||!/^\d{3,5}x\d{3,5}$/.test(rs.lastKey)) delete rs.lastKey;
+  return rs;
+}
+
+/* ================= 고른 항목만 동기화 ================= */
+/* 컴퓨터마다 달라야 하는 위젯은 처음엔 이 컴퓨터 전용 */
+const SYNC_LOCAL_TYPES=new Set(["files","netswitch","aiusage"]);
+const SYNC_XL_TYPES=new Set(["timetable","roster","contacts"]);
+function isShared(w){ return !!w && (w.sync===undefined ? !SYNC_LOCAL_TYPES.has(w.type) : w.sync!==false); }
+function syncOpts(){ if(!state.syncOpts||typeof state.syncOpts!=="object") state.syncOpts={deco:true};
+  if(state.syncOpts.notesAll===undefined) state.syncOpts.notesAll=true; return state.syncOpts; }
+/* 메모는 컴퓨터마다 가져올 메모를 고름: '모든 메모'가 켜져 있거나, 골라 둔 메모 */
+function isNoteSynced(id){ const o=syncOpts(); return o.notesAll!==false || !!(o.notePick&&o.notePick[id]); }
+function _nSig(n){ return _h(JSON.stringify([String(n.text||""), n.color||""])); }
+/* 지난번에 본 클라우드의 메모 전체 (이 컴퓨터가 가져오지 않는 메모를 그대로 전달하려고 기억) */
+function _carryNotes(){ const c=state.syncCarry; return (c&&Array.isArray(c.notes))?c.notes:[]; }
+function _stable(v){ if(Array.isArray(v)) return v.map(_stable);
+  if(v&&typeof v==="object"){ const o={}; Object.keys(v).sort().forEach(k=>{ o[k]=_stable(v[k]); }); return o; }
+  return v; }
+function _h(str){ let h=0x811c9dc5; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,0x01000193); }
+  return (h>>>0).toString(36)+"."+str.length.toString(36); }
+/* 내용 서명: 배치·임시 데이터·동기화 표시와, 컴퓨터마다 다른 값(폴더 경로, 엑셀 파일 위치)은 뺀다 */
+function _cSig(w){
+  const o={};
+  Object.keys(w).forEach(k=>{ if(k==="layout"||k==="layoutMax"||k==="lays"||k==="sync"||k.charAt(0)==="_") return; o[k]=w[k]; });
+  if(o.config&&typeof o.config==="object"){ const c=Object.assign({},o.config);
+    if(w.type==="files") delete c.items;
+    if(SYNC_XL_TYPES.has(w.type)) delete c.file;
+    o.config=c; }
+  return _h(JSON.stringify(_stable(o)));
+}
+/* 배치 서명: 화면별 위치·크기만 (겹침 순서 z는 컴퓨터마다 달라질 수 있어 뺀다) */
+function _lSig(w){
+  const L=w.lays&&typeof w.lays==="object"?w.lays:{}, o={};
+  Object.keys(L).sort().forEach(k=>{ const e=L[k]||{}, f=x=>x?[x.x,x.y,x.w,x.h]:null; o[k]=[f(e.layout),f(e.layoutMax)]; });
+  return _h(JSON.stringify(o));
+}
+/* 클라우드에 올릴 내용: 동기화 대상 위젯 + (켜 두었으면) 화면 꾸미기 */
+function syncPayload(){
+  snapshotLays();
+  const base=state.syncBase||{}, ws=[], ids=new Set();
+  (state.widgets||[]).forEach(w=>{ if(!isShared(w)) return;
+    const o={}; Object.keys(w).forEach(k=>{ if(k.charAt(0)!=="_") o[k]=w[k]; });
+    o.sync=true;
+    if(w.type==="files"&&o.config){ o.config=Object.assign({},o.config); delete o.config.items; }   /* 폴더 경로는 올리지 않음 */
+    ws.push(o); ids.add(w.id); });
+  /* 체크를 푼 위젯: 다른 컴퓨터에서 지우지 말고 그 컴퓨터 전용으로 남기라는 표시 */
+  const un=(base.unshared||[]).filter(id=>!ids.has(id));
+  Object.keys(base.w||{}).forEach(id=>{ if(ids.has(id)||un.includes(id)) return;
+    const lw=(state.widgets||[]).find(x=>x.id===id); if(lw&&!isShared(lw)) un.push(id); });
+  const nl=notes().filter(n=>isNoteSynced(n.id)).map(n=>({id:n.id, text:String(n.text||""), color:n.color||"", at:+n.at||0}));
+  const have=new Set(nl.map(n=>n.id));
+  _carryNotes().forEach(n=>{ if(!have.has(n.id)&&!isNoteSynced(n.id)) nl.push(n); });   /* 가져오지 않는 메모는 클라우드 것 그대로 */
+  const p={v:2, savedAt:state.savedAt||Date.now(), widgets:ws, notes:nl};
+  if(state.lastKey) p.lastKey=state.lastKey;
+  const th=syncOpts().deco!==false ? state.theme : base.theme;   /* 꾸미기를 안 맞추는 컴퓨터는 클라우드 값을 그대로 전달 */
+  if(th) p.theme=th;
+  if(un.length) p.unshared=un.slice(-300);
+  return p;
+}
+function payloadSig(p){
+  const ws=(p.widgets||[]).map(x=>x.id+":"+x.type+":"+_cSig(x)+":"+_lSig(x)).sort();
+  const ns=(p.notes||[]).map(n=>n.id+":"+_nSig(n)).sort();
+  return _h(JSON.stringify([ws, p.theme||"", (p.unshared||[]).slice().sort(), ns]));
+}
+/* 이 컴퓨터가 맞추지 않는 메모는 '마지막으로 맞췄던 때' 기록을 그대로 둠
+   → 나중에 다시 체크했을 때 양쪽에서 고친 것을 알아채고 물어볼 수 있음 */
+function _holdNoteBase(nb){ const ob=((state.syncBase||{}).n)||{};
+  Object.keys(nb.n||{}).forEach(id=>{ if(!isNoteSynced(id) && (id in ob)) nb.n[id]=ob[id]; });
+  return nb; }
+/* 지난번에 맞춘 클라우드 내용 기록 (다음에 어느 쪽이 바뀌었는지 비교용) */
+function syncBaseFrom(p){
+  const w={}, n={}; (p.widgets||[]).forEach(x=>{ w[x.id]={c:_cSig(x), l:_lSig(x)}; });
+  (p.notes||[]).forEach(x=>{ n[x.id]=_nSig(x); });
+  return {v:2, all:payloadSig(p), w, n, theme:p.theme||"", unshared:(p.unshared||[]).slice(-300)};
+}
+/* 세 갈래 합치기: 지난번 맞춘 상태와 비교해 어느 쪽이 바뀌었는지 보고 위젯마다 고른다.
+   choice: 같은 위젯을 양쪽에서 고쳤을 때 "remote"/"local", replace: 처음 연결 때 클라우드 것으로 바꾸기 */
+function syncMerge(remote, choice, replace){
+  const base=(state.syncBase&&state.syncBase.w)?state.syncBase:null, B=base?base.w:{};
+  const R=new Map(remote.widgets.map(w=>[w.id,w])), uns=new Set(remote.unshared||[]);
+  const plan=[], conflicts=[], seen=new Set(); let took=0;
+  const nm=w=>w.title||(WIDGETS[w.type]&&WIDGETS[w.type].title)||w.type;
+  const deco=syncOpts().deco!==false;
+  const rNotes=remote.notes||[];
+  if(replace){
+    (state.widgets||[]).forEach(l=>{ if(!isShared(l)&&!R.has(l.id)) plan.push({w:l}); });
+    remote.widgets.forEach(r=>plan.push({w:r}));
+    const keepN=notes().filter(n=>!isNoteSynced(n.id)), kid=new Set(keepN.map(n=>n.id));
+    const outN=keepN.concat(rNotes.filter(n=>isNoteSynced(n.id)&&!kid.has(n.id)));
+    return {plan, conflicts, took:1, theme:(deco&&remote.theme)?remote.theme:state.theme, notes:outN, carry:rNotes};
+  }
+  const k=screenKey();
+  const localOlder=!base && (state.savedAt||0) <= (+remote.savedAt||0);
+  (state.widgets||[]).forEach(l=>{
+    seen.add(l.id); const r=R.get(l.id), b=B[l.id];
+    if(!isShared(l)){                                   /* 이 컴퓨터 전용 */
+      if(r&&!b){ plan.push({w:r}); took++; }             /* 다른 컴퓨터가 다시 동기화로 바꿈 → 받아들임 */
+      else plan.push({w:l});
+      return;
+    }
+    if(!r){
+      if(uns.has(l.id)){ plan.push({w:l, local:true}); return; }   /* 다른 컴퓨터에서 체크를 풂 → 이 컴퓨터 전용으로 남김 */
+      if(b&&_cSig(l)===b.c){ took++; return; }                    /* 다른 컴퓨터에서 지움 */
+      plan.push({w:l}); return;                                    /* 새로 만들었거나, 지워졌지만 여기서 고친 것 */
+    }
+    const lc=_cSig(l), rc=_cSig(r);
+    let src=l;
+    if(lc!==rc){
+      if(b&&lc===b.c){ src=r; took++; }
+      else if(b&&rc===b.c){ src=l; }
+      else if(!b&&localOlder){ src=r; took++; }          /* 처음 맞출 때: 클라우드가 올라간 뒤 이 컴퓨터는 고친 게 없음 */
+      else if(choice){ src=(choice==="remote")?r:l; if(src===r) took++; }
+      else { conflicts.push({id:l.id, title:nm(l)}); }
+    }
+    /* 배치: 한쪽만 옮겼으면 그쪽 것, 둘 다 옮겼으면 이 컴퓨터 화면 배치만 이 컴퓨터 것 */
+    const ll=_lSig(l), rl=_lSig(r); let lays;
+    if(ll!==rl){
+      if(b&&ll===b.l) lays=r.lays;
+      else if(b&&rl===b.l) lays=l.lays;
+      else { lays=Object.assign({}, l.lays||{}, r.lays||{}); if(l.lays&&l.lays[k]) lays[k]=l.lays[k]; }
+      if(lays!==l.lays) took++;
+    }
+    plan.push({w:src, lays});
+  });
+  remote.widgets.forEach(r=>{ if(seen.has(r.id)) return;
+    const b=B[r.id];
+    if(b&&_cSig(r)===b.c) return;                        /* 이 컴퓨터에서 지운 위젯 */
+    plan.push({w:r}); took++;                            /* 새 위젯 (또는 지웠지만 다른 컴퓨터에서 고친 것) */
+  });
+  /* 메모: 이 컴퓨터에서 맞추는 메모만 합치고, 나머지는 건드리지 않음 */
+  const Bn=(base&&base.n)||{}, Rn=new Map(rNotes.map(n=>[n.id,n])), nseen=new Set(), outN=[];
+  notes().forEach(l=>{ nseen.add(l.id); const r=Rn.get(l.id), b=Bn[l.id];
+    if(!isNoteSynced(l.id)){ outN.push(l); return; }                       /* 이 컴퓨터에서 맞추지 않는 메모 */
+    if(!r){ if(b&&_nSig(l)===b){ took++; return; } outN.push(l); return; }  /* 다른 컴퓨터에서 지움 / 새로 만든 메모 */
+    const lc=_nSig(l), rc=_nSig(r);
+    if(lc===rc){ outN.push(l); return; }
+    if(b&&lc===b){ outN.push(r); took++; return; }
+    if(b&&rc===b){ outN.push(l); return; }
+    if(!b&&localOlder){ outN.push(r); took++; return; }
+    if(choice){ outN.push(choice==="remote"?r:l); if(choice==="remote") took++; return; }
+    conflicts.push({id:"note:"+l.id, title:"메모 '"+noteTitle(l)+"'"}); outN.push(l); });
+  rNotes.forEach(r=>{ if(nseen.has(r.id)||!isNoteSynced(r.id)) return;
+    const b=Bn[r.id]; if(b&&_nSig(r)===b) return;                           /* 이 컴퓨터에서 지운 메모 */
+    outN.push(r); took++; });
+  let theme=state.theme;
+  if(deco&&remote.theme&&remote.theme!==state.theme&&!(base&&base.theme===remote.theme)){ theme=remote.theme; took++; }
+  return {plan, conflicts, took, theme, notes:outN, carry:rNotes};
+}
+/* 합친 결과를 화면에 반영: 내용이 그대로인 위젯은 카드를 그대로 두고, 바뀐 위젯만 새로 그림 */
+function applySynced(res, remote, baseNew, excelChanged){
+  const xc=new Set((excelChanged||[]).map(String));
+  const prev=new Map((state.widgets||[]).map(w=>[w.id,w])), keep=new Set();
+  const list=res.plan.map(({w:n,lays,local})=>{
+    if(lays!==undefined){ if(lays) n.lays=lays; else delete n.lays; }
+    if(local) n.sync=false;
+    const o=prev.get(n.id);
+    if(xc.has(n.id)){                                    /* 다른 컴퓨터가 엑셀 파일을 바꿈 → 새로 받은 파일로 다시 읽기 */
+      const rw=remote.widgets.find(x=>x.id===n.id);
+      if(rw&&rw.config&&rw.config.file) n.config=Object.assign({}, n.config, {file:rw.config.file, fileName:rw.config.fileName||n.config.fileName});
+      return n;
+    }
+    if(o===n){ if(cardOf(o.id)) keep.add(o); return o; }
+    if(o&&o.type===n.type&&cardOf(o.id)&&_wsig(o)===_wsig(n)){
+      ["layout","layoutMax","lays","sync"].forEach(key=>{ if(key in n) o[key]=n[key]; else delete o[key]; });
+      keep.add(o); return o;
+    }
+    return n;
+  });
+  state.widgets=list;
+  if(Array.isArray(res.notes)) state.notes=res.notes;
+  state.syncCarry={notes:(res.carry||[]).map(n=>({id:n.id, text:String(n.text||""), color:n.color||"", at:+n.at||0}))};
+  if(res.theme) state.theme=res.theme;
+  if(remote.lastKey) state.lastKey=remote.lastKey;
   adaptLayouts(); assignLayouts(); snapshotLays();
+  state.syncBase=baseNew;
   saveLocalOnly();
-  applyTheme(); updateTopbar(); renderAll();
-  return true;
+  applyTheme(); updateTopbar(); refreshCards(keep);
+  refreshMemoCards(null,null);                           /* 그대로 둔 메모 위젯도 바뀐 메모 내용으로 */
+}
+/* 위젯 내용 비교용 서명: 배치(layout·layoutMax·lays)와 임시 데이터(_로 시작)는 빼고, 키 순서와 상관없이 비교 */
+function _wsig(w){
+  const norm=v=>{ if(Array.isArray(v)) return v.map(norm);
+    if(v&&typeof v==="object"){ const o={}; Object.keys(v).sort().forEach(k=>{ o[k]=norm(v[k]); }); return o; }
+    return v; };
+  const top={};
+  Object.keys(w).sort().forEach(k=>{ if(k!=="layout"&&k!=="layoutMax"&&k!=="lays"&&k!=="sync"&&k.charAt(0)!=="_") top[k]=norm(w[k]); });
+  return JSON.stringify(top);
+}
+/* keep에 든 위젯은 카드를 그대로 두고 위치만 옮기고, 나머지(바뀐·새 위젯)만 새로 그림 */
+function refreshCards(keep){
+  const byId=new Map(state.widgets.map(w=>[w.id,w]));
+  [...board.querySelectorAll(".card")].forEach(c=>{ const w=byId.get(c.dataset.id); if(!w||!keep.has(w)) c.remove(); });
+  state.widgets.forEach(w=>{
+    const c=keep.has(w)?cardOf(w.id):null;
+    if(c){ applyPos(c,w); return; }
+    const nc=mountCard(w); if(nc) board.appendChild(nc);
+  });
+  growBoard();
 }
 const Sync={
   on:false, busy:false, email:"", timer:null, pushTimer:null, lastOk:0, conflict:false, err:"",
@@ -3647,7 +4002,8 @@ const Sync={
   async init(){
     if(!hasApi("gdrive_status")){ const b=$("#syncBtn"); if(b) b.style.display="none"; return; }
     try{ const s=await this.api().gdrive_status(); this.on=!!s.connected; this.email=s.email||"";
-      this.lastOk=(s.last_sync||0)*1000; this.revokedAt=s.revoked_at||0; }catch(e){}
+      this.lastOk=(s.last_sync||0)*1000; this.revokedAt=s.revoked_at||0;
+      this.needApp=(+s.format||1)<2; }catch(e){}           /* 옛 본체: 고른 항목만 동기화를 못 함 → 업데이트 전까지 멈춤 */
     this.badge();
     window.addEventListener("focus",()=>this.tick());
     document.addEventListener("visibilitychange",()=>{ this.schedule(); if(!document.hidden) this.tick(); });
@@ -3661,11 +4017,14 @@ const Sync={
     const b=$("#syncBtn"), t=$("#syncTxt"); if(!b||!t) return;
     b.classList.toggle("on", this.on&&!this.err); b.classList.toggle("busy", this.busy);
     b.classList.toggle("err", this.on&&!!this.err);
+    if(this.on&&this.needApp){ b.classList.add("err"); b.classList.remove("on"); t.textContent="업데이트 필요"; b.title="프로그램 업데이트 후 동기화됩니다"; return; }
     t.textContent = !this.on ? "동기화" : (this.busy ? "동기화 중…" : (this.err ? (this.err==="offline"||/^http_/.test(this.err) ? "다시 연결 중…" : "동기화 확인 필요") : "맞춤 완료 · "+relTime(this.lastOk)));
     b.title = this.on ? `${this.email} 계정과 동기화 중` : "다른 컴퓨터와 내용 맞추기";
   },
+  /* 동기화 대상 내용이 지난번 맞춘 뒤 바뀌었는지 (이 컴퓨터 전용 위젯만 바뀌었으면 올리지 않음) */
+  dirty(){ try{ return payloadSig(syncPayload())!==((state.syncBase||{}).all||""); }catch(e){ return true; } },
   async tick(){
-    if(!this.on||this.busy||this.conflict) return;
+    if(!this.on||this.busy||this.conflict||this.needApp) return;
     this.busy=true; this.badge();
     try{
       const c=await this.api().gdrive_check();
@@ -3680,37 +4039,71 @@ const Sync={
         return;
       }
       this.err="";
-      const dirty=(state.savedAt||0) > (c.pushed_savedAt||0);
-      if(c.exists && c.changed && !c.mine){
-        if(dirty) this.askConflict(c.remote_device_name, c.remote_savedAt);
-        else await this.pull(true);
-      } else if(dirty || !c.exists || c.excel_dirty){
+      if(c.exists && ((c.changed && !c.mine) || this.needMerge)){
+        this.needMerge=false;                                                   /* 메모를 다시 맞추기 시작하면 한 번 합쳐 봄 */
+        if(this.first) this.askConflict(c.remote_device_name, c.remote_savedAt);   /* 처음 연결: 어느 쪽을 쓸지 묻기 */
+        else await this.pull(true);                                             /* 평소: 위젯마다 합치기 */
+      } else if(!c.exists || c.excel_dirty || this.dirty()){
         await this.push(false);
       } else { this.lastOk=Date.now(); }
-      this.first=false;
+      if(!this.conflict) this.first=false;
     }catch(e){ this.err="error"; }
     finally{ this.busy=false; this.badge(); }
   },
   async push(force){
-    let r=null;
-    try{ snapshotLays(); r=await this.api().gdrive_push(JSON.stringify(state), !!force); }
+    let r=null, p=null;
+    try{ p=syncPayload(); r=await this.api().gdrive_push(JSON.stringify(p), !!force); }
     catch(e){ r={ok:false, reason:"error", detail:(e&&e.message)||String(e)}; }
-    if(r&&r.ok){ this.lastOk=Date.now(); this.err=""; }
-    else if(r&&r.reason==="conflict"){ this.askConflict(r.remote_device_name, r.remote_savedAt); }
+    if(r&&r.ok){ state.syncBase=_holdNoteBase(syncBaseFrom(p)); state.syncCarry={notes:p.notes||[]}; saveLocalOnly(); this.lastOk=Date.now(); this.err=""; }
+    else if(r&&r.reason==="conflict"){           /* 그 사이 다른 컴퓨터가 올림 → 곧 받아서 합친 뒤 다시 올림 */
+      this.err=""; clearTimeout(this.pushTimer); this.pushTimer=setTimeout(()=>this.tick(),1500); }
     else this.err=(r&&r.reason)||"upload";
     return r;
   },
-  async pull(auto){
-    let r=null;
-    try{ if(hasApi("state_backup_save")) await this.api().state_backup_save(JSON.stringify(state), "before_pull"); }catch(e){}
-    try{ r=await this.api().gdrive_pull(); }
-    catch(e){ r={ok:false, reason:(e&&e.message)||"error"}; }
-    if(!r||!r.ok){ this.err=(r&&r.reason)||"download"; return false; }
-    if(!applyRemoteState(r.state)){ this.err="bad_state"; return false; }
-    try{ await this.api().gdrive_mark(state.savedAt||0); }catch(e){}
+  /* 받아서 합치기. choice: 같은 위젯을 양쪽에서 고쳤을 때의 선택, replace: 처음 연결 때 클라우드 것으로 바꾸기 */
+  async pull(auto, choice, replace){
+    let r=(choice&&this._pend)||null;
+    if(!r){
+      try{ if(hasApi("state_backup_save")) await this.api().state_backup_save(stateJSON(), "before_pull"); }catch(e){}
+      try{ r=await this.api().gdrive_pull(); }
+      catch(e){ r={ok:false, reason:(e&&e.message)||"error"}; }
+      if(!r||!r.ok){ this.err=(r&&r.reason)||"download"; return false; }
+    }
+    const remote=sanitizeRemote(r.state);
+    if(!remote){ this.err="bad_state"; return false; }
+    const baseNew=_holdNoteBase(syncBaseFrom(remote));
+    const res=syncMerge(remote, choice||null, !!replace);
+    if(res.conflicts.length && !choice && !replace){ this._pend=r; this.askMerge(res.conflicts); return "ask"; }
+    this._pend=null;
+    applySynced(res, remote, baseNew, r.excel_changed||[]);
     this.lastOk=Date.now(); this.err="";
-    toast(auto ? `${r.device_name||"다른 컴퓨터"}의 변경 내용을 가져왔어요` : "클라우드 내용을 가져왔어요");
+    if(res.took) toast(auto ? `${r.device_name||"다른 컴퓨터"}의 변경 내용을 가져왔어요` : "클라우드 내용을 가져왔어요");
+    if(this.dirty()) await this.push(false);          /* 이 컴퓨터에서 고친 것도 올림 */
     return true;
+  },
+  askMerge(list){
+    this.conflict=true;
+    const sh=$("#syncSheet"), names=list.map(x=>escapeHtml(x.title)).join(", ");
+    const nn=list.filter(x=>String(x.id).startsWith("note:")).length;
+    const what=nn===list.length?"메모를":(nn?"내용을":"위젯을");
+    sh.innerHTML=`<h2>양쪽에서 같은 ${what} 고쳤어요</h2>
+      <div class="sy-box"><div><b>${names}</b>
+      <i>이 컴퓨터와 다른 컴퓨터에서 서로 다르게 고쳐졌어요. 어느 쪽 내용을 쓸지 골라 주세요.</i></div></div>
+      <div class="sy-btns"><button class="mini go" data-r>다른 컴퓨터 것 쓰기</button><button class="mini" data-l>이 컴퓨터 것 쓰기</button></div>
+      <div class="sy-note">나머지는 자동으로 합쳐집니다.<br>
+      '다른 컴퓨터 것'을 고르면 지금 이 컴퓨터 내용은 '기존 설정 이용하기'에 보관돼요.</div>`;
+    $("#syncScrim").classList.add("on");
+    const go=async(choice)=>{
+      if(this._running) return; this._running=true;
+      sh.querySelectorAll("button").forEach(b=>b.disabled=true);
+      this.busy=true; this.badge(); let ok=false;
+      try{ ok=(await this.pull(false, choice))===true; }catch(e){}
+      finally{ this._running=false; this.busy=false; }
+      this.conflict=false; this.first=false; $("#syncScrim").classList.remove("on"); this.badge();
+      if(ok) toast(choice==="remote"?"다른 컴퓨터 내용으로 맞췄어요":"이 컴퓨터 내용으로 맞췄어요");
+    };
+    $("[data-r]",sh).onclick=()=>go("remote");
+    $("[data-l]",sh).onclick=()=>go("local");
   },
   async runChoice(sh, kind, done, dev, at){
     if(this._running) return;
@@ -3723,7 +4116,7 @@ const Sync={
     let ok=false, why="";
     try{
       if(kind==="keep"){ const r=await this.push(true); ok=!!(r&&r.ok); if(!ok) why=(r&&(r.detail||r.reason))||"알 수 없음"; }
-      else { ok=await this.pull(false); if(!ok) why=this.err||"알 수 없음"; }
+      else { ok=(await this.pull(false, null, true))===true; if(!ok) why=this.err||"알 수 없음"; }
     }catch(e){ ok=false; why=(e&&e.message)||String(e); }
     finally{ this._running=false; this.busy=false; this.badge(); }
     if(ok){
@@ -3774,10 +4167,12 @@ const Sync={
       const json=await this.api().state_backup_get(id);
       let st=null; try{ st=JSON.parse(json||""); }catch(e){}
       if(!st||!Array.isArray(st.widgets)) throw new Error("보관된 설정을 읽지 못했어요");
-      try{ await this.api().state_backup_save(JSON.stringify(state), "before_restore"); }catch(e){}
+      try{ await this.api().state_backup_save(stateJSON(), "before_restore"); }catch(e){}
       const known=new Set(Object.keys(WIDGETS));
       st.widgets=st.widgets.filter(w=>w&&typeof w==="object"&&known.has(w.type)&&typeof w.id==="string");
       if(typeof st.theme!=="string"||!/^[a-z0-9_-]{1,24}$/i.test(st.theme)) st.theme=state.theme;
+      st.syncBase=state.syncBase; st.syncOpts=state.syncOpts; st.syncCarry=state.syncCarry;   /* 동기화 기록·설정은 지금 것 유지 */
+      ensureNotes(st);
       if(mode==="local" && this.on){                 /* 동기화를 먼저 끊어야 되돌린 설정이 덮어써지지 않음 */
         try{ await this.api().gdrive_disconnect(false); }catch(e){}
         this.on=false; this.email=""; this.err=""; this.schedule();
@@ -3835,14 +4230,16 @@ const Sync={
       const rv=this.revokedAt ? `<div class="sy-warn">지난번 연결이 <b>구글 쪽에서 해제</b>되었어요 (${escapeHtml(new Date(this.revokedAt*1000).toLocaleString("ko-KR"))}).<br>
         구글 클라우드 <b>대상</b> 메뉴의 게시 상태가 <b>테스트 중</b>이면 7일마다 해제됩니다. <b>프로덕션 단계</b>로 게시해 주세요.</div>` : "";
       sh.innerHTML=`<h2>다른 컴퓨터와 내용 맞추기</h2>${rv}
-        <p class="s">구글 계정으로 연결하면 위젯 배치·할 일·메모·설정·엑셀 파일이 같은 계정을 쓰는 모든 컴퓨터에서 똑같이 보입니다.</p>
+        ${this.needApp?`<div class="sy-warn">동기화 방식이 바뀌어 <b>프로그램 업데이트</b>가 필요해요. 업데이트 알림에서 [업데이트]를 눌러 주세요.</div>`:""}
+        <p class="s">구글 계정으로 연결하면 위젯 배치·할 일·메모·설정·엑셀 파일이 같은 계정을 쓰는 모든 컴퓨터에서 똑같이 보입니다. 연결한 뒤 맞출 항목을 고를 수 있어요.</p>
         <div class="sy-btns" style="margin-top:16px"><button class="mini go" data-conn>구글 계정으로 연결</button>
           <button class="mini" data-bkopen>기존 설정 이용하기</button></div>
         <div class="sy-note">· 저장 위치: 내 구글 드라이브의 <b>앱 전용 숨김 폴더</b> (드라이브의 다른 파일은 보지 않습니다)<br>
-        · 컴퓨터마다 따로 유지: 창 위치·크기, 폴더·파일 바로가기<br>
+        · 컴퓨터마다 따로 유지: 창 위치·크기, 폴더·파일 바로가기·인터넷 전환·AI 사용량 위젯 (나중에 바꿀 수 있어요)<br>
         · 학생 정보가 포함되므로 <b>학교 구글 계정</b> 사용을 권장합니다<br>
         · 공용 컴퓨터에서는 사용 후 연결을 해제해 주세요<br>
         · 연결하면 폰에서도 할 일·메모를 볼 수 있어요</div>`;
+      if(this.needApp){ const cb=$("[data-conn]",sh); if(cb) cb.disabled=true; }
       $("[data-conn]",sh).onclick=async(e)=>{
         const b=e.currentTarget; b.disabled=true; b.textContent="브라우저에서 계정을 선택해 주세요…";
         let r=null; try{ r=await this.api().gdrive_connect(); }catch(err){}
@@ -3859,11 +4256,14 @@ const Sync={
           : "연결하지 못했어요");
       };
     } else {
+      const ws=state.widgets||[], nOn=ws.filter(isShared).length;
       sh.innerHTML=`<h2>다른 컴퓨터와 내용 맞추기</h2>
+        ${this.needApp?`<div class="sy-warn">동기화 방식이 바뀌어 <b>프로그램 업데이트</b>가 필요해요. 업데이트 전까지 동기화를 잠시 멈춥니다.</div>`:""}
         <div class="sy-box"><div><b>${escapeHtml(this.email||"연결됨")}</b>
-        <i>마지막 동기화: ${relTime(this.lastOk)}${this.err?" · 확인 필요 ("+escapeHtml(this.err)+")":""}</i></div></div>
+        <i>마지막 동기화: ${relTime(this.lastOk)}${this.err?" · 확인 필요 ("+escapeHtml(this.err)+")":""}</i>
+        <i>맞추는 항목: 위젯 ${ws.length}개 중 ${nOn}개 · 메모 ${syncOpts().notesAll!==false?"모두":notes().filter(n=>isNoteSynced(n.id)).length+"개"} · 화면 꾸미기 ${syncOpts().deco!==false?"켜짐":"꺼짐"}</i></div></div>
         <div class="sy-btns"><button class="mini go" data-now>지금 동기화</button><button class="mini" data-off>연결 해제</button></div>
-        <div class="sy-btns"><button class="mini" data-bkopen>기존 설정 이용하기</button></div>
+        <div class="sy-btns"><button class="mini" data-pick>동기화 항목 고르기</button><button class="mini" data-bkopen>기존 설정 이용하기</button></div>
         <div class="sy-mobile"><div class="qr">${mobileQr()}</div>
           <div><b>폰에서 보기</b><i>폰 카메라로 QR을 찍고 같은 구글 계정으로 로그인하면<br>할 일·메모·D-Day·바로가기를 보고 고칠 수 있어요.</i>
           <button class="mini" data-copyurl>주소 복사</button></div></div>
@@ -3873,12 +4273,68 @@ const Sync={
         await this.tick(); b.disabled=false; b.textContent="지금 동기화";
         if(!this.err) toast("최신 상태입니다"); this.openPanel(); };
       $("[data-off]",sh).onclick=()=>this.confirmOff();
+      $("[data-pick]",sh).onclick=()=>this.openPick();
+      if(this.needApp) $("[data-now]",sh).disabled=true;
       const cu=$("[data-copyurl]",sh);
       if(cu) cu.onclick=async()=>{ try{ await navigator.clipboard.writeText(MOBILE_URL); toast("주소를 복사했어요"); }
         catch(e){ toast(MOBILE_URL); } };
     }
     const bo=$("[data-bkopen]",sh); if(bo) bo.onclick=()=>this.openBackups();
     if(bo && !hasApi("state_backups")) bo.style.display="none";
+    $("#syncScrim").classList.add("on");
+  },
+  openPick(){
+    const sh=$("#syncSheet"), o=syncOpts();
+    const rows=(state.widgets||[]).map(w=>{ const d=WIDGETS[w.type]||{}, nm=w.title||d.title||w.type;
+      const hint=SYNC_LOCAL_TYPES.has(w.type)?" · 컴퓨터마다 달라 전용 추천":(SYNC_XL_TYPES.has(w.type)?" · 엑셀 파일도 함께 맞춤"
+        :(w.type==="memo"?" · 위치와 띄울 메모만 · 내용은 위 '메모'에서":""));
+      return `<label class="sy-chk"><input type="checkbox" data-w="${escapeHtml(w.id)}"${isShared(w)?" checked":""}>
+        <span class="ic">${d.icon||""}</span><span class="tx"><b>${escapeHtml(nm)}</b><i>${escapeHtml((d.title||w.type)+hint)}</i></span></label>`; }).join("");
+    const cn=_carryNotes(), ln=notes();
+    const nids=[...new Set(ln.map(n=>n.id).concat(cn.map(n=>n.id)))]
+      .map(id=>ln.find(n=>n.id===id)||cn.find(n=>n.id===id)).sort((x,y)=>(y.at||0)-(x.at||0)).map(n=>n.id);
+    const nrow=id=>{ const l=ln.find(n=>n.id===id), r=cn.find(n=>n.id===id), n=l||r, c=noteColor(n.color);
+      const where=!l?"클라우드에만 있음 · 체크하면 가져와요":(!r?"이 컴퓨터에만 있음":"");
+      return `<label class="sy-chk sm"><input type="checkbox" data-n="${escapeHtml(id)}"${isNoteSynced(id)?" checked":""}>
+        <span class="ic"><i class="sy-dot" style="background:${c||"transparent"}"></i></span><span class="tx"><b>${escapeHtml(noteTitle(n))}</b>${where?`<i>${where}</i>`:""}</span></label>`; };
+    const memoSec=`<div class="sy-sub">메모</div>
+      <label class="sy-chk"><input type="checkbox" data-nall${o.notesAll!==false?" checked":""}><span class="ic">🗂️</span>
+        <span class="tx"><b>모든 메모</b><i>새로 만든 메모도 자동으로 맞춤 · 끄면 메모를 하나씩 골라요</i></span></label>
+      ${o.notesAll===false ? (nids.length?nids.map(nrow).join(""):`<div class="sy-empty">메모가 없어요</div>`) : ""}`;
+    sh.innerHTML=`<h2>동기화할 항목</h2>
+      <p class="s">체크한 항목만 다른 컴퓨터·폰과 맞춥니다.</p>
+      <div class="sy-list">
+        <label class="sy-chk"><input type="checkbox" data-deco${o.deco!==false?" checked":""}>
+          <span class="ic">🎨</span><span class="tx"><b>화면 꾸미기</b><i>테마 · 이 컴퓨터에서만 정하는 설정</i></span></label>
+        ${memoSec}
+        <div class="sy-sub">위젯</div>${rows||`<div class="sy-empty">위젯이 없어요</div>`}
+      </div>
+      <div class="sy-note">· 체크를 풀면 그 위젯은 <b>이 컴퓨터 전용</b>이 됩니다. 다른 컴퓨터에 있던 것도 지워지지 않고 그 컴퓨터 전용으로 남아요.<br>
+      · 위젯 체크는 모든 컴퓨터에 함께 적용되고, <b>메모</b>와 <b>화면 꾸미기</b>는 컴퓨터마다 따로 정해요.<br>
+      · 고르지 않은 메모는 이 컴퓨터로 가져오지도, 올리지도 않아요. 다른 컴퓨터에는 그대로 남아요.<br>
+      · 엑셀 위젯의 체크를 풀면 클라우드에 올라간 엑셀 파일도 지워요.<br>
+      · 폰에서는 체크한 위젯만 보여요.</div>
+      <div class="sy-btns"><button class="mini" data-back>돌아가기</button></div>`;
+    $("[data-deco]",sh).onchange=e=>{
+      o.deco=e.target.checked;
+      if(o.deco){ const bt=(state.syncBase||{}).theme; if(bt&&bt!==state.theme){ state.theme=bt; applyTheme(); } }   /* 켜면 다른 컴퓨터 꾸미기를 가져옴 */
+      persist(); toast(o.deco?"화면 꾸미기도 맞춥니다":"이 컴퓨터는 자기 화면 꾸미기를 유지해요"); };
+    /* 메모 가져오기: 켜면 클라우드에만 있던 메모를 이 컴퓨터로 가져옴 */
+    const bring=id=>{ if(getNote(id)) return; const r=_carryNotes().find(n=>n.id===id); if(r) notes().push(Object.assign({},r)); };
+    $("[data-nall]",sh).onchange=e=>{
+      if(e.target.checked){ o.notesAll=true; _carryNotes().forEach(n=>bring(n.id)); this.needMerge=true; toast("모든 메모를 맞춥니다"); }
+      else { o.notesAll=false; o.notePick={}; notes().forEach(n=>{ o.notePick[n.id]=true; }); toast("맞출 메모를 하나씩 골라 주세요"); }
+      persist(); refreshMemoCards(null,null); this.openPick(); };
+    sh.querySelectorAll("[data-n]").forEach(cb=>cb.onchange=()=>{
+      const id=cb.dataset.n; o.notePick=o.notePick||{};
+      if(cb.checked){ o.notePick[id]=true; bring(id); this.needMerge=true; toast("이 메모도 맞춥니다"); }
+      else { o.notePick[id]=false; toast("이 메모는 이 컴퓨터에서 맞추지 않아요"); }
+      persist(); refreshMemoCards(null,null); this.openPick(); });
+    sh.querySelectorAll("[data-w]").forEach(cb=>cb.onchange=()=>{
+      const w=(state.widgets||[]).find(x=>x.id===cb.dataset.w); if(!w) return;
+      w.sync=cb.checked; persist();
+      toast(cb.checked?"이 위젯도 다른 컴퓨터와 맞춥니다":"이 위젯은 이 컴퓨터 전용이 됐어요"); });
+    $("[data-back]",sh).onclick=()=>this.openPanel();
     $("#syncScrim").classList.add("on");
   },
   confirmOff(){
@@ -4218,10 +4674,8 @@ async function collectNotices(){
     if(w.type==="todo"&&w.config&&Array.isArray(w.config.items)){
       w.config.items.filter(i=>!i.done&&i.date===today).forEach(i=>list.push({key:"todo:"+i.id, icon:"✓", from:title||"할 일", text:i.text}));
     }
-    if(w.type==="memo"&&w.config&&w.config.text){
-      memoDatesToday(w.config.text).forEach((line,idx)=>list.push({key:"memo:"+w.id+":"+today+":"+idx, icon:"📝", from:title||"메모", text:line}));
-    }
   });
+  notes().forEach(n=>{ memoDatesToday(String(n.text||"")).forEach((line,idx)=>list.push({key:"memo:"+n.id+":"+today+":"+idx, icon:"📝", from:"메모", text:line})); });
   const neis=state.widgets.find(w=>w.type==="neis"&&w.config&&w.config.school);
   if(neis){
     try{ const sc=neis.config.school; let url=`https://open.neis.go.kr/hub/SchoolSchedule?Type=json&pSize=50&ATPT_OFCDC_SC_CODE=${sc.atpt}&SD_SCHUL_CODE=${sc.code}&AA_FROM_YMD=${today}&AA_TO_YMD=${today}`; if(neis.config.key)url+=`&KEY=${neis.config.key}`;
@@ -4344,7 +4798,7 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-09-22.2";
+const APP_VER="2026-09-22.5";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`;
@@ -4377,7 +4831,7 @@ var bootedWithApi=false, _ready=false;
 async function boot(){
   if(booted && (bootedWithApi || !hasApi("load_state"))) return;
   booted=true; bootedWithApi=hasApi("load_state"); _ready=false;
-  await loadState(); if(!state.theme)state.theme="light"; ensureDefaults(); adaptLayouts(); assignLayouts();
+  await loadState(); if(!state.theme)state.theme="light"; ensureDefaults(); ensureNotes(); adaptLayouts(); assignLayouts();
   if(hasApi("is_maximized")){ try{ if(await window.pywebview.api.is_maximized()){ isMax=true; mode="max"; } }catch(e){} }
   const _mb=$("#winMax"); if(_mb){ _mb.textContent=isMax?"❐":"▢"; _mb.title=isMax?"이전 크기로":"최대화"; }
   applyTheme(); updateTopbar(); _bootPhase=true; renderAll(); requestAnimationFrame(()=>runMountQueue());
