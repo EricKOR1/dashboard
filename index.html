@@ -3639,7 +3639,7 @@ const Sync={
   async init(){
     if(!hasApi("gdrive_status")){ const b=$("#syncBtn"); if(b) b.style.display="none"; return; }
     try{ const s=await this.api().gdrive_status(); this.on=!!s.connected; this.email=s.email||"";
-      this.lastOk=(s.last_sync||0)*1000; }catch(e){}
+      this.lastOk=(s.last_sync||0)*1000; this.revokedAt=s.revoked_at||0; }catch(e){}
     this.badge();
     window.addEventListener("focus",()=>this.tick());
     document.addEventListener("visibilitychange",()=>{ this.schedule(); if(!document.hidden) this.tick(); });
@@ -3653,7 +3653,7 @@ const Sync={
     const b=$("#syncBtn"), t=$("#syncTxt"); if(!b||!t) return;
     b.classList.toggle("on", this.on&&!this.err); b.classList.toggle("busy", this.busy);
     b.classList.toggle("err", this.on&&!!this.err);
-    t.textContent = !this.on ? "동기화" : (this.busy ? "동기화 중…" : (this.err ? "동기화 확인 필요" : "맞춤 완료 · "+relTime(this.lastOk)));
+    t.textContent = !this.on ? "동기화" : (this.busy ? "동기화 중…" : (this.err ? (this.err==="offline"||/^http_/.test(this.err) ? "다시 연결 중…" : "동기화 확인 필요") : "맞춤 완료 · "+relTime(this.lastOk)));
     b.title = this.on ? `${this.email} 계정과 동기화 중` : "다른 컴퓨터와 내용 맞추기";
   },
   async tick(){
@@ -3662,8 +3662,13 @@ const Sync={
     try{
       const c=await this.api().gdrive_check();
       if(!c||!c.ok){
-        if(c&&c.reason==="not_connected"){ this.on=false; this.schedule(); toast("구글 드라이브 연결이 끊어졌어요"); }
-        else this.err=(c&&c.reason)||"offline";
+        if(c&&c.reason==="not_connected"){
+          let st=null; try{ st=await this.api().gdrive_status(); }catch(e){}
+          if(st&&st.connected){ this.err="offline"; }            /* 로그인 정보는 그대로 → 잠깐 실패, 다음에 다시 시도 */
+          else { this.on=false; this.revokedAt=(st&&st.revoked_at)||0; this.schedule();
+            toast(c.detail==="revoked" ? "구글 쪽에서 연결이 해제되었어요. [☁ 동기화]에서 다시 연결해 주세요" : "구글 드라이브 연결이 끊어졌어요"); }
+        }
+        else this.err=(c&&c.reason)||"offline";   /* 인터넷 잠깐 끊김 등: 연결은 유지하고 10초 뒤 다시 시도 */
         return;
       }
       this.err="";
@@ -3754,7 +3759,9 @@ const Sync={
   openPanel(){
     const sh=$("#syncSheet");
     if(!this.on){
-      sh.innerHTML=`<h2>다른 컴퓨터와 내용 맞추기</h2>
+      const rv=this.revokedAt ? `<div class="sy-warn">지난번 연결이 <b>구글 쪽에서 해제</b>되었어요 (${escapeHtml(new Date(this.revokedAt*1000).toLocaleString("ko-KR"))}).<br>
+        구글 클라우드 <b>대상</b> 메뉴의 게시 상태가 <b>테스트 중</b>이면 7일마다 해제됩니다. <b>프로덕션 단계</b>로 게시해 주세요.</div>` : "";
+      sh.innerHTML=`<h2>다른 컴퓨터와 내용 맞추기</h2>${rv}
         <p class="s">구글 계정으로 연결하면 위젯 배치·할 일·메모·설정·엑셀 파일이 같은 계정을 쓰는 모든 컴퓨터에서 똑같이 보입니다.</p>
         <div class="sy-btns" style="margin-top:16px"><button class="mini go" data-conn>구글 계정으로 연결</button></div>
         <div class="sy-note">· 저장 위치: 내 구글 드라이브의 <b>앱 전용 숨김 폴더</b> (드라이브의 다른 파일은 보지 않습니다)<br>
@@ -3766,7 +3773,7 @@ const Sync={
         const b=e.currentTarget; b.disabled=true; b.textContent="브라우저에서 계정을 선택해 주세요…";
         let r=null; try{ r=await this.api().gdrive_connect(); }catch(err){}
         if(r&&r.ok){
-          this.on=true; this.email=r.email||""; this.err=""; this.first=true;
+          this.on=true; this.email=r.email||""; this.err=""; this.first=true; this.revokedAt=0;
           toast(`${this.email||"구글 계정"}에 연결되었습니다`);
           $("#syncScrim").classList.remove("on"); this.schedule(); this.badge(); this.tick(); return;
         }
@@ -4260,7 +4267,7 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-09-21.6";
+const APP_VER="2026-09-22";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`;
