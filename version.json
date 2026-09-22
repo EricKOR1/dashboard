@@ -1,8 +1,9 @@
 {
-  "ui_version": "2026-09-22.5",
+  "ui_version": "2026-09-22.12",
   "ui_url": "https://raw.githubusercontent.com/EricKOR1/dashboard/main/index.html",
-  "app_version": "1.5.3",
+  "app_version": "1.5.4",
   "app_url": "https://github.com/EricKOR1/dashboard/releases/latest/download/MyDashboard.zip",
   "page_url": "https://github.com/EricKOR1/dashboard/releases",
-  "notes": "동기화할 항목 고르기(위젯·메모·화면 꾸미기). 메모 목록(컬러노트처럼 골라 띄우기·색). 서로 다른 위젯은 자동으로 합침. 원본 엑셀을 고치면 다른 컴퓨터에도 반영."
+  "notes": "동기화할 항목 고르기, 처음 가져올 때 항목 고르기(같은 위젯은 내용 보고, 메모는 하나로). 위치·크기는 컴퓨터마다 자동 배열(▦ 자동 정렬). 메모 목록. 끌어서 순서 바꾸기 개선. 동기화가 더 빨라짐(2~5초).",
+  "ui_sha256": "d3d6fe122c5a14c8e31ecd4f66507d1170b5a22097c9d355c0f3cec6d1a3bd56"
 }
