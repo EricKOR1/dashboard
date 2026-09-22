@@ -455,7 +455,13 @@ function isoNow(){ const d=new Date(); return `${d.getFullYear()}-${pad(d.getMon
 function safeUrl(u){ u=String(u||"").trim(); return /^https?:\/\//i.test(u) ? u : ""; }
 let _tt=null;
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove("on"),2200); }
-function status(msg, err){ const s=$("#st"); s.textContent=msg||""; s.classList.toggle("err", !!err); }
+/* 위쪽 상태: 잘 되고 있으면 늘 '연결중' (불러오기·저장할 때마다 글자가 바뀌지 않게). 문제는 1분 넘게 계속될 때만 표시 */
+let _errSince=0;
+function setStatus(msg, err){ const s=$("#st");
+  if(!msg){ _errSince=0; s.textContent=""; s.classList.remove("err"); return; }
+  if(err){ if(!_errSince) _errSince=Date.now(); } else _errSince=0;
+  const bad=!!err && Date.now()-_errSince>=60000, txt=bad?msg:"연결중";
+  if(s.textContent!==txt) s.textContent=txt; s.classList.toggle("err", bad); }
 
 /* ===== 로그인 (구글 공식 방식: 토큰은 1시간짜리, 이 기기에만 보관) ===== */
 const S = { tok:null, exp:0, email:"", file:null, data:null, pending:[], flushing:false, flushT:null };
@@ -516,34 +522,39 @@ async function upload(id, data){                       // PC 프로그램과 같
 function valid(d){ return d && typeof d==="object" && Array.isArray(d.widgets); }
 
 /* ===== 불러오기 / 저장 ===== */
+let _burstUntil=0;          // 방금 주고받았으면 1분 동안 더 자주 확인
 async function refresh(force){
-  if(!S.tok || S.pending.length || S.flushing) return;
+  if(!S.tok || S.pending.length || S.flushing || S.refreshing) return;
+  S.refreshing=true;
+  try{ await _refresh(force); }finally{ S.refreshing=false; }
+}
+async function _refresh(force){
   if(!force && document.activeElement && document.activeElement.classList.contains("memo")) return;   // 메모 쓰는 중엔 건드리지 않음
   try{
-    if(S.file && !force){ const m=await fileMeta(S.file.id); if(m.modifiedTime===S.file.modifiedTime){ status("최신"); return; } }
-    status("불러오는 중…");
+    if(S.file && !force){ const m=await fileMeta(S.file.id); if(m.modifiedTime===S.file.modifiedTime){ setStatus("최신"); return; } }
+    setStatus("불러오는 중…");
     const f = await findFile();
-    if(!f){ S.file=null; S.data=null; renderEmpty(); status(""); return; }
+    if(!f){ S.file=null; S.data=null; renderEmpty(); setStatus(""); return; }
     const d = await download(f.id);
     if(!valid(d)) throw new Error("bad");
-    S.file={id:f.id, modifiedTime:f.modifiedTime}; S.data=d; render(); status("최신");
+    S.file={id:f.id, modifiedTime:f.modifiedTime}; S.data=d; render(); setStatus("최신"); _burstUntil=Date.now()+60000;
   }catch(e){
     if(e instanceof AuthError){ needLogin(); return; }
-    status("연결 확인 필요", true);
+    setStatus("연결 확인 필요", true);
   }
 }
 /* 바꾼 내용은 '무엇을 바꿨는지'로 기록해 두었다가, 저장 직전 최신본에 다시 적용 → PC에서 같이 고쳐도 안 덮어씀 */
 function commit(op, delay){
   if(!S.data) return;
   op(S.data); S.data.savedAt=Date.now(); render();
-  S.pending.push(op); status("저장 대기…");
+  S.pending.push(op); setStatus("저장 대기…");
   clearTimeout(S.flushT); S.flushT=setTimeout(flush, delay==null?700:delay);
 }
 async function flush(){
   if(S.flushing || !S.pending.length) return;
   S.flushing=true; const ops=S.pending.splice(0);
   try{
-    status("저장 중…");
+    setStatus("저장 중…");
     const f = await findFile();
     if(!f) throw new Error("gone");
     const latest = await download(f.id);
@@ -552,12 +563,12 @@ async function flush(){
     latest.savedAt = Date.now();
     const r = await upload(f.id, latest);
     S.file={id:r.id||f.id, modifiedTime:r.modifiedTime}; S.data=latest;
-    status("저장됨");
+    setStatus("저장됨"); _burstUntil=Date.now()+60000;
     if(!(document.activeElement && document.activeElement.classList.contains("memo"))) render();
   }catch(e){
     S.pending.unshift(...ops);
     if(e instanceof AuthError){ needLogin(); }
-    else { status("저장 실패 · 다시 시도 중", true); clearTimeout(S.flushT); S.flushT=setTimeout(flush, 5000); }
+    else { setStatus("저장 실패 · 다시 시도 중", true); clearTimeout(S.flushT); S.flushT=setTimeout(flush, 5000); }
   }finally{ S.flushing=false; if(S.pending.length && !S.flushT) S.flushT=setTimeout(flush,700); }
 }
 function W(d, wid){ return (d.widgets||[]).find(w=>w.id===wid); }
@@ -813,7 +824,7 @@ function showHello(err){
       "내용은 내 구글 드라이브의 앱 전용 폴더에만 저장됩니다.", h("br"),
       "학생 정보가 보일 수 있으니 폰 화면 잠금을 꼭 설정해 주세요.")));
 }
-function needLogin(){ status(""); showHello("로그인 시간이 지났어요. 다시 계속해 주세요."); }
+function needLogin(){ setStatus(""); showHello("로그인 시간이 지났어요. 다시 계속해 주세요."); }
 function startMain(){
   $("#bar").hidden=false;
   $("#app").innerHTML=""; $("#app").appendChild(h("p",{class:"empty", text:"불러오는 중…"}));
@@ -829,7 +840,7 @@ $("#closeMenu").onclick=()=>$("#menu").classList.remove("on");
 $("#menu").addEventListener("click",e=>{ if(e.target.id==="menu") $("#menu").classList.remove("on"); });
 $("#logoutBtn").onclick=logout;
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden && S.tok) refresh(false); });
-setInterval(()=>{ if(!document.hidden && S.tok) refresh(false); }, 15000);
+(function loop(){ setTimeout(()=>{ if(!document.hidden && S.tok) refresh(false); loop(); }, Date.now()<_burstUntil ? 2000 : 5000); })();   // 5초마다 (방금 바뀌었으면 2초)
 setInterval(()=>{ if(S.tok && Date.now()>S.exp){ S.tok=null; needLogin(); } }, 30000);
 window.addEventListener("beforeunload",()=>{ if(S.pending.length) flush(); });
 loadAuth();

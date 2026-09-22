@@ -1679,7 +1679,11 @@
 
   .ti[data-rid], .dday .item[data-rid], .stk .sq[data-rid], .links a[data-rid], .apps .ic[data-rid]{cursor:grab;}
   .lift{cursor:grabbing; background:var(--card); border:1px solid var(--accent); border-radius:12px; box-shadow:var(--shadow-lift);}
-  .dnd-ph{border-radius:12px; background:var(--accent-soft); border:1px dashed var(--accent); box-sizing:border-box;}
+  .dnd-src{opacity:.3;}                                          /* 끌고 있는 원래 칸 */
+  .dnd-over{outline:2px solid var(--accent); outline-offset:3px; border-radius:var(--radius-sm); background:var(--accent-soft);}   /* 놓을 칸 */
+  .dnd-ghost{opacity:.82;}
+  .dnd-ghost .ic-x, .dnd-ghost .x, .dnd-ghost .sq-x, .dnd-ghost .rx, .dnd-ghost .hact{display:none !important;}
+  body.dnd-on, body.dnd-on *{cursor:grabbing !important; -webkit-user-select:none; user-select:none;}
 
   .meal .datebar{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
   .meal .datebar .dd{font-size:13px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
@@ -2029,6 +2033,8 @@
   .sync-sheet .sy-chk i{display:block; font-style:normal; font-size:11.5px; color:var(--muted); margin-top:1px;}
   .sync-sheet .sy-sub{font-size:11.5px; font-weight:700; color:var(--muted); margin:6px 2px 0;}
   .sync-sheet .sy-chk.sm{padding:8px 12px;}
+  .sync-sheet .sy-chk.many{align-items:flex-start;}
+  .sync-sheet .sy-chk.many input, .sync-sheet .sy-chk.many .ic{margin-top:2px;}
   .sync-sheet .sy-dot{display:inline-block; width:12px; height:12px; border-radius:50%; box-shadow:inset 0 0 0 1px var(--border); vertical-align:middle;}
   .sync-sheet .sy-empty{font-size:12.5px; color:var(--muted); line-height:1.7; padding:14px; text-align:center;
     border:1px dashed var(--border); border-radius:12px;}
@@ -2039,6 +2045,8 @@
   /* 끌거나 크기를 바꾸는 동안에는 항상 맨 위에 보이게 */
   .card.moving,.card.sizing{z-index:2147483000 !important;}
 
+  .toast.act{pointer-events:auto;}
+  .toast .toast-b{margin-left:10px; padding:3px 10px; border:none; border-radius:8px; background:var(--accent); color:var(--accent-ink); font:inherit; font-weight:700; cursor:pointer;}
   .toast{position:fixed; z-index:2200; left:50%; bottom:30px; transform:translateX(-50%) translateY(16px); background:var(--text); border:none; color:var(--bg); padding:12px 18px; border-radius:13px; font-size:13.5px; font-weight:600; box-shadow:var(--shadow-lift); opacity:0; pointer-events:none; transition:opacity .2s var(--ease), transform .2s var(--ease);}
   .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
 
@@ -2068,6 +2076,7 @@
       </div>
       <div class="actions">
         <button class="btn sync" id="syncBtn" title="다른 컴퓨터와 내용 맞추기"><span class="sy-i">☁</span><span id="syncTxt">동기화</span></button>
+        <button class="btn icon" id="arrangeBtn" title="위젯 자동 정렬 (이 화면 폭에 맞춰 왼쪽 위부터 빈틈없이)">▦</button>
         <button class="btn icon" id="themeBtn" title="화면 꾸미기">🎨</button>
         <button class="btn primary" id="addBtn">＋ 위젯 추가</button>
       </div>
@@ -2194,6 +2203,17 @@ function openCalendar(anchor, initial, onPick){
 
 /* ===== 유틸 ===== */
 const $=(s,r=document)=>r.querySelector(s);
+/* 화면에서 난 오류를 본체의 오류 기록(error_log.txt)으로 보냄 — 문제가 생겼을 때 원인을 찾으려고 */
+(function(){ const seen=new Set(), wait=[]; let n=0;
+  const api=()=>window.pywebview&&window.pywebview.api&&window.pywebview.api.log_js_error;
+  const send=t=>{ try{ t=String(t||"").slice(0,2000); const key=t.split("\n")[0];      /* 같은 오류 = 같은 내용·위치 */
+    if(!t||/ResizeObserver loop/.test(t)||seen.has(key)||n>=30) return; seen.add(key); n++;
+    const ver=(typeof APP_VER!=="undefined")?APP_VER:"";
+    if(api()) window.pywebview.api.log_js_error(`[화면 ${ver}] ${t}`).catch(()=>{}); else wait.push(t); }catch(e){} };
+  window.addEventListener("error",e=>send(`${e.message} @ ${String(e.filename||"").split("/").pop()}:${e.lineno}:${e.colno}\n${(e.error&&e.error.stack)||""}`));
+  window.addEventListener("unhandledrejection",e=>{ const r=e.reason; send(`처리되지 않은 오류: ${(r&&r.message)||r}\n${(r&&r.stack)||""}`); });
+  window.addEventListener("pywebviewready",()=>{ const q=wait.splice(0); n-=q.length; q.forEach(t=>{ seen.delete(t.split("\n")[0]); send(t); }); });
+})();
 const el=(t,c,h)=>{const e=document.createElement(t); if(c)e.className=c; if(h!=null)e.innerHTML=h; return e;};
 const uid=()=>Math.random().toString(36).slice(2,9);
 const pad=n=>String(n).padStart(2,"0");
@@ -2202,7 +2222,11 @@ const isoOf=s=>`${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const snap=v=>Math.round(v/8)*8;
 let toastTimer=null;
-function toast(m){const t=$("#toast"); t.textContent=m; t.classList.add("on"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("on"),1700);}
+function toast(m){const t=$("#toast"); t.textContent=m; t.classList.remove("act"); t.classList.add("on"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("on"),1700);}
+function toastAction(m, label, fn){ const t=$("#toast"); t.textContent=m+" ";
+  const b=document.createElement("button"); b.className="toast-b"; b.textContent=label;
+  b.onclick=()=>{ t.classList.remove("on","act"); fn(); }; t.appendChild(b);
+  t.classList.add("on","act"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("on","act"),6000); }
 
 /* ===== 위젯 정의 (시계/날씨/할일/급식/디데이/바로가기) ===== */
 /* 인터넷 상태 확인(파워셸 실행)은 무거워서: 동시에 여러 번 부르면 한 번만 실행하고, 15초 안의 결과는 재사용 */
@@ -2643,7 +2667,7 @@ const WIDGETS = {
       try{ let url=`https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&ATPT_OFCDC_SC_CODE=${sc.atpt}&SD_SCHUL_CODE=${sc.code}&MLSV_YMD=${ymd(d)}`; if(w.config.key)url+=`&KEY=${w.config.key}`;
         const data=JSON.parse(await httpGet(url)); const rows=(data.mealServiceDietInfo&&data.mealServiceDietInfo[1]&&data.mealServiceDietInfo[1].row)||[];
         if(!rows.length){out.innerHTML=`<div class="empty">${days[d.getDay()]}요일 (${d.getMonth()+1}/${d.getDate()})에는 급식 정보가 없어요.</div>`; return;}
-        out.innerHTML=""; rows.forEach(r=>{const dishes=cleanDish(r.DDISH_NM); const blk=el("div","block"); blk.innerHTML=`<div class="bt">${r.MMEAL_SC_NM||"식단"}</div>`; const wr=el("div","dishes"); dishes.forEach(n=>wr.appendChild(el("span",null,n))); blk.appendChild(wr); out.appendChild(blk);});
+        out.innerHTML=""; rows.forEach(r=>{const dishes=cleanDish(r.DDISH_NM); const blk=el("div","block"); blk.innerHTML=`<div class="bt">${escapeHtml(r.MMEAL_SC_NM||"식단")}</div>`; const wr=el("div","dishes"); dishes.forEach(n=>wr.appendChild(el("span",null,n))); blk.appendChild(wr); out.appendChild(blk);});
       }catch(e){ out.innerHTML=`<div class="empty">급식 정보를 불러오지 못했어요. 자주 끊기면 설정(⚙)에서 NEIS 인증키를 넣어 보세요.</div>`; } } },
 
   neis:{ title:"학사일정", icon:"📅", desc:"학교 학사일정(NEIS).", settings:true,
@@ -2731,7 +2755,7 @@ const WIDGETS = {
     spk(text,lang){ const bt=el("button","spk","🔊"); bt.title="듣기"; bt.onclick=(e)=>{ e.stopPropagation(); speak(text,lang); }; return bt; },
     openSettings(b,w){ const old=$(".dset",b); if(old){ old.remove(); return; }
       const box=el("div","dset");
-      box.innerHTML=`<div class="setrow"><span>국어사전 키</span><input data-kk placeholder="표준국어대사전 인증키" value="${w.config.krKey||''}"></div>
+      box.innerHTML=`<div class="setrow"><span>국어사전 키</span><input data-kk placeholder="표준국어대사전 인증키" value="${escapeHtml(w.config.krKey||'')}"></div>
         <div class="setrow"><span>영영 키</span><input data-mk placeholder="Merriam-Webster 키 (선택)" value="${w.config.mwKey||''}"></div>
         <div class="row"><button class="mini go" data-save>저장</button></div>
         <div class="setnote">국어사전 키는 stdict.korean.go.kr 또는 공공데이터포털에서 무료로 발급받습니다. 영영 키를 넣으면 발음·뜻이 더 자세히 나오고, 없으면 무료 사전으로 동작합니다.</div>`;
@@ -2878,7 +2902,7 @@ const WIDGETS = {
       if(!hasApi("read_timetable")){ b.innerHTML=`<div class="empty">설치형(exe)에서만 동작해요. 최신 build.bat으로 다시 만들어 주세요.</div>`; return; }
       let res=null; try{ res=await window.pywebview.api.read_timetable(w.config.file); }catch(e){}
       if(!res||!res.ok){ const why=res&&res.error==="openpyxl_missing"?"엑셀 읽기 도구가 없어요. 최신 build.bat으로 다시 빌드해 주세요.":res&&res.error==="notfound"?"파일을 찾을 수 없어요. 다시 올려 주세요.":res&&res.error==="noformat"?"요일·교시 제목줄을 찾지 못했어요.":"시간표를 읽지 못했어요.";
-        b.innerHTML=`<div class="empty">${why}</div><div class="rup"><label class="mini go up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div>`; this.hookFile(b,w,b); return; }
+        b.innerHTML=`<div class="empty">${escapeHtml(why)}</div><div class="rup"><label class="mini go up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div>`; this.hookFile(b,w,b); return; }
       w._tt=res;
       const isT=()=>w.config.tab!=="class";
       b.innerHTML=`<div class="ttabs" data-tabs><button data-t="teacher">교사별</button><button data-t="class">학반별</button></div>
@@ -2943,7 +2967,7 @@ const WIDGETS = {
       if(!hasApi("read_contacts")){ b.innerHTML=`<div class="empty">설치형(exe)에서만 동작해요. 최신 build.bat으로 다시 만들어 주세요.</div>`; return; }
       let res=null; try{ res=await window.pywebview.api.read_contacts(w.config.file); }catch(e){}
       if(!res||!res.ok){ const why=res&&res.error==="openpyxl_missing"?"엑셀 읽기 도구가 없어요. 최신 build.bat으로 다시 빌드해 주세요.":res&&res.error==="notfound"?"파일을 찾을 수 없어요. 다시 올려 주세요.":res&&res.error==="noformat"?"이름·전화번호 제목줄을 찾지 못했어요.":"연락처를 읽지 못했어요.";
-        b.innerHTML=`<div class="empty">${why}</div><div class="rup"><label class="mini go up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div>`; this.hookFile(b,w,b); return; }
+        b.innerHTML=`<div class="empty">${escapeHtml(why)}</div><div class="rup"><label class="mini go up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div>`; this.hookFile(b,w,b); return; }
       w._ctc=res;
       b.innerHTML=`<div class="row"><input placeholder="이름 또는 장소 (예: 홍길동, 보건실)" data-q><button class="mini go" data-find>찾기</button></div><div class="rcount"></div><div class="rbody" data-body></div>`;
       $(".rcount",b).textContent=`${w.config.fileName||res.file} · 교사 ${res.people.length} · 특별실 ${res.rooms.length}`;
@@ -3022,7 +3046,7 @@ const WIDGETS = {
       if(!hasApi("read_roster")){ b.innerHTML=`<div class="empty">설치형(exe)에서만 동작해요. build.bat으로 다시 만들어 주세요.</div>`; return; }
       let res=null; try{ res=await window.pywebview.api.read_roster(w.config.file); }catch(e){}
       if(!res||!res.ok){ const why=res&&res.error==="openpyxl_missing"?"엑셀 읽기 도구가 없어요. 최신 build.bat으로 다시 빌드해 주세요.":res&&res.error==="notfound"?"파일을 찾을 수 없어요. 다시 올려 주세요.":res&&res.error==="noformat"?"학년·반·이름 제목줄을 찾지 못했어요.":"명렬표를 읽지 못했어요.";
-        b.innerHTML=`<div class="empty">${why}</div><div class="rup"><label class="mini go up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div>`; this.hookFile(b,w,b); return; }
+        b.innerHTML=`<div class="empty">${escapeHtml(why)}</div><div class="rup"><label class="mini go up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div>`; this.hookFile(b,w,b); return; }
       w._roster=res.students;
       b.innerHTML=`<div class="row"><input placeholder="이름 또는 학급 (예: 홍길동, 1-3)" data-q><button class="mini go" data-find>찾기</button></div><div class="rcount"></div><div class="rbody" data-body></div>`;
       $(".rcount",b).textContent=`${w.config.fileName||res.file} · ${res.count.toLocaleString()}명`;
@@ -3055,7 +3079,7 @@ const WIDGETS = {
     draw(b,w){ const list=$("[data-list]",b); list.innerHTML=""; if(!w.config.events.length){list.innerHTML=`<div class="empty">기념일·마감일을 추가해 보세요.</div>`; return;}
       const today=new Date(); today.setHours(0,0,0,0);
       w.config.events.forEach(ev=>{const t=new Date(ev.date+"T00:00"); const diff=Math.round((t-today)/86400000); const txt=diff===0?"D-DAY":diff>0?`D-${diff}`:`D+${-diff}`; const cls=diff===0?"soon":diff<0?"past":diff<=7?"soon":"";
-        const it=el("div","item",`<div class="nm"></div><div class="dv ${cls}">${txt}</div><div class="x">✕</div>`); it.dataset.rid=ev.id; $(".nm",it).innerHTML=`${escapeHtml(ev.name)}<small>${ev.date}</small>`; $(".x",it).onclick=()=>{w.config.events=w.config.events.filter(x=>x.id!==ev.id); persist(); this.draw(b,w);}; list.appendChild(it);});
+        const it=el("div","item",`<div class="nm"></div><div class="dv ${cls}">${txt}</div><div class="x">✕</div>`); it.dataset.rid=ev.id; $(".nm",it).innerHTML=`${escapeHtml(ev.name)}<small>${escapeHtml(ev.date)}</small>`; $(".x",it).onclick=()=>{w.config.events=w.config.events.filter(x=>x.id!==ev.id); persist(); this.draw(b,w);}; list.appendChild(it);});
       enableListDnD(list, w.config.events, persist); } },
 
   links:{ title:"바로가기", icon:"🔗", desc:"자주 가는 사이트 모음.",
@@ -3482,46 +3506,69 @@ let _fx={rate:0,t:0};
 async function usdKrw(){ const now=Date.now(); if(_fx.rate && now-_fx.t<600000) return _fx.rate; const m=await yahooChart("USDKRW=X"); if(m&&m.regularMarketPrice){ _fx={rate:m.regularMarketPrice,t:now}; } return _fx.rate||0; }
 async function coinMarkets(){ if(_coinMarkets) return _coinMarkets; const j=JSON.parse(await httpGet("https://api.upbit.com/v1/market/all?isDetails=false")); _coinMarkets=(Array.isArray(j)?j:[]).filter(m=>String(m.market).startsWith("KRW-")); return _coinMarkets; }
 
-/* 행 전체를 잡고 끌어 순서 바꾸기 — 들어 올리고 다른 항목이 밀려남 (세로 목록) */
+/* 끌어서 순서 바꾸기 — '옮기고 싶은 칸' 위에 놓으면 그 자리로 들어가고, 나머지는 한 칸씩 밀림
+   · 끄는 동안 목록은 그대로 두고, 놓을 칸만 표시 → 어디로 들어갈지 분명함
+   · 따라다니는 모양은 위젯 안 모양 그대로 (위젯 밖으로 꺼내면 아이콘 그림이 원래 크기로 커지던 문제) */
 function enableListDnD(list, arr, onDone){
   if(!list) return;
   list.querySelectorAll("[data-rid]").forEach(row=>{
     row.addEventListener("pointerdown", e=>{
       if(e.button!==0) return;
       if(e.target.closest(".box, .x, .sq-x, .ic-x, .rx, .hact, input, select, textarea, button")) return;
-      const startX=e.clientX, startY=e.clientY; let dragging=false, ph=null, offX=0, offY=0;
+      const startX=e.clientX, startY=e.clientY; let dragging=false, shell=null, ghost=null, over=null, offX=0, offY=0;
+      const rows=()=>[...list.querySelectorAll("[data-rid]")];
       const begin=()=>{
         dragging=true; const rect=row.getBoundingClientRect(); offX=startX-rect.left; offY=startY-rect.top;
         const zb=list.closest(".body"); const zf=zb?(parseFloat(getComputedStyle(zb).zoom)||1):1;
-        ph=document.createElement("div"); ph.className="dnd-ph"; ph.style.width=(rect.width/zf)+"px"; ph.style.height=(rect.height/zf)+"px";
-        list.insertBefore(ph, row);
-        row.classList.add("lift");
-        row.style.width=rect.width+"px"; row.style.height=rect.height+"px"; row.style.position="fixed"; row.style.left=rect.left+"px"; row.style.top=rect.top+"px"; row.style.margin="0"; row.style.zIndex="3000"; row.style.pointerEvents="none";
-        document.body.appendChild(row);
+        /* 목록~카드까지 바깥 틀의 이름표만 흉내 낸 빈 껍데기(상자는 안 그림) 안에 복사본을 띄움 → 위젯 안과 같은 모양 */
+        const chain=[]; for(let a=row.parentElement; a && a!==document.body; a=a.parentElement){ chain.push(a); if(a.classList.contains("card")) break; }
+        let inner=null;
+        chain.reverse().forEach(a=>{ const s=document.createElement(/^(UL|OL)$/.test(a.tagName)?a.tagName:"div");
+          s.className=a.className; if(a.dataset.type) s.dataset.type=a.dataset.type;
+          const ff=a.style.getPropertyValue("font-family"); if(ff) s.style.setProperty("font-family", ff, a.style.getPropertyPriority("font-family"));
+          s.style.display="contents"; s.style.zoom="1";
+          if(inner) inner.appendChild(s); else shell=s; inner=s; });
+        ghost=row.cloneNode(true); ghost.removeAttribute("data-rid"); ghost.classList.add("lift","dnd-ghost");
+        Object.assign(ghost.style,{position:"fixed", left:rect.left+"px", top:rect.top+"px", width:(rect.width/zf)+"px", height:(rect.height/zf)+"px",
+          margin:"0", zIndex:"3000", pointerEvents:"none", transformOrigin:`${offX/zf}px ${offY/zf}px`, transform:`scale(${zf*0.9})`});   /* 조금 작게 → 아래 놓을 칸 표시가 보이게 */
+        (inner||document.body).appendChild(ghost); if(shell) document.body.appendChild(shell);
+        row.classList.add("dnd-src"); document.body.classList.add("dnd-on");
+        try{ const sel=window.getSelection(); if(sel) sel.removeAllRanges(); }catch(err){}   /* 끄는 사이 글자가 선택되지 않게 */
       };
+      /* 놓을 칸 찾기: 손가락(마우스) 아래 칸 → 칸 사이 틈이면 가장 가까운 칸 → 목록 밖이면 없음(취소) */
+      const targetAt=(x,y)=>{
+        const hit=document.elementFromPoint(x,y), r=hit&&hit.closest("[data-rid]");
+        if(r===row) return null;                                         /* 제자리 */
+        if(r && list.contains(r)) return r;
+        const lr=list.getBoundingClientRect(); if(x<lr.left-6||x>lr.right+6||y<lr.top-6||y>lr.bottom+6) return null;
+        let best=null, bd=Infinity;
+        for(const s of rows()){ if(s===row) continue; const bx=s.getBoundingClientRect();
+          const d=Math.hypot(Math.max(bx.left-x,0,x-bx.right), Math.max(bx.top-y,0,y-bx.bottom)); if(d<bd){ bd=d; best=s; } }
+        return bd<=14 ? best : null;
+      };
+      const setOver=t=>{ if(t===over) return; if(over) over.classList.remove("dnd-over"); over=t; if(over) over.classList.add("dnd-over"); };
       const move=ev=>{
         if(!dragging){ if(Math.abs(ev.clientY-startY)<5 && Math.abs(ev.clientX-startX)<5) return; begin(); }
-        row.style.left=(ev.clientX-offX)+"px"; row.style.top=(ev.clientY-offY)+"px";
-        const sibs=[...list.querySelectorAll("[data-rid]")];
-        let best=null, bd=Infinity, before=true;
-        for(const s of sibs){ const bx=s.getBoundingClientRect(); const cx=bx.left+bx.width/2, cy=bx.top+bx.height/2; const d=Math.hypot(ev.clientX-cx, ev.clientY-cy);
-          if(d<bd){ bd=d; best=s; before=(ev.clientY<cy-bx.height*0.2)?true:(ev.clientY>cy+bx.height*0.2?false:(ev.clientX<cx)); } }
-        if(best){ list.insertBefore(ph, before?best:best.nextSibling); } else { list.appendChild(ph); }
+        ghost.style.left=(ev.clientX-offX)+"px"; ghost.style.top=(ev.clientY-offY)+"px";
+        setOver(targetAt(ev.clientX, ev.clientY));
       };
-      const up=()=>{
+      const finish=ok=>{
         document.removeEventListener("pointermove",move,true); document.removeEventListener("pointerup",up,true);
-        if(dragging){
-          row.classList.remove("lift");
-          row.style.position=""; row.style.left=""; row.style.top=""; row.style.width=""; row.style.height=""; row.style.margin=""; row.style.zIndex=""; row.style.pointerEvents="";
-          if(ph){ list.insertBefore(row, ph); ph.remove(); }
-          const order=[...list.querySelectorAll("[data-rid]")].map(r=>r.dataset.rid);
-          arr.sort((a,b)=>{ const ia=order.indexOf(String(a.id)), ib=order.indexOf(String(b.id)); if(ia<0&&ib<0)return 0; if(ia<0)return 1; if(ib<0)return -1; return ia-ib; });
-          const swallow=ev2=>{ ev2.stopPropagation(); ev2.preventDefault(); row.removeEventListener("click",swallow,true); };
-          row.addEventListener("click",swallow,true); setTimeout(()=>row.removeEventListener("click",swallow,true),350);
-          if(onDone) onDone();
-        }
+        document.removeEventListener("pointercancel",cancel,true); document.removeEventListener("keydown",esc,true);
+        if(!dragging) return;
+        const t=ok?over:null; setOver(null);
+        row.classList.remove("dnd-src"); document.body.classList.remove("dnd-on"); if(shell) shell.remove(); else if(ghost) ghost.remove();
+        if(t){ const rs=rows(), from=rs.indexOf(row), to=rs.indexOf(t);
+          list.insertBefore(row, from<to ? t.nextSibling : t);             /* 놓은 칸의 자리로 */
+          const order=rows().map(r=>r.dataset.rid);
+          arr.sort((a,b)=>{ const ia=order.indexOf(String(a.id)), ib=order.indexOf(String(b.id)); if(ia<0&&ib<0)return 0; if(ia<0)return 1; if(ib<0)return -1; return ia-ib; }); }
+        const swallow=ev2=>{ ev2.stopPropagation(); ev2.preventDefault(); row.removeEventListener("click",swallow,true); };
+        row.addEventListener("click",swallow,true); setTimeout(()=>row.removeEventListener("click",swallow,true),350);   /* 끈 뒤 놓을 때 링크가 열리지 않게 */
+        if(t && onDone) onDone();
       };
+      const up=()=>finish(true), cancel=()=>finish(false), esc=ev=>{ if(ev.key==="Escape"){ ev.preventDefault(); finish(false); } };
       document.addEventListener("pointermove",move,true); document.addEventListener("pointerup",up,true);
+      document.addEventListener("pointercancel",cancel,true); document.addEventListener("keydown",esc,true);
     });
   });
 }
@@ -3569,6 +3616,51 @@ function applyPos(card,w){ const L=lay(w); card.style.left=L.x+"px"; card.style.
 function bringFront(card,w){ const L=lay(w); L.z=++maxZ; card.style.zIndex=L.z; }
 function growBoard(){ let max=320; state.widgets.forEach(w=>{ const L=rdLay(w); if(L) max=Math.max(max, L.y+L.h); }); board.style.height=(max+40)+"px"; }
 function overlap(a,b){ return !(a.x+a.w<=b.x||b.x+b.w<=a.x||a.y+a.h<=b.y||b.y+b.h<=a.y); }
+/* ===== 칸 맞춤 자동 배열 =====
+   이 화면 폭에 맞춰 같은 폭의 칸으로 나누고, 위젯을 종류별 기본 높이로 맞춰
+   왼쪽 위부터 '비어 있는 가장 높은 자리'에 차례로 채움 (빈틈없이, 겹치지 않게, 간격 일정) */
+const ARR_GAP=16, ARR_M=16, ARR_T=340;
+function gridSpec(){ const bw=Math.max(340, boardW()||1000);
+  const cols=Math.max(1, Math.round((bw-2*ARR_M+ARR_GAP)/(ARR_T+ARR_GAP)));
+  return {cols, cw:Math.max(260, Math.floor((bw-2*ARR_M-(cols-1)*ARR_GAP)/cols))}; }
+function placeInGrid(type, occ, g, hh){
+  g=g||gridSpec(); const h=hh||(DEF_SIZE[type]||{h:240}).h; let best=null;
+  for(let c=0;c<g.cols;c++){
+    const x=ARR_M+c*(g.cw+ARR_GAP); let y=ARR_M;
+    for(let n=0;n<400;n++){ const r={x,y,w:g.cw,h}; const hit=occ.find(o=>o&&overlap(r,o)); if(!hit) break; y=hit.y+hit.h+ARR_GAP; }
+    if(!best||y<best.y) best={x,y};
+  }
+  return {x:best.x, y:best.y, w:g.cw, h};
+}
+/* 위젯들을 주어진 순서대로 새로 배열 (both: 창 최대화/보통 두 배치 모두) */
+function arrangeWidgets(order, both){
+  const g=gridSpec(), occ=[];
+  order.forEach(w=>{ const p=placeInGrid(w.type, occ, g, w._fitH), z=((both?null:lay(w))||{}).z||++maxZ;
+    const L={x:p.x, y:p.y, w:p.w, h:p.h, z};
+    if(both){ w.layout=Object.assign({},L); w.layoutMax=Object.assign({},L); }
+    else { const cur=lay(w); Object.assign(cur, L); }
+    occ.push(L); });
+}
+/* 내용이 잘리지 않을 높이 재기 (기본 높이보다 작게는 안 줄이고, 너무 길면 560까지) */
+function measureFit(list){
+  list.forEach(w=>{ const c=cardOf(w.id), b=c&&c.querySelector(".body"); if(!b||!c.offsetHeight) return;
+    const need=Math.ceil(c.offsetHeight-b.clientHeight+b.scrollHeight), d=(DEF_SIZE[w.type]||{h:240}).h;
+    w._fitH=Math.min(560, Math.max(d, need)); });
+}
+/* 배열 → 그려 보고 → 내용 높이에 맞춰 한 번 더 배열 */
+function arrangeFit(order, both, done){
+  arrangeWidgets(order, both); renderPositions();
+  setTimeout(()=>{ measureFit(order); if(order.some(w=>w._fitH)){ arrangeWidgets(order, both); renderPositions(); }
+    order.forEach(w=>{ delete w._fitH; }); if(done) done(); }, 300);
+}
+/* 화면에 보이는 순서 (위→아래, 왼쪽→오른쪽) */
+function byScreenPos(a,b){ const A=rdLay(a)||{x:0,y:0}, B=rdLay(b)||{x:0,y:0}; return (A.y-B.y)||(A.x-B.x); }
+/* [위젯 자동 정렬] 버튼: 지금 보이는 순서대로 다시 배열 (되돌리기 가능) */
+function autoArrange(){
+  const before=state.widgets.map(w=>[w, JSON.stringify(lay(w))]);
+  arrangeFit(state.widgets.slice().sort(byScreenPos), false, ()=>{ persist();
+  toastAction("위젯을 정렬했어요", "되돌리기", ()=>{ before.forEach(([w,j])=>Object.assign(lay(w), JSON.parse(j))); renderPositions(); persist(); toast("정렬 전으로 되돌렸어요"); }); });
+}
 function findFreeSpot(wd,ht){ const bw=boardW()||1000; const step=24; for(let y=0;y<5000;y+=step){ for(let x=0;x+wd<=bw;x+=step){ const cand={x,y,w:wd,h:ht}; const hit=state.widgets.some(o=>{ const lo=rdLay(o); return lo&&overlap(cand,lo); }); if(!hit) return {x,y}; } } return {x:0,y:0}; }
 
 function mountCard(w){
@@ -3777,7 +3869,7 @@ function sanitizeRemote(json){
   rs.widgets=rs.widgets.filter(w=>w&&typeof w==="object"&&known.has(w.type)
     &&typeof w.id==="string"&&w.id.length>0&&w.id.length<80);
   rs.widgets.forEach(w=>{
-    Object.keys(w).forEach(k=>{ if(k.charAt(0)==="_") delete w[k]; });   /* 다른 컴퓨터의 임시 데이터는 버림 */
+    Object.keys(w).forEach(k=>{ if(k.charAt(0)==="_"||k==="layout"||k==="layoutMax"||k==="lays") delete w[k]; });   /* 다른 컴퓨터의 임시 데이터·위치는 버림 */
     if(!w.config||typeof w.config!=="object"||Array.isArray(w.config)) w.config={};
     if(typeof w.title!=="undefined"&&typeof w.title!=="string") delete w.title;
     if(Array.isArray(w.config.items)){
@@ -3796,7 +3888,7 @@ function sanitizeRemote(json){
   ensureNotes(rs);
   if(typeof rs.theme!=="string"||!/^[a-z0-9_-]{1,24}$/i.test(rs.theme)) delete rs.theme;
   rs.unshared=(Array.isArray(rs.unshared)?rs.unshared:[]).filter(x=>typeof x==="string"&&x.length<80).slice(-300);
-  if(typeof rs.lastKey!=="string"||!/^\d{3,5}x\d{3,5}$/.test(rs.lastKey)) delete rs.lastKey;
+  delete rs.lastKey;
   return rs;
 }
 
@@ -3812,6 +3904,34 @@ function isNoteSynced(id){ const o=syncOpts(); return o.notesAll!==false || !!(o
 function _nSig(n){ return _h(JSON.stringify([String(n.text||""), n.color||""])); }
 /* 지난번에 본 클라우드의 메모 전체 (이 컴퓨터가 가져오지 않는 메모를 그대로 전달하려고 기억) */
 function _carryNotes(){ const c=state.syncCarry; return (c&&Array.isArray(c.notes))?c.notes:[]; }
+/* 이 컴퓨터로 가져오지 않기로 한 클라우드 위젯 (클라우드·다른 컴퓨터에는 그대로 둠) */
+function _skipW(){ const o=syncOpts(); if(!o.skipW||typeof o.skipW!=="object") o.skipW={}; return o.skipW; }
+function _carryWidgets(){ const c=state.syncCarry; return (c&&Array.isArray(c.widgets))?c.widgets:[]; }
+let _importMemo=null;       /* 가져오기 때 새로 만들 메모 위젯이 띄울 메모 */
+/* 위젯 내용 미리보기 몇 줄 (같은 종류가 여러 개일 때 내용을 보고 고르려고) */
+function wPreview(w){
+  const c=w.config||{}, it=Array.isArray(c.items)?c.items:[], cut=t=>{ t=String(t||"").trim(); return t.length>34?t.slice(0,34)+"…":t; };
+  const more=(arr,n)=>arr.length>n?[`…외 ${arr.length-n}개`]:[];
+  if(w.type==="todo"){ const left=it.filter(x=>x&&!x.done); if(!left.length) return [`남은 할 일 없음 (완료 ${it.length}개)`];
+    return left.slice(0,3).map(x=>"· "+cut(x.text)).concat(more(left,3)); }
+  if(w.type==="dday"){ const ev=Array.isArray(c.events)?c.events:[]; if(!ev.length) return ["비어 있음"];
+    return ev.slice(0,3).map(x=>"· "+cut(x.name)+(x.date?` (${x.date})`:"")).concat(more(ev,3)); }
+  if(/^(links|shortcuts|stocks|files)$/.test(w.type)){ if(!it.length) return ["비어 있음"];
+    return [it.slice(0,6).map(x=>cut(x.name||x.label||x.code||"")).filter(Boolean).join(", ")+(it.length>6?` …외 ${it.length-6}개`:"")]; }
+  const one=wSummary(w,[]); return one?[one]:[];
+}
+/* 위젯 내용 한 줄 요약 (같은 이름의 위젯을 구별하려고) */
+function wSummary(w, noteList){
+  const c=w.config||{}, it=Array.isArray(c.items)?c.items:[], cut=t=>{ t=String(t||"").trim(); return t.length>24?t.slice(0,24)+"…":t; };
+  if(w.type==="todo"){ const left=it.filter(x=>x&&!x.done); return left.length?`남은 할 일 ${left.length}개 · ${cut(left[0].text)}`:`할 일 ${it.length}개`; }
+  if(w.type==="memo"){ const n=(noteList||[]).find(x=>x.id===c.noteId); return n?`메모: ${cut(noteTitle(n))}`:"띄울 메모 없음"; }
+  if(w.type==="dday"){ const ev=Array.isArray(c.events)?c.events:[]; return ev.length?`${ev.length}개 · ${cut(ev[0].name)}`:"비어 있음"; }
+  if(/^(links|shortcuts|stocks|files)$/.test(w.type)) return it.length?`${it.length}개 · ${it.slice(0,3).map(x=>cut(x.name||x.label||x.code||"")).filter(Boolean).join(", ")}`:"비어 있음";
+  if(SYNC_XL_TYPES.has(w.type)) return c.fileName?`엑셀: ${cut(c.fileName)}`:"엑셀 파일 없음";
+  if(/^(weather|clock)$/.test(w.type)) return c.name?`지역: ${cut(c.name)}`:"";
+  if(/^(meal|neis)$/.test(w.type)) return c.school&&c.school.name?`학교: ${cut(c.school.name)}`:"학교 미설정";
+  return "";
+}
 function _stable(v){ if(Array.isArray(v)) return v.map(_stable);
   if(v&&typeof v==="object"){ const o={}; Object.keys(v).sort().forEach(k=>{ o[k]=_stable(v[k]); }); return o; }
   return v; }
@@ -3827,21 +3947,17 @@ function _cSig(w){
     o.config=c; }
   return _h(JSON.stringify(_stable(o)));
 }
-/* 배치 서명: 화면별 위치·크기만 (겹침 순서 z는 컴퓨터마다 달라질 수 있어 뺀다) */
-function _lSig(w){
-  const L=w.lays&&typeof w.lays==="object"?w.lays:{}, o={};
-  Object.keys(L).sort().forEach(k=>{ const e=L[k]||{}, f=x=>x?[x.x,x.y,x.w,x.h]:null; o[k]=[f(e.layout),f(e.layoutMax)]; });
-  return _h(JSON.stringify(o));
-}
 /* 클라우드에 올릴 내용: 동기화 대상 위젯 + (켜 두었으면) 화면 꾸미기 */
 function syncPayload(){
   snapshotLays();
   const base=state.syncBase||{}, ws=[], ids=new Set();
-  (state.widgets||[]).forEach(w=>{ if(!isShared(w)) return;
-    const o={}; Object.keys(w).forEach(k=>{ if(k.charAt(0)!=="_") o[k]=w[k]; });
+  (state.widgets||[]).filter(isShared).sort(byScreenPos).forEach(w=>{      /* 보이는 순서대로 (폰·새 컴퓨터가 이 순서로 보여 줌) */
+    const o={}; Object.keys(w).forEach(k=>{ if(k.charAt(0)!=="_"&&k!=="layout"&&k!=="layoutMax"&&k!=="lays") o[k]=w[k]; });   /* 위치·크기는 컴퓨터마다 따로 */
     o.sync=true;
     if(w.type==="files"&&o.config){ o.config=Object.assign({},o.config); delete o.config.items; }   /* 폴더 경로는 올리지 않음 */
     ws.push(o); ids.add(w.id); });
+  const sk=_skipW(), localIds=new Set((state.widgets||[]).map(x=>x.id));
+  _carryWidgets().forEach(w=>{ if(sk[w.id]&&!ids.has(w.id)&&!localIds.has(w.id)){ ws.push(Object.assign({},w,{sync:true})); ids.add(w.id); } });   /* 가져오지 않은 위젯은 클라우드 것 그대로 */
   /* 체크를 푼 위젯: 다른 컴퓨터에서 지우지 말고 그 컴퓨터 전용으로 남기라는 표시 */
   const un=(base.unshared||[]).filter(id=>!ids.has(id));
   Object.keys(base.w||{}).forEach(id=>{ if(ids.has(id)||un.includes(id)) return;
@@ -3850,14 +3966,13 @@ function syncPayload(){
   const have=new Set(nl.map(n=>n.id));
   _carryNotes().forEach(n=>{ if(!have.has(n.id)&&!isNoteSynced(n.id)) nl.push(n); });   /* 가져오지 않는 메모는 클라우드 것 그대로 */
   const p={v:2, savedAt:state.savedAt||Date.now(), widgets:ws, notes:nl};
-  if(state.lastKey) p.lastKey=state.lastKey;
   const th=syncOpts().deco!==false ? state.theme : base.theme;   /* 꾸미기를 안 맞추는 컴퓨터는 클라우드 값을 그대로 전달 */
   if(th) p.theme=th;
   if(un.length) p.unshared=un.slice(-300);
   return p;
 }
 function payloadSig(p){
-  const ws=(p.widgets||[]).map(x=>x.id+":"+x.type+":"+_cSig(x)+":"+_lSig(x)).sort();
+  const ws=(p.widgets||[]).map(x=>x.id+":"+x.type+":"+_cSig(x)).sort();
   const ns=(p.notes||[]).map(n=>n.id+":"+_nSig(n)).sort();
   return _h(JSON.stringify([ws, p.theme||"", (p.unshared||[]).slice().sort(), ns]));
 }
@@ -3868,7 +3983,7 @@ function _holdNoteBase(nb){ const ob=((state.syncBase||{}).n)||{};
   return nb; }
 /* 지난번에 맞춘 클라우드 내용 기록 (다음에 어느 쪽이 바뀌었는지 비교용) */
 function syncBaseFrom(p){
-  const w={}, n={}; (p.widgets||[]).forEach(x=>{ w[x.id]={c:_cSig(x), l:_lSig(x)}; });
+  const w={}, n={}; (p.widgets||[]).forEach(x=>{ w[x.id]={c:_cSig(x)}; });
   (p.notes||[]).forEach(x=>{ n[x.id]=_nSig(x); });
   return {v:2, all:payloadSig(p), w, n, theme:p.theme||"", unshared:(p.unshared||[]).slice(-300)};
 }
@@ -3881,14 +3996,17 @@ function syncMerge(remote, choice, replace){
   const nm=w=>w.title||(WIDGETS[w.type]&&WIDGETS[w.type].title)||w.type;
   const deco=syncOpts().deco!==false;
   const rNotes=remote.notes||[];
-  if(replace){
-    (state.widgets||[]).forEach(l=>{ if(!isShared(l)&&!R.has(l.id)) plan.push({w:l}); });
-    remote.widgets.forEach(r=>plan.push({w:r}));
+  const skip=_skipW();
+  if(replace){                                            /* 가져오기: 클라우드에서 고른 위젯만 (이 컴퓨터 위젯은 전용 위젯까지 모두 빠짐) */
+    remote.widgets.forEach(r=>{ if(!skip[r.id]) plan.push({w:r}); });
     const keepN=notes().filter(n=>!isNoteSynced(n.id)), kid=new Set(keepN.map(n=>n.id));
     const outN=keepN.concat(rNotes.filter(n=>isNoteSynced(n.id)&&!kid.has(n.id)));
-    return {plan, conflicts, took:1, theme:(deco&&remote.theme)?remote.theme:state.theme, notes:outN, carry:rNotes};
+    if(_importMemo){                                      /* 메모 위젯은 하나로: 고른 메모 중 가장 최근 것을 띄움 (이 컴퓨터 전용) */
+      const at=remote.widgets.findIndex(w=>w.type==="memo"), before=remote.widgets.slice(0,Math.max(0,at)).filter(w=>!skip[w.id]).length;
+      plan.splice(before, 0, {w:{id:uid(), type:"memo", config:{noteId:_importMemo}, sync:false}});
+      _importMemo=null; }
+    return {plan, conflicts, took:1, theme:(deco&&remote.theme)?remote.theme:state.theme, notes:outN, carry:rNotes, replace:true};
   }
-  const k=screenKey();
   const localOlder=!base && (state.savedAt||0) <= (+remote.savedAt||0);
   (state.widgets||[]).forEach(l=>{
     seen.add(l.id); const r=R.get(l.id), b=B[l.id];
@@ -3911,17 +4029,9 @@ function syncMerge(remote, choice, replace){
       else if(choice){ src=(choice==="remote")?r:l; if(src===r) took++; }
       else { conflicts.push({id:l.id, title:nm(l)}); }
     }
-    /* 배치: 한쪽만 옮겼으면 그쪽 것, 둘 다 옮겼으면 이 컴퓨터 화면 배치만 이 컴퓨터 것 */
-    const ll=_lSig(l), rl=_lSig(r); let lays;
-    if(ll!==rl){
-      if(b&&ll===b.l) lays=r.lays;
-      else if(b&&rl===b.l) lays=l.lays;
-      else { lays=Object.assign({}, l.lays||{}, r.lays||{}); if(l.lays&&l.lays[k]) lays[k]=l.lays[k]; }
-      if(lays!==l.lays) took++;
-    }
-    plan.push({w:src, lays});
+    plan.push({w:src});
   });
-  remote.widgets.forEach(r=>{ if(seen.has(r.id)) return;
+  remote.widgets.forEach(r=>{ if(seen.has(r.id)||skip[r.id]) return;          /* 가져오지 않기로 한 위젯 */
     const b=B[r.id];
     if(b&&_cSig(r)===b.c) return;                        /* 이 컴퓨터에서 지운 위젯 */
     plan.push({w:r}); took++;                            /* 새 위젯 (또는 지웠지만 다른 컴퓨터에서 고친 것) */
@@ -3945,14 +4055,21 @@ function syncMerge(remote, choice, replace){
   if(deco&&remote.theme&&remote.theme!==state.theme&&!(base&&base.theme===remote.theme)){ theme=remote.theme; took++; }
   return {plan, conflicts, took, theme, notes:outN, carry:rNotes};
 }
+/* 이 컴퓨터의 동기화 위젯이 클라우드와 같은 위젯들인지 (같은 위젯이면 내용은 위젯마다 합치면 되고, 다른 위젯이면 합치면 겹쳐 보임) */
+function _sameAsCloud(remote){
+  const mine=(state.widgets||[]).filter(isShared), R=new Map(remote.widgets.map(w=>[w.id,w]));
+  if(mine.length!==remote.widgets.length) return false;
+  return mine.every(l=>{ const r=R.get(l.id); return !!r && r.type===l.type; });
+}
 /* 합친 결과를 화면에 반영: 내용이 그대로인 위젯은 카드를 그대로 두고, 바뀐 위젯만 새로 그림 */
-function applySynced(res, remote, baseNew, excelChanged){
+function applySynced(res, remote, baseNew, excelChanged, carryW){
   const xc=new Set((excelChanged||[]).map(String));
   const prev=new Map((state.widgets||[]).map(w=>[w.id,w])), keep=new Set();
-  const list=res.plan.map(({w:n,lays,local})=>{
-    if(lays!==undefined){ if(lays) n.lays=lays; else delete n.lays; }
+
+  const list=res.plan.map(({w:n,local})=>{
     if(local) n.sync=false;
     const o=prev.get(n.id);
+    if(o && o!==n){ ["layout","layoutMax","lays"].forEach(k=>{ if(o[k]) n[k]=o[k]; }); }   /* 위치·크기는 이 컴퓨터 것 그대로 */
     if(xc.has(n.id)){                                    /* 다른 컴퓨터가 엑셀 파일을 바꿈 → 새로 받은 파일로 다시 읽기 */
       const rw=remote.widgets.find(x=>x.id===n.id);
       if(rw&&rw.config&&rw.config.file) n.config=Object.assign({}, n.config, {file:rw.config.file, fileName:rw.config.fileName||n.config.fileName});
@@ -3960,21 +4077,36 @@ function applySynced(res, remote, baseNew, excelChanged){
     }
     if(o===n){ if(cardOf(o.id)) keep.add(o); return o; }
     if(o&&o.type===n.type&&cardOf(o.id)&&_wsig(o)===_wsig(n)){
-      ["layout","layoutMax","lays","sync"].forEach(key=>{ if(key in n) o[key]=n[key]; else delete o[key]; });
+      if("sync" in n) o.sync=n.sync; else delete o.sync;
       keep.add(o); return o;
     }
     return n;
   });
   state.widgets=list;
   if(Array.isArray(res.notes)) state.notes=res.notes;
-  state.syncCarry={notes:(res.carry||[]).map(n=>({id:n.id, text:String(n.text||""), color:n.color||"", at:+n.at||0}))};
+  const sk=_skipW(), rids=new Set(remote.widgets.map(x=>x.id));
+  Object.keys(sk).forEach(id=>{ if(!rids.has(id)) delete sk[id]; });
+  state.syncCarry={notes:(res.carry||[]).map(n=>({id:n.id, text:String(n.text||""), color:n.color||"", at:+n.at||0})),
+    widgets:(carryW||[]).filter(x=>sk[x.id])};
   if(res.theme) state.theme=res.theme;
-  if(remote.lastKey) state.lastKey=remote.lastKey;
-  adaptLayouts(); assignLayouts(); snapshotLays();
+  /* 새로 온 위젯(이 컴퓨터에 자리가 없는 것)은 칸에 맞춰 빈자리에 차례로 (가져오기 때는 전부 새로 배열) */
+  const arrivals=res.replace ? list.slice() : list.filter(w=>!(w.layout&&typeof w.layout.x==="number"));
+  if(res.replace) list.forEach(w=>{ delete w.lays; });   /* 가져오기: 이 화면에 맞춰 전부 새로 배열 */
+  if(arrivals.length){ const g=gridSpec(), occ=list.filter(w=>!arrivals.includes(w)).map(w=>rdLay(w)).filter(Boolean);
+    arrivals.forEach(w=>{ const p=placeInGrid(w.type, occ, g), L={x:p.x,y:p.y,w:p.w,h:p.h,z:++maxZ};
+      w.layout=Object.assign({},L); w.layoutMax=Object.assign({},L); occ.push(L); }); }
+  adaptLayouts(); assignLayouts();
+  snapshotLays();
   state.syncBase=baseNew;
   saveLocalOnly();
   applyTheme(); updateTopbar(); refreshCards(keep);
   refreshMemoCards(null,null);                           /* 그대로 둔 메모 위젯도 바뀐 메모 내용으로 */
+  if(res.replace && list.length) arrangeFit(list.slice(), true, ()=>{ snapshotLays(); saveLocalOnly(); });   /* 가져오기: 내용 높이까지 맞춰 다시 배열 */
+  else if(arrivals.length) setTimeout(()=>{ measureFit(arrivals); const occ=[], g=gridSpec();
+    list.filter(w=>!arrivals.includes(w)).forEach(w=>{ const L=rdLay(w); if(L) occ.push(L); });
+    arrivals.forEach(w=>{ if(!w._fitH) return; const p=placeInGrid(w.type, occ, g, w._fitH), L={x:p.x,y:p.y,w:p.w,h:p.h,z:(w.layout||{}).z||++maxZ};
+      w.layout=Object.assign({},L); w.layoutMax=Object.assign({},L); occ.push(L); delete w._fitH; });
+    renderPositions(); snapshotLays(); saveLocalOnly(); }, 300);
 }
 /* 위젯 내용 비교용 서명: 배치(layout·layoutMax·lays)와 임시 데이터(_로 시작)는 빼고, 키 순서와 상관없이 비교 */
 function _wsig(w){
@@ -4010,16 +4142,28 @@ const Sync={
     this.schedule();
     if(this.on) this.tick();
   },
-  schedule(){ clearInterval(this.timer); if(!this.on) return;
-    this.timer=setInterval(()=>this.tick(), document.hidden?120000:10000); },
-  queuePush(){ if(!this.on) return; clearTimeout(this.pushTimer); this.pushTimer=setTimeout(()=>this.tick(),3000); },
+  /* 확인 간격: 창이 보이면 4초, 방금 주고받았으면 1분 동안 2초(연달아 고치는 때), 가려져 있으면 1분(보이는 순간 바로 확인) */
+  schedule(){ clearTimeout(this.timer); if(!this.on) return;
+    const d=document.hidden ? 60000 : (Date.now()<(this.burstUntil||0) ? 2000 : 4000);
+    this.timer=setTimeout(async()=>{ try{ await this.tick(); }catch(e){} finally{ this.schedule(); } }, d); },
+  /* 고친 뒤 올리기: 1초 뒤 (글을 쓰는 중이면 2.5초 뒤 — 잠깐 멈췄을 때 올림) */
+  queuePush(){ if(!this.on) return; clearTimeout(this.pushTimer);
+    const a=document.activeElement, typing=!!a && /^(TEXTAREA|INPUT)$/.test(a.tagName);
+    this.pushTimer=setTimeout(()=>this.tick(), typing?2500:1000); },
+  /* 위쪽 동기화 표시: 잘 되고 있으면 늘 '연결중' 한 가지 (확인할 때마다 글자가 바뀌지 않게).
+     문제는 1분 넘게 계속될 때만 표시 → 잠깐 끊겼다 바로 붙는 건 보이지 않음. 마지막 동기화 시각은 마우스를 올리면 보임 */
   badge(){
     const b=$("#syncBtn"), t=$("#syncTxt"); if(!b||!t) return;
-    b.classList.toggle("on", this.on&&!this.err); b.classList.toggle("busy", this.busy);
-    b.classList.toggle("err", this.on&&!!this.err);
-    if(this.on&&this.needApp){ b.classList.add("err"); b.classList.remove("on"); t.textContent="업데이트 필요"; b.title="프로그램 업데이트 후 동기화됩니다"; return; }
-    t.textContent = !this.on ? "동기화" : (this.busy ? "동기화 중…" : (this.err ? (this.err==="offline"||/^http_/.test(this.err) ? "다시 연결 중…" : "동기화 확인 필요") : "맞춤 완료 · "+relTime(this.lastOk)));
-    b.title = this.on ? `${this.email} 계정과 동기화 중` : "다른 컴퓨터와 내용 맞추기";
+    if(this.on && this.err){ if(!this.errSince) this.errSince=Date.now(); } else this.errSince=0;
+    const bad=!!this.errSince && Date.now()-this.errSince>=60000;
+    let txt="연결중", cls="on";
+    if(!this.on){ txt="동기화"; cls=""; }
+    else if(this.needApp){ txt="업데이트 필요"; cls="err"; }
+    else if(bad){ txt=(this.err==="offline"||/^http_/.test(this.err)) ? "연결 끊김" : "동기화 확인 필요"; cls="err"; }
+    if(t.textContent!==txt) t.textContent=txt;
+    b.classList.toggle("on", cls==="on"); b.classList.toggle("err", cls==="err"); b.classList.remove("busy");
+    b.title = !this.on ? "다른 컴퓨터와 내용 맞추기"
+      : (this.needApp ? "프로그램 업데이트 후 동기화됩니다" : `${this.email} 계정과 연결됨\n마지막 동기화: ${relTime(this.lastOk)}`);
   },
   /* 동기화 대상 내용이 지난번 맞춘 뒤 바뀌었는지 (이 컴퓨터 전용 위젯만 바뀌었으면 올리지 않음) */
   dirty(){ try{ return payloadSig(syncPayload())!==((state.syncBase||{}).all||""); }catch(e){ return true; } },
@@ -4054,7 +4198,7 @@ const Sync={
     let r=null, p=null;
     try{ p=syncPayload(); r=await this.api().gdrive_push(JSON.stringify(p), !!force); }
     catch(e){ r={ok:false, reason:"error", detail:(e&&e.message)||String(e)}; }
-    if(r&&r.ok){ state.syncBase=_holdNoteBase(syncBaseFrom(p)); state.syncCarry={notes:p.notes||[]}; saveLocalOnly(); this.lastOk=Date.now(); this.err=""; }
+    if(r&&r.ok){ state.syncBase=_holdNoteBase(syncBaseFrom(p)); state.syncCarry=Object.assign({}, state.syncCarry, {notes:p.notes||[]}); saveLocalOnly(); this.lastOk=Date.now(); this.err=""; this.burstUntil=Date.now()+60000; }
     else if(r&&r.reason==="conflict"){           /* 그 사이 다른 컴퓨터가 올림 → 곧 받아서 합친 뒤 다시 올림 */
       this.err=""; clearTimeout(this.pushTimer); this.pushTimer=setTimeout(()=>this.tick(),1500); }
     else this.err=(r&&r.reason)||"upload";
@@ -4062,7 +4206,7 @@ const Sync={
   },
   /* 받아서 합치기. choice: 같은 위젯을 양쪽에서 고쳤을 때의 선택, replace: 처음 연결 때 클라우드 것으로 바꾸기 */
   async pull(auto, choice, replace){
-    let r=(choice&&this._pend)||null;
+    let r=((choice||replace)&&this._pend)||null;
     if(!r){
       try{ if(hasApi("state_backup_save")) await this.api().state_backup_save(stateJSON(), "before_pull"); }catch(e){}
       try{ r=await this.api().gdrive_pull(); }
@@ -4071,12 +4215,16 @@ const Sync={
     }
     const remote=sanitizeRemote(r.state);
     if(!remote){ this.err="bad_state"; return false; }
+    /* 새 방식으로 처음 맞추는 때: 두 쪽 위젯이 다르면 합치지 않고(겹쳐 보임) 어느 쪽을 쓸지 물음 */
+    if(!choice && !replace && !(state.syncBase&&state.syncBase.w) && !_sameAsCloud(remote)){
+      this._pend=r; this.first=true; this.askConflict(r.device_name||"다른 컴퓨터", +remote.savedAt||0); return "ask"; }
     const baseNew=_holdNoteBase(syncBaseFrom(remote));
+    const carryW=JSON.parse(JSON.stringify(remote.widgets));   /* 합치기 전 원본 (가져오지 않은 위젯 보관용) */
     const res=syncMerge(remote, choice||null, !!replace);
     if(res.conflicts.length && !choice && !replace){ this._pend=r; this.askMerge(res.conflicts); return "ask"; }
     this._pend=null;
-    applySynced(res, remote, baseNew, r.excel_changed||[]);
-    this.lastOk=Date.now(); this.err="";
+    applySynced(res, remote, baseNew, r.excel_changed||[], carryW);
+    this.lastOk=Date.now(); this.err=""; this.burstUntil=Date.now()+60000;
     if(res.took) toast(auto ? `${r.device_name||"다른 컴퓨터"}의 변경 내용을 가져왔어요` : "클라우드 내용을 가져왔어요");
     if(this.dirty()) await this.push(false);          /* 이 컴퓨터에서 고친 것도 올림 */
     return true;
@@ -4205,14 +4353,14 @@ const Sync={
       : `<h2>다른 컴퓨터에서 수정된 내용이 있습니다</h2>
          <div class="sy-box"><div><b>${who} · ${when}</b>
          <i>이 컴퓨터에도 아직 올리지 않은 변경이 있어요. 어느 쪽을 쓸지 골라 주세요.</i></div></div>`;
-    sh.innerHTML += `<div class="sy-btns"><button class="mini go" data-pull>${who}의 내용 가져오기</button>
+    sh.innerHTML += `<div class="sy-btns"><button class="mini go" data-pull>${who}의 내용 가져오기…</button>
         <button class="mini" data-keep>이 컴퓨터 것 유지</button></div>
-      <div class="sy-note"><b>가져오기</b>: 이 컴퓨터의 위젯 배치와 내용이 ${who}의 것으로 바뀝니다.<br>
+      <div class="sy-note"><b>가져오기</b>: 클라우드에 있는 항목 중 고른 것만 가져와요. 이 컴퓨터에 있던 위젯은 빠지고 '기존 설정 이용하기'에 보관돼요.<br>
       <b>이 컴퓨터 것 유지</b>: 클라우드와 ${who}의 내용이 이 컴퓨터 것으로 바뀝니다.<br>
       두 내용은 합쳐지지 않고 한쪽이 선택됩니다.</div>`;
     $("#syncScrim").classList.add("on");
-    const done=()=>{ this.conflict=false; this.first=false; $("#syncScrim").classList.remove("on"); this.badge(); };
-    $("[data-pull]",sh).onclick=()=>this.runChoice(sh, "pull", done, dev, at);
+    const done=()=>{ this.conflict=false; this.first=false; this._pend=null; $("#syncScrim").classList.remove("on"); this.badge(); };
+    $("[data-pull]",sh).onclick=()=>this.startImport(sh, done, dev, at);
     $("[data-keep]",sh).onclick=()=>{
       sh.innerHTML=`<h2>정말 이 컴퓨터 것으로 맞출까요?</h2>
         <div class="sy-warn">⚠ <b>${who}의 내용이 사라집니다.</b><br>
@@ -4222,6 +4370,67 @@ const Sync={
         <button class="mini danger" data-yes>이 컴퓨터 것으로 맞추기</button></div>`;
       $("[data-back]",sh).onclick=()=>{ this.conflict=false; this.askConflict(dev, at); };
       $("[data-yes]",sh).onclick=()=>this.runChoice(sh, "keep", done, dev, at);
+    };
+  },
+  /* 처음 가져오기: 클라우드 내용을 받아 와서 가져올 항목을 고르게 함 */
+  async startImport(sh, done, dev, at){
+    if(this._running) return;
+    let r=this._pend;
+    if(!r){
+      this._running=true; sh.querySelectorAll("button").forEach(b=>b.disabled=true);
+      let msg=$(".sy-prog",sh); if(!msg){ msg=el("div","sy-prog"); sh.appendChild(msg); } msg.className="sy-prog"; msg.textContent="클라우드 내용을 불러오는 중입니다…";
+      try{ if(hasApi("state_backup_save")) await this.api().state_backup_save(stateJSON(), "before_pull"); }catch(e){}
+      try{ r=await this.api().gdrive_pull(); }catch(e){ r={ok:false, reason:(e&&e.message)||"error"}; }
+      this._running=false;
+      if(!r||!r.ok){ sh.querySelectorAll("button").forEach(b=>b.disabled=false); msg.className="sy-prog err";
+        msg.textContent=`불러오지 못했어요 (${(r&&r.reason)||"알 수 없음"}). 인터넷 연결을 확인하고 다시 눌러 주세요.`; return; }
+      this._pend=r;
+    }
+    const remote=sanitizeRemote(r.state);
+    if(!remote){ toast("클라우드 내용을 읽지 못했어요"); return; }
+    this.openImport(sh, remote, done, dev, at);
+  },
+  openImport(sh, remote, done, dev, at){
+    const who=escapeHtml(dev||"다른 컴퓨터"), o=syncOpts();
+    const tn=(()=>{ const t=[...THEMES.light,...THEMES.dark].find(x=>x[0]===remote.theme); return t?t[1]:""; })();
+    const rn=(remote.notes||[]).slice().sort((x,y)=>(y.at||0)-(x.at||0)), hasMemoW=remote.widgets.some(w=>w.type==="memo");
+    /* 같은 종류끼리 묶기 (처음 나온 순서대로), 메모 위젯은 빼고 메모 목록으로 */
+    const groups=[]; remote.widgets.forEach(w=>{ if(w.type==="memo") return; let g=groups.find(x=>x.type===w.type); if(!g){ g={type:w.type, list:[]}; groups.push(g); } g.list.push(w); });
+    const wrow=(w,many)=>{ const d=WIDGETS[w.type]||{}, nm=w.title||d.title||w.type, pv=many?wPreview(w):[wSummary(w,rn)||""];
+      return `<label class="sy-chk${many?" many":""}"><input type="checkbox" data-iw="${escapeHtml(w.id)}" checked>
+        <span class="ic">${d.icon||""}</span><span class="tx"><b>${escapeHtml(nm)}</b>${pv.filter(Boolean).map(t=>`<i>${escapeHtml(t)}</i>`).join("")}</span></label>`; };
+    const nrow=n=>{ const ls=String(n.text||"").trim().split("\n").map(t=>t.trim()).filter(Boolean), cut=t=>t.length>40?t.slice(0,40)+"…":t;
+      return `<label class="sy-chk many"><input type="checkbox" data-in="${escapeHtml(n.id)}" checked>
+        <span class="ic"><i class="sy-dot" style="background:${noteColor(n.color)||"transparent"}"></i></span>
+        <span class="tx"><b>${escapeHtml(noteTitle(n))}</b>${ls.slice(1,3).map(t=>`<i>${escapeHtml(cut(t))}</i>`).join("")}</span></label>`; };
+    const gHtml=groups.map(g=>{ const d=WIDGETS[g.type]||{}, many=g.list.length>1;
+      return many ? `<div class="sy-sub">${escapeHtml(d.title||g.type)} ${g.list.length}개 · 내용을 보고 고르세요</div>${g.list.map(w=>wrow(w,true)).join("")}`
+                  : wrow(g.list[0],false); }).join("");
+    sh.innerHTML=`<h2>가져올 항목 고르기</h2>
+      <p class="s">${who}의 클라우드 내용이에요. 이 컴퓨터로 가져올 것만 체크하세요. 위치와 크기는 이 화면에 맞춰 자동으로 배열돼요.</p>
+      <div class="sy-btns"><button class="mini" data-all>모두 체크</button><button class="mini" data-none>모두 해제</button></div>
+      <div class="sy-list">
+        ${remote.theme?`<label class="sy-chk"><input type="checkbox" data-ideco${o.deco!==false?" checked":""}><span class="ic">🎨</span>
+          <span class="tx"><b>화면 꾸미기</b><i>${escapeHtml(tn||remote.theme)}</i></span></label>`:""}
+        ${rn.length?`<div class="sy-sub">📝 메모 ${rn.length}개${hasMemoW?" · 메모 위젯 하나에 모아서 보여요":""}</div>${rn.map(nrow).join("")}`:""}
+        <div class="sy-sub">위젯</div>${gHtml||`<div class="sy-empty">위젯이 없어요</div>`}
+      </div>
+      <div class="sy-btns"><button class="mini go" data-go>가져오기</button><button class="mini" data-back>돌아가기</button></div>
+      <div class="sy-note">· 이 컴퓨터에 있던 위젯은 빠지고 '기존 설정 이용하기'에 보관돼요.<br>
+      · 체크하지 않은 항목은 가져오지 않지만, 클라우드와 다른 컴퓨터에는 그대로 남아요. 나중에 '동기화 항목 고르기'에서 가져올 수 있어요.</div>`;
+    const boxes=()=>[...sh.querySelectorAll("input[data-iw],input[data-in],input[data-ideco]")];
+    $("[data-all]",sh).onclick=()=>boxes().forEach(b=>b.checked=true);
+    $("[data-none]",sh).onclick=()=>boxes().forEach(b=>b.checked=false);
+    $("[data-back]",sh).onclick=()=>{ this.conflict=false; this.askConflict(dev, at); };
+    $("[data-go]",sh).onclick=()=>{
+      const skip={}; sh.querySelectorAll("input[data-iw]").forEach(cb=>{ if(!cb.checked) skip[cb.dataset.iw]=true; });
+      remote.widgets.forEach(w=>{ if(w.type==="memo") skip[w.id]=true; });          /* 메모 위젯들은 가져오지 않고 하나로 새로 만듦 */
+      o.skipW=skip;
+      const dc=$("input[data-ideco]",sh); if(dc) o.deco=dc.checked;
+      const nb=[...sh.querySelectorAll("input[data-in]")], picked=nb.filter(cb=>cb.checked).map(cb=>cb.dataset.in);
+      if(nb.length){ const all=picked.length===nb.length; o.notesAll=all; o.notePick={}; if(!all) picked.forEach(id=>{ o.notePick[id]=true; }); }
+      _importMemo=(hasMemoW && picked.length) ? picked[0] : null;               /* 고른 메모 중 가장 최근 것 */
+      this.runChoice(sh, "pull", done, dev, at);
     };
   },
   openPanel(){
@@ -4290,6 +4499,10 @@ const Sync={
         :(w.type==="memo"?" · 위치와 띄울 메모만 · 내용은 위 '메모'에서":""));
       return `<label class="sy-chk"><input type="checkbox" data-w="${escapeHtml(w.id)}"${isShared(w)?" checked":""}>
         <span class="ic">${d.icon||""}</span><span class="tx"><b>${escapeHtml(nm)}</b><i>${escapeHtml((d.title||w.type)+hint)}</i></span></label>`; }).join("");
+    const skW=_carryWidgets().filter(w=>_skipW()[w.id]&&!(state.widgets||[]).some(x=>x.id===w.id));
+    const skRows=skW.map(w=>{ const d=WIDGETS[w.type]||{}, nm=w.title||d.title||w.type;
+      return `<label class="sy-chk"><input type="checkbox" data-sw="${escapeHtml(w.id)}"><span class="ic">${d.icon||""}</span>
+        <span class="tx"><b>${escapeHtml(nm)}</b><i>클라우드에만 있음 · 체크하면 가져와요${(()=>{ const t=wSummary(w,_carryNotes()); return t?" · "+escapeHtml(t):""; })()}</i></span></label>`; }).join("");
     const cn=_carryNotes(), ln=notes();
     const nids=[...new Set(ln.map(n=>n.id).concat(cn.map(n=>n.id)))]
       .map(id=>ln.find(n=>n.id===id)||cn.find(n=>n.id===id)).sort((x,y)=>(y.at||0)-(x.at||0)).map(n=>n.id);
@@ -4307,7 +4520,7 @@ const Sync={
         <label class="sy-chk"><input type="checkbox" data-deco${o.deco!==false?" checked":""}>
           <span class="ic">🎨</span><span class="tx"><b>화면 꾸미기</b><i>테마 · 이 컴퓨터에서만 정하는 설정</i></span></label>
         ${memoSec}
-        <div class="sy-sub">위젯</div>${rows||`<div class="sy-empty">위젯이 없어요</div>`}
+        <div class="sy-sub">위젯</div>${rows||`<div class="sy-empty">위젯이 없어요</div>`}${skRows}
       </div>
       <div class="sy-note">· 체크를 풀면 그 위젯은 <b>이 컴퓨터 전용</b>이 됩니다. 다른 컴퓨터에 있던 것도 지워지지 않고 그 컴퓨터 전용으로 남아요.<br>
       · 위젯 체크는 모든 컴퓨터에 함께 적용되고, <b>메모</b>와 <b>화면 꾸미기</b>는 컴퓨터마다 따로 정해요.<br>
@@ -4330,6 +4543,15 @@ const Sync={
       if(cb.checked){ o.notePick[id]=true; bring(id); this.needMerge=true; toast("이 메모도 맞춥니다"); }
       else { o.notePick[id]=false; toast("이 메모는 이 컴퓨터에서 맞추지 않아요"); }
       persist(); refreshMemoCards(null,null); this.openPick(); });
+    sh.querySelectorAll("[data-sw]").forEach(cb=>cb.onchange=()=>{     /* 클라우드에만 있던 위젯 가져오기 */
+      const id=cb.dataset.sw, src=_carryWidgets().find(x=>x.id===id); if(!src||!cb.checked) return;
+      delete _skipW()[id];
+      const w=JSON.parse(JSON.stringify(src)); w.sync=true;
+      const k=screenKey(); if(w.lays&&w.lays[k]){ if(w.lays[k].layout) w.layout=Object.assign({},w.lays[k].layout); if(w.lays[k].layoutMax) w.layoutMax=Object.assign({},w.lays[k].layoutMax); }
+      state.widgets.push(w); const L=lay(w);
+      if(state.widgets.some(o2=>o2!==w&&rdLay(o2)&&overlap(L,rdLay(o2)))){ L.x=-100000; L.y=-100000; const sp=findFreeSpot(L.w||300,L.h||220); L.x=sp.x; L.y=sp.y; }   /* 겹치면 빈자리로 */
+      L.z=++maxZ; const c=mountCard(w); if(c) board.appendChild(c); growBoard();
+      this.needMerge=true; persist(); toast("클라우드에 있던 위젯을 가져왔어요"); this.openPick(); });
     sh.querySelectorAll("[data-w]").forEach(cb=>cb.onchange=()=>{
       const w=(state.widgets||[]).find(x=>x.id===cb.dataset.w); if(!w) return;
       w.sync=cb.checked; persist();
@@ -4352,6 +4574,7 @@ const Sync={
   }
 };
 $("#syncBtn").onclick=()=>Sync.openPanel();
+$("#arrangeBtn").onclick=()=>autoArrange();
 $("#syncScrim").onclick=(e)=>{ if(e.target.id==="syncScrim" && !Sync.conflict) $("#syncScrim").classList.remove("on"); };
 setInterval(()=>Sync.badge(), 30000);
 
@@ -4791,6 +5014,8 @@ function showUpdateBar(r){
       $(".ub-s",bar).textContent="프로그램을 껐다 켜면 새 화면이 적용됩니다.";
       return;
     }
+    if(res.ui_error==="hash_mismatch"||res.app_error==="hash_mismatch"){
+      btn.disabled=false; btn.textContent="다시 시도"; toast("받은 파일이 올린 파일과 달라서 설치하지 않았어요. 잠시 뒤 다시 눌러 주세요."); return; }
     btn.disabled=false; btn.textContent="업데이트";
     toast(res.app_error==="not_frozen"?"설치형(exe)에서만 프로그램 업데이트가 됩니다":"이미 최신 상태예요");
   };
@@ -4798,7 +5023,7 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-09-22.5";
+const APP_VER="2026-09-22.12";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`;
