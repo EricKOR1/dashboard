@@ -1983,6 +1983,14 @@
   .sync-sheet .sy-prog{font-size:12.5px; color:var(--muted); margin-top:12px; line-height:1.6;}
   .sync-sheet .sy-prog.err{color:var(--danger); font-weight:600;}
   .sync-sheet button:disabled{opacity:.55; cursor:default;}
+  .sync-sheet .sy-list{display:flex; flex-direction:column; gap:7px; margin:14px 0 12px; max-height:46vh; overflow:auto;}
+  .sync-sheet .sy-item{display:block; text-align:left; padding:11px 13px; border:1px solid var(--border); border-radius:12px;
+    background:var(--card); cursor:pointer;}
+  .sync-sheet .sy-item:hover{border-color:var(--accent);}
+  .sync-sheet .sy-item b{display:block; font-size:13.5px;}
+  .sync-sheet .sy-item i{display:block; font-style:normal; font-size:11.5px; color:var(--muted); margin-top:2px;}
+  .sync-sheet .sy-empty{font-size:12.5px; color:var(--muted); line-height:1.7; padding:14px; text-align:center;
+    border:1px dashed var(--border); border-radius:12px;}
   .sync-sheet .mini.danger{background:var(--danger); color:#fff; border-color:transparent; font-weight:700;}
   .sync-sheet .sy-warn{font-size:12px; color:var(--text); line-height:1.7; background:var(--card-2);
     border-radius:12px; padding:11px 13px; margin:12px 0;}
@@ -3694,6 +3702,7 @@ const Sync={
   },
   async pull(auto){
     let r=null;
+    try{ if(hasApi("state_backup_save")) await this.api().state_backup_save(JSON.stringify(state), "before_pull"); }catch(e){}
     try{ r=await this.api().gdrive_pull(); }
     catch(e){ r={ok:false, reason:(e&&e.message)||"error"}; }
     if(!r||!r.ok){ this.err=(r&&r.reason)||"download"; return false; }
@@ -3724,6 +3733,70 @@ const Sync={
     btns.forEach(b=>b.disabled=false);
     msg.className="sy-prog err";
     msg.textContent=`${kind==="keep"?"맞추지":"가져오지"} 못했어요 (${why}). 인터넷 연결을 확인하고 다시 눌러 주세요.`;
+  },
+  async openBackups(){
+    const sh=$("#syncSheet"); this.conflict=true;
+    let list=[]; try{ list=await this.api().state_backups()||[]; }catch(e){}
+    const name={before_sync:"동기화 켜기 전 설정", before_pull:"가져오기 전 설정", before_restore:"되돌리기 전 설정"};
+    const when=t=>t?escapeHtml(new Date(t*1000).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"numeric",minute:"2-digit"})):"";
+    sh.innerHTML=`<h2>기존 설정 이용하기</h2>
+      <p class="s">동기화로 내용이 바뀌기 전의 이 컴퓨터 설정입니다. 돌아갈 설정을 고르세요.</p>
+      <div class="sy-list">${ list.length ? list.map(b=>`<button class="sy-item" data-bk="${escapeHtml(b.id)}">
+          <b>${name[b.kind]||"보관된 설정"}</b><i>${when(b.at)} · 위젯 ${b.widgets}개 · 남은 할 일 ${b.todos}개</i></button>`).join("")
+        : `<div class="sy-empty">아직 보관된 설정이 없어요.<br>앞으로 동기화로 내용이 바뀔 때마다 자동으로 보관됩니다.</div>` }</div>
+      <div class="sy-btns"><button class="mini" data-back>돌아가기</button></div>`;
+    $("[data-back]",sh).onclick=()=>{ this.conflict=false; this.openPanel(); };
+    sh.querySelectorAll("[data-bk]").forEach(b=>b.onclick=()=>this.chooseBackup(b.dataset.bk, b.querySelector("b").textContent, b.querySelector("i").textContent));
+    $("#syncScrim").classList.add("on");
+  },
+  chooseBackup(id, label, info){
+    const sh=$("#syncSheet");
+    sh.innerHTML=`<h2>이 설정으로 되돌릴까요?</h2>
+      <div class="sy-box"><div><b>${escapeHtml(label)}</b><i>${escapeHtml(info)}</i></div></div>
+      ${this.on ? `<div class="sy-btns"><button class="mini go" data-local>이 컴퓨터에서만 사용</button><button class="mini" data-all>모든 컴퓨터에 적용</button></div>
+        <div class="sy-note"><b>이 컴퓨터에서만 사용</b>: 이 컴퓨터를 기존 설정으로 되돌리고 동기화를 끕니다. 다른 컴퓨터는 그대로예요.<br>
+        <b>모든 컴퓨터에 적용</b>: 기존 설정을 클라우드에 올려 다른 컴퓨터도 이 설정으로 바뀝니다.<br>
+        지금 설정도 '되돌리기 전 설정'으로 보관되니 언제든 다시 돌아올 수 있어요.</div>`
+      : `<div class="sy-btns"><button class="mini go" data-local>이 설정으로 되돌리기</button></div>
+        <div class="sy-note">지금 설정도 '되돌리기 전 설정'으로 보관되니 언제든 다시 돌아올 수 있어요.</div>` }
+      <div class="sy-btns"><button class="mini" data-back>목록으로</button></div>`;
+    $("[data-back]",sh).onclick=()=>this.openBackups();
+    $("[data-local]",sh).onclick=()=>this.restoreBackup(sh, id, "local");
+    const all=$("[data-all]",sh); if(all) all.onclick=()=>this.restoreBackup(sh, id, "all");
+  },
+  async restoreBackup(sh, id, mode){
+    if(this._running) return; this._running=true;
+    const btns=[...sh.querySelectorAll("button")]; btns.forEach(b=>b.disabled=true);
+    let msg=$(".sy-prog",sh); if(!msg){ msg=el("div","sy-prog"); sh.appendChild(msg); }
+    msg.className="sy-prog"; msg.textContent="되돌리는 중입니다…";
+    let ok=false, why="";
+    try{
+      const json=await this.api().state_backup_get(id);
+      let st=null; try{ st=JSON.parse(json||""); }catch(e){}
+      if(!st||!Array.isArray(st.widgets)) throw new Error("보관된 설정을 읽지 못했어요");
+      try{ await this.api().state_backup_save(JSON.stringify(state), "before_restore"); }catch(e){}
+      const known=new Set(Object.keys(WIDGETS));
+      st.widgets=st.widgets.filter(w=>w&&typeof w==="object"&&known.has(w.type)&&typeof w.id==="string");
+      if(typeof st.theme!=="string"||!/^[a-z0-9_-]{1,24}$/i.test(st.theme)) st.theme=state.theme;
+      if(mode==="local" && this.on){                 /* 동기화를 먼저 끊어야 되돌린 설정이 덮어써지지 않음 */
+        try{ await this.api().gdrive_disconnect(false); }catch(e){}
+        this.on=false; this.email=""; this.err=""; this.schedule();
+      }
+      state=st; adaptLayouts(); assignLayouts();
+      applyTheme(); updateTopbar(); renderAll();
+      await persist();
+      if(mode==="all"){ msg.textContent="클라우드에 올리는 중입니다…"; const r=await this.push(true);
+        if(!(r&&r.ok)) throw new Error((r&&(r.detail||r.reason))||"올리지 못했어요"); }
+      ok=true;
+    }catch(e){ why=(e&&e.message)||String(e); }
+    finally{ this._running=false; this.badge(); }
+    if(ok){
+      this.conflict=false; $("#syncScrim").classList.remove("on");
+      toast(mode==="all" ? "기존 설정을 모든 컴퓨터에 적용했어요" : (this.on ? "기존 설정으로 되돌렸어요" : "기존 설정으로 되돌리고 동기화를 껐어요"));
+      return;
+    }
+    btns.forEach(b=>b.disabled=false);
+    msg.className="sy-prog err"; msg.textContent=`되돌리지 못했어요 (${why}).`;
   },
   askConflict(dev, at){
     this.conflict=true;
@@ -3763,7 +3836,8 @@ const Sync={
         구글 클라우드 <b>대상</b> 메뉴의 게시 상태가 <b>테스트 중</b>이면 7일마다 해제됩니다. <b>프로덕션 단계</b>로 게시해 주세요.</div>` : "";
       sh.innerHTML=`<h2>다른 컴퓨터와 내용 맞추기</h2>${rv}
         <p class="s">구글 계정으로 연결하면 위젯 배치·할 일·메모·설정·엑셀 파일이 같은 계정을 쓰는 모든 컴퓨터에서 똑같이 보입니다.</p>
-        <div class="sy-btns" style="margin-top:16px"><button class="mini go" data-conn>구글 계정으로 연결</button></div>
+        <div class="sy-btns" style="margin-top:16px"><button class="mini go" data-conn>구글 계정으로 연결</button>
+          <button class="mini" data-bkopen>기존 설정 이용하기</button></div>
         <div class="sy-note">· 저장 위치: 내 구글 드라이브의 <b>앱 전용 숨김 폴더</b> (드라이브의 다른 파일은 보지 않습니다)<br>
         · 컴퓨터마다 따로 유지: 창 위치·크기, 폴더·파일 바로가기<br>
         · 학생 정보가 포함되므로 <b>학교 구글 계정</b> 사용을 권장합니다<br>
@@ -3789,6 +3863,7 @@ const Sync={
         <div class="sy-box"><div><b>${escapeHtml(this.email||"연결됨")}</b>
         <i>마지막 동기화: ${relTime(this.lastOk)}${this.err?" · 확인 필요 ("+escapeHtml(this.err)+")":""}</i></div></div>
         <div class="sy-btns"><button class="mini go" data-now>지금 동기화</button><button class="mini" data-off>연결 해제</button></div>
+        <div class="sy-btns"><button class="mini" data-bkopen>기존 설정 이용하기</button></div>
         <div class="sy-mobile"><div class="qr">${mobileQr()}</div>
           <div><b>폰에서 보기</b><i>폰 카메라로 QR을 찍고 같은 구글 계정으로 로그인하면<br>할 일·메모·D-Day·바로가기를 보고 고칠 수 있어요.</i>
           <button class="mini" data-copyurl>주소 복사</button></div></div>
@@ -3802,6 +3877,8 @@ const Sync={
       if(cu) cu.onclick=async()=>{ try{ await navigator.clipboard.writeText(MOBILE_URL); toast("주소를 복사했어요"); }
         catch(e){ toast(MOBILE_URL); } };
     }
+    const bo=$("[data-bkopen]",sh); if(bo) bo.onclick=()=>this.openBackups();
+    if(bo && !hasApi("state_backups")) bo.style.display="none";
     $("#syncScrim").classList.add("on");
   },
   confirmOff(){
@@ -4267,7 +4344,7 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-09-22";
+const APP_VER="2026-09-22.2";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`;

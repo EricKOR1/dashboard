@@ -1,8 +1,8 @@
 {
-  "ui_version": "2026-09-22",
+  "ui_version": "2026-09-22.2",
   "ui_url": "https://raw.githubusercontent.com/EricKOR1/dashboard/main/index.html",
-  "app_version": "1.5.1",
+  "app_version": "1.5.2",
   "app_url": "https://github.com/EricKOR1/dashboard/releases/latest/download/MyDashboard.zip",
   "page_url": "https://github.com/EricKOR1/dashboard/releases",
-  "notes": "동기화가 켤 때마다 끊기던 문제 수정. 진행 표시 추가."
+  "notes": "동기화 전 설정으로 돌아가는 '기존 설정 이용하기' 추가. 동기화 끊김 문제 수정."
 }
