@@ -2081,7 +2081,8 @@
   .sync-sheet .sy-sub{font-size:11.5px; font-weight:700; color:var(--muted); margin:6px 2px 0;}
   .sync-sheet .sy-chk.sm{padding:8px 12px;}
   .sync-sheet .sy-usage{margin-top:14px; padding-top:12px; border-top:1px solid var(--border);}
-  .sync-sheet .sy-usage label{display:flex; align-items:center; gap:8px; font-size:13.5px; cursor:pointer;}
+  .sync-sheet .sy-usage label{display:flex; align-items:center; justify-content:flex-start; gap:8px; font-size:13.5px; cursor:pointer; text-align:left;}
+  .sync-sheet .sy-usage input[type=checkbox]{flex:none; width:18px; height:18px; margin:0;}
   .sync-sheet .sy-chk.many{align-items:flex-start;}
   .sync-sheet .sy-chk.many input, .sync-sheet .sy-chk.many .ic{margin-top:2px;}
   .sync-sheet .sy-dot{display:inline-block; width:12px; height:12px; border-radius:50%; box-shadow:inset 0 0 0 1px var(--border); vertical-align:middle;}
@@ -4278,7 +4279,19 @@ function isShared(w){ return !!w && (w.sync===undefined ? !SYNC_LOCAL_TYPES.has(
 function syncOpts(){ if(!state.syncOpts||typeof state.syncOpts!=="object") state.syncOpts={deco:true};
   if(state.syncOpts.notesAll===undefined) state.syncOpts.notesAll=true; return state.syncOpts; }
 /* 메모는 컴퓨터마다 가져올 메모를 고름: '모든 메모'가 켜져 있거나, 골라 둔 메모 */
-function isNoteSynced(id){ const o=syncOpts(); return o.notesAll!==false || !!(o.notePick&&o.notePick[id]); }
+/* 아직 한 번도 안 쓴 빈 기본 위젯인지 (처음 설치 때 생긴 시계·할 일 등) — 가져오기 때 같은 종류가 오면 대신함 */
+function _blankWidget(w){
+  if(!w || (typeof w.title==="string"&&w.title.trim())) return false;
+  const c=w.config||{};
+  if(w.type==="memo"){ const n=getNote(c.noteId); return !n || !String(n.text||"").trim(); }
+  if(Array.isArray(c.items)) return c.items.length===0;
+  if(Array.isArray(c.events)) return c.events.length===0;
+  const d=WIDGETS[w.type]; if(!Object.keys(c).length) return true; if(!d||!d.defaultCfg) return false;
+  const strip=o=>{ const x=Object.assign({},o); ["tab","sel","moff","selSetOn","showDone","offset","feed","mode"].forEach(k=>delete x[k]); return JSON.stringify(_stable(x)); };
+  try{ return strip(c)===strip(d.defaultCfg()); }catch(e){ return false; }
+}
+function isNoteSynced(id){ const o=syncOpts(); if(o.noteLocal&&o.noteLocal[id]) return false;          /* 가져오기 때 이 컴퓨터에 있던 메모 */
+  return o.notesAll!==false || !!(o.notePick&&o.notePick[id]); }
 function _nSig(n){ return _h(JSON.stringify([String(n.text||""), n.color||""])); }
 /* 지난번에 본 클라우드의 메모 전체 (이 컴퓨터가 가져오지 않는 메모를 그대로 전달하려고 기억) */
 function _carryNotes(){ const c=state.syncCarry; return (c&&Array.isArray(c.notes))?c.notes:[]; }
@@ -4375,15 +4388,23 @@ function syncMerge(remote, choice, replace){
   const deco=syncOpts().deco!==false;
   const rNotes=remote.notes||[];
   const skip=_skipW();
-  if(replace){                                            /* 가져오기: 클라우드에서 고른 위젯만 (이 컴퓨터 위젯은 전용 위젯까지 모두 빠짐) */
-    remote.widgets.forEach(r=>{ if(!skip[r.id]) plan.push({w:r}); });
-    const keepN=notes().filter(n=>!isNoteSynced(n.id)), kid=new Set(keepN.map(n=>n.id));
-    const outN=keepN.concat(rNotes.filter(n=>isNoteSynced(n.id)&&!kid.has(n.id)));
-    if(_importMemo){                                      /* 메모 위젯은 하나로: 고른 메모 중 가장 최근 것을 띄움 (이 컴퓨터 전용) */
+  if(replace){                                            /* 가져오기: 이 컴퓨터 위젯은 그대로 두고, 클라우드에서 고른 위젯을 더함 */
+    const chosenW=remote.widgets.filter(r=>!skip[r.id]), chosen=new Set(chosenW.map(r=>r.id)), types=new Set(chosenW.map(r=>r.type));
+    if(_importMemo) types.add("memo");
+    const dropNotes=new Set();
+    (state.widgets||[]).forEach(l=>{ if(chosen.has(l.id)) return;
+      if(types.has(l.type) && _blankWidget(l)){ if(l.type==="memo"&&l.config&&l.config.noteId) dropNotes.add(l.config.noteId); return; }   /* 빈 기본 위젯은 가져온 같은 종류로 대신 */
+      if(R.has(l.id)){ plan.push({w:Object.assign({}, l, {id:uid()}), local:true}); return; }   /* 클라우드에도 같은 번호가 있는데 안 가져온 것 → 따로 떼어 이 컴퓨터 전용으로 (클라우드 것은 그대로 전달) */
+      plan.push({w:l, local:true}); });                                                          /* 원래 위젯: 그대로, 이 컴퓨터 전용 */
+    remote.widgets.forEach(r=>{ if(!skip[r.id]) plan.push({w:r}); });                          /* 고른 클라우드 위젯: 빈자리에 더함 */
+    const rid=new Set(rNotes.map(n=>n.id));
+    const outN=notes().filter(n=>!(rid.has(n.id)&&isNoteSynced(n.id)) && !(dropNotes.has(n.id)&&!String(n.text||"").trim()))
+      .concat(rNotes.filter(n=>isNoteSynced(n.id)));                                             /* 원래 메모 + 고른 클라우드 메모 */
+    if(_importMemo){                                      /* 메모 위젯이 없을 때만 하나 — 원래 컴퓨터의 메모 자리 순서에 */
       const at=remote.widgets.findIndex(w=>w.type==="memo"), before=remote.widgets.slice(0,Math.max(0,at)).filter(w=>!skip[w.id]).length;
-      plan.splice(before, 0, {w:{id:uid(), type:"memo", config:{noteId:_importMemo}, sync:false}});
-      _importMemo=null; }
-    return {plan, conflicts, took:1, theme:(deco&&remote.theme)?remote.theme:state.theme, notes:outN, carry:rNotes, replace:true};
+      const localN=plan.length-chosenW.length;
+      plan.splice(localN+before, 0, {w:{id:uid(), type:"memo", config:{noteId:_importMemo}, sync:false}}); _importMemo=null; }
+    return {plan, conflicts, took:1, theme:(deco&&remote.theme)?remote.theme:state.theme, notes:outN, carry:rNotes, add:true};
   }
   const localOlder=!base && (state.savedAt||0) <= (+remote.savedAt||0);
   (state.widgets||[]).forEach(l=>{
@@ -4537,16 +4558,18 @@ const Sync={
     let txt="연결중", cls="on";
     if(!this.on){ txt="동기화"; cls=""; }
     else if(this.needApp){ txt="업데이트 필요"; cls="err"; }
+    else if(this.hold){ txt="동기화 대기"; cls=""; }
     else if(bad){ txt=(this.err==="offline"||/^http_/.test(this.err)) ? "연결 끊김" : "동기화 확인 필요"; cls="err"; }
     if(t.textContent!==txt) t.textContent=txt;
     b.classList.toggle("on", cls==="on"); b.classList.toggle("err", cls==="err"); b.classList.remove("busy");
     b.title = !this.on ? "다른 컴퓨터와 내용 맞추기"
+      : this.hold ? "클라우드 내용을 가져올지 아직 고르지 않았어요. 눌러서 고르세요"
       : (this.needApp ? "프로그램 업데이트 후 동기화됩니다" : `${this.email} 계정과 연결됨\n마지막 동기화: ${relTime(this.lastOk)}`);
   },
   /* 동기화 대상 내용이 지난번 맞춘 뒤 바뀌었는지 (이 컴퓨터 전용 위젯만 바뀌었으면 올리지 않음) */
   dirty(){ try{ return payloadSig(syncPayload())!==((state.syncBase||{}).all||""); }catch(e){ return true; } },
   async tick(){
-    if(!this.on||this.busy||this.conflict||this.needApp) return;
+    if(!this.on||this.busy||this.conflict||this.needApp||this.hold) return;      /* hold: 처음 연결 때 '나중에 고르기' */
     this.busy=true; this.badge();
     try{
       const c=await this.api().gdrive_check();
@@ -4554,7 +4577,7 @@ const Sync={
         if(c&&c.reason==="not_connected"){
           let st=null; try{ st=await this.api().gdrive_status(); }catch(e){}
           if(st&&st.connected){ this.err="offline"; }            /* 로그인 정보는 그대로 → 잠깐 실패, 다음에 다시 시도 */
-          else { this.on=false; this.revokedAt=(st&&st.revoked_at)||0; this.schedule();
+          else { this.on=false; this.hold=null; this.revokedAt=(st&&st.revoked_at)||0; this.schedule();
             toast(c.detail==="revoked" ? "구글 쪽에서 연결이 해제되었어요. [☁ 동기화]에서 다시 연결해 주세요" : "구글 드라이브 연결이 끊어졌어요"); }
         }
         else this.err=(c&&c.reason)||"offline";   /* 인터넷 잠깐 끊김 등: 연결은 유지하고 10초 뒤 다시 시도 */
@@ -4701,7 +4724,7 @@ const Sync={
       ensureNotes(st);
       if(mode==="local" && this.on){                 /* 동기화를 먼저 끊어야 되돌린 설정이 덮어써지지 않음 */
         try{ await this.api().gdrive_disconnect(false); }catch(e){}
-        this.on=false; this.email=""; this.err=""; this.schedule();
+        this.on=false; this.hold=null; this.email=""; this.err=""; this.schedule();
       }
       state=st; adaptLayouts(); assignLayouts();
       applyTheme(); updateTopbar(); renderAll();
@@ -4733,12 +4756,15 @@ const Sync={
          <i>이 컴퓨터에도 아직 올리지 않은 변경이 있어요. 어느 쪽을 쓸지 골라 주세요.</i></div></div>`;
     sh.innerHTML += `<div class="sy-btns"><button class="mini go" data-pull>${who}의 내용 가져오기…</button>
         <button class="mini" data-keep>이 컴퓨터 것 유지</button></div>
-      <div class="sy-note"><b>가져오기</b>: 클라우드에 있는 항목 중 고른 것만 가져와요. 이 컴퓨터에 있던 위젯은 빠지고 '기존 설정 이용하기'에 보관돼요.<br>
-      <b>이 컴퓨터 것 유지</b>: 클라우드와 ${who}의 내용이 이 컴퓨터 것으로 바뀝니다.<br>
-      두 내용은 합쳐지지 않고 한쪽이 선택됩니다.</div>`;
+      <div class="sy-note"><b>가져오기</b>: 이 컴퓨터 위젯·메모는 <b>그대로 두고</b>, 클라우드에서 고른 항목을 <b>더해요</b>.
+      원래 있던 것은 이 컴퓨터 전용으로 남고, 나중에 '동기화 항목 고르기'에서 함께 쓰게 바꿀 수 있어요.<br>
+      <b>이 컴퓨터 것 유지</b>: 클라우드와 ${who}의 내용이 이 컴퓨터 것으로 바뀝니다.</div>
+      <div class="sy-btns" style="margin-top:10px"><button class="mini" data-later>← 나가기 (나중에 고르기)</button></div>`;
     $("#syncScrim").classList.add("on");
     const done=()=>{ this.conflict=false; this.first=false; this._pend=null; $("#syncScrim").classList.remove("on"); this.badge(); };
     $("[data-pull]",sh).onclick=()=>this.startImport(sh, done, dev, at);
+    $("[data-later]",sh).onclick=()=>{ this.conflict=false; this.hold={dev, at}; $("#syncScrim").classList.remove("on"); this.badge();
+      toast("고를 때까지 동기화를 멈췄어요. [동기화 대기]를 누르면 다시 고를 수 있어요"); };
     $("[data-keep]",sh).onclick=()=>{
       sh.innerHTML=`<h2>정말 이 컴퓨터 것으로 맞출까요?</h2>
         <div class="sy-warn">⚠ <b>${who}의 내용이 사라집니다.</b><br>
@@ -4785,7 +4811,7 @@ const Sync={
       return many ? `<div class="sy-sub">${escapeHtml(d.title||g.type)} ${g.list.length}개 · 내용을 보고 고르세요</div>${g.list.map(w=>wrow(w,true)).join("")}`
                   : wrow(g.list[0],false); }).join("");
     sh.innerHTML=`<h2>가져올 항목 고르기</h2>
-      <p class="s">${who}의 클라우드 내용이에요. 이 컴퓨터로 가져올 것만 체크하세요. 위치와 크기는 이 화면에 맞춰 자동으로 배열돼요.</p>
+      <p class="s">${who}의 클라우드 내용이에요. 이 컴퓨터에 <b>더할</b> 것만 체크하세요. 이 컴퓨터에 있던 위젯은 그대로 있고, 가져온 위젯은 빈자리에 놓여요.</p>
       <div class="sy-btns"><button class="mini" data-all>모두 체크</button><button class="mini" data-none>모두 해제</button></div>
       <div class="sy-list">
         ${remote.theme?`<label class="sy-chk"><input type="checkbox" data-ideco${o.deco!==false?" checked":""}><span class="ic">🎨</span>
@@ -4794,7 +4820,7 @@ const Sync={
         <div class="sy-sub">위젯</div>${gHtml||`<div class="sy-empty">위젯이 없어요</div>`}
       </div>
       <div class="sy-btns"><button class="mini go" data-go>가져오기</button><button class="mini" data-back>돌아가기</button></div>
-      <div class="sy-note">· 이 컴퓨터에 있던 위젯은 빠지고 '기존 설정 이용하기'에 보관돼요.<br>
+      <div class="sy-note">· 이 컴퓨터에 있던 위젯·메모는 그대로 남고, 이 컴퓨터 전용이 돼요 (다른 컴퓨터로 가지 않음). '동기화 항목 고르기'에서 함께 쓰게 바꿀 수 있어요.<br>
       · 체크하지 않은 항목은 가져오지 않지만, 클라우드와 다른 컴퓨터에는 그대로 남아요. 나중에 '동기화 항목 고르기'에서 가져올 수 있어요.</div>`;
     const boxes=()=>[...sh.querySelectorAll("input[data-iw],input[data-in],input[data-ideco]")];
     $("[data-all]",sh).onclick=()=>boxes().forEach(b=>b.checked=true);
@@ -4807,7 +4833,10 @@ const Sync={
       const dc=$("input[data-ideco]",sh); if(dc) o.deco=dc.checked;
       const nb=[...sh.querySelectorAll("input[data-in]")], picked=nb.filter(cb=>cb.checked).map(cb=>cb.dataset.in);
       if(nb.length){ const all=picked.length===nb.length; o.notesAll=all; o.notePick={}; if(!all) picked.forEach(id=>{ o.notePick[id]=true; }); }
-      _importMemo=(hasMemoW && picked.length) ? picked[0] : null;               /* 고른 메모 중 가장 최근 것 */
+      const rIds=new Set((remote.notes||[]).map(n=>n.id)); o.noteLocal=Object.assign({}, o.noteLocal||{});
+      notes().forEach(n=>{ if(!rIds.has(n.id)) o.noteLocal[n.id]=true; });        /* 원래 메모는 이 컴퓨터 전용으로 (다른 컴퓨터로 안 감) */
+      const hasLocalMemo=(state.widgets||[]).some(w=>w.type==="memo" && !_blankWidget(w));          /* 빈 메모 위젯은 없는 것으로 */
+      _importMemo=(hasMemoW && picked.length && !hasLocalMemo) ? picked[0] : null;   /* 메모 위젯이 이미 있으면 그 목록에 들어감 */
       this.runChoice(sh, "pull", done, dev, at);
     };
   },
@@ -4818,7 +4847,20 @@ const Sync={
       이름·이메일·파일·메모·일정 내용은 보내지 않아요. 프로그램을 더 낫게 만드는 데만 써요.</div>`;
     box.querySelector("input").onchange=e=>{ state.usageOff=!e.target.checked; saveLocalOnly(); toast(e.target.checked?"사용 통계를 보내요":"사용 통계를 보내지 않아요"); };
     sh.appendChild(box); },
+  openHold(){                                              /* '나중에 고르기'로 나간 뒤 동기화 버튼을 누르면 */
+    const sh=$("#syncSheet"), who=escapeHtml(this.hold.dev||"다른 컴퓨터");
+    sh.innerHTML=`<h2>동기화 대기 중</h2>
+      <div class="sy-box"><div><b>${who}의 내용이 클라우드에 있어요</b>
+      <i>가져올지, 이 컴퓨터 것으로 맞출지 아직 고르지 않았어요. 고르기 전까지는 동기화하지 않아요.</i></div></div>
+      <div class="sy-btns"><button class="mini go" data-choose>지금 고르기</button><button class="mini" data-off>연결 해제</button><button class="mini" data-close>닫기</button></div>`;
+    $("[data-choose]",sh).onclick=()=>{ const h=this.hold; this.hold=null; this.askConflict(h.dev, h.at); };
+    $("[data-off]",sh).onclick=()=>this.confirmOff();
+    $("[data-close]",sh).onclick=()=>$("#syncScrim").classList.remove("on");
+    this.usageRow(sh);
+    $("#syncScrim").classList.add("on");
+  },
   openPanel(){
+    if(this.hold && this.on){ this.openHold(); return; }
     const sh=$("#syncSheet");
     if(!this.on){
       const rv=this.revokedAt ? `<div class="sy-warn">지난번 연결이 <b>구글 쪽에서 해제</b>되었어요 (${escapeHtml(new Date(this.revokedAt*1000).toLocaleString("ko-KR"))}).<br>
@@ -4838,7 +4880,7 @@ const Sync={
         const b=e.currentTarget; b.disabled=true; b.textContent="브라우저에서 계정을 선택해 주세요…";
         let r=null; try{ r=await this.api().gdrive_connect(); }catch(err){}
         if(r&&r.ok){
-          this.on=true; this.email=r.email||""; this.err=""; this.first=true; this.revokedAt=0;
+          this.on=true; this.hold=null; this.email=r.email||""; this.err=""; this.first=true; this.revokedAt=0;
           toast(`${this.email||"구글 계정"}에 연결되었습니다`);
           $("#syncScrim").classList.remove("on"); this.schedule(); this.badge(); this.tick(); return;
         }
@@ -4899,7 +4941,8 @@ const Sync={
     const memoSec=`<div class="sy-sub">메모</div>
       <label class="sy-chk"><input type="checkbox" data-nall${o.notesAll!==false?" checked":""}><span class="ic">🗂️</span>
         <span class="tx"><b>모든 메모</b><i>새로 만든 메모도 자동으로 맞춤 · 끄면 메모를 하나씩 골라요</i></span></label>
-      ${o.notesAll===false ? (nids.length?nids.map(nrow).join(""):`<div class="sy-empty">메모가 없어요</div>`) : ""}`;
+      ${o.notesAll===false ? (nids.length?nids.map(nrow).join(""):`<div class="sy-empty">메모가 없어요</div>`)
+        : (()=>{ const lo=ln.filter(n=>o.noteLocal&&o.noteLocal[n.id]); return lo.length?`<div class="sy-sub">이 컴퓨터에만 두는 메모 <span>· 체크하면 함께 맞춰요</span></div>${lo.map(n=>nrow(n.id)).join("")}`:""; })()}`;
     sh.innerHTML=`<h2>동기화할 항목</h2>
       <p class="s">체크한 항목만 다른 컴퓨터·폰과 맞춥니다.</p>
       <div class="sy-list">
@@ -4922,11 +4965,11 @@ const Sync={
     const bring=id=>{ if(getNote(id)) return; const r=_carryNotes().find(n=>n.id===id); if(r) notes().push(Object.assign({},r)); };
     $("[data-nall]",sh).onchange=e=>{
       if(e.target.checked){ o.notesAll=true; _carryNotes().forEach(n=>bring(n.id)); this.needMerge=true; toast("모든 메모를 맞춥니다"); }
-      else { o.notesAll=false; o.notePick={}; notes().forEach(n=>{ o.notePick[n.id]=true; }); toast("맞출 메모를 하나씩 골라 주세요"); }
+      else { o.notesAll=false; o.notePick={}; notes().forEach(n=>{ o.notePick[n.id]=!(o.noteLocal&&o.noteLocal[n.id]); }); o.noteLocal={}; toast("맞출 메모를 하나씩 골라 주세요"); }
       persist(); refreshMemoCards(null,null); this.openPick(); };
     sh.querySelectorAll("[data-n]").forEach(cb=>cb.onchange=()=>{
       const id=cb.dataset.n; o.notePick=o.notePick||{};
-      if(cb.checked){ o.notePick[id]=true; bring(id); this.needMerge=true; toast("이 메모도 맞춥니다"); }
+      if(cb.checked){ o.notePick[id]=true; if(o.noteLocal) delete o.noteLocal[id]; bring(id); this.needMerge=true; toast("이 메모도 맞춥니다"); }
       else { o.notePick[id]=false; toast("이 메모는 이 컴퓨터에서 맞추지 않아요"); }
       persist(); refreshMemoCards(null,null); this.openPick(); });
     sh.querySelectorAll("[data-sw]").forEach(cb=>cb.onchange=()=>{     /* 클라우드에만 있던 위젯 가져오기 */
@@ -4952,7 +4995,7 @@ const Sync={
       이 컴퓨터의 위젯과 내용은 그대로 남습니다.</div>
       <div class="sy-btns"><button class="mini" data-o1>연결만 해제</button><button class="mini" data-o2>클라우드 내용도 삭제</button><button class="mini" data-o3>취소</button></div>`;
     const off=async(del)=>{ try{ await this.api().gdrive_disconnect(!!del); }catch(e){}
-      this.on=false; this.email=""; this.err=""; this.schedule(); this.badge();
+      this.on=false; this.hold=null; this.email=""; this.err=""; this.schedule(); this.badge();
       $("#syncScrim").classList.remove("on"); toast(del?"연결을 해제하고 클라우드 내용을 지웠어요":"연결을 해제했어요"); };
     $("[data-o1]",sh).onclick=()=>off(false);
     $("[data-o2]",sh).onclick=()=>off(true);
@@ -5409,7 +5452,7 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-09-23.4";
+const APP_VER="2026-09-24.1";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`;
