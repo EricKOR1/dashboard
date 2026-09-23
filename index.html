@@ -2245,6 +2245,10 @@ document.addEventListener("visibilitychange",()=>{
     const w=(state.widgets||[]).find(x=>x.id===c.dataset.id), b=$(".body",c);
     if(w&&b) WIDGETS.netswitch.load(b,w,true,true); });
 });
+/* 할 일 날짜순: 날짜 빠른 순(지난 할 일이 맨 위) → 같은 날은 먼저 추가한 순 → 날짜 없는 할 일은 맨 아래 */
+function todoByDate(arr){
+  return arr.map((it,i)=>[it,i]).sort((a,b)=>{ const x=a[0].date||"99999999", y=b[0].date||"99999999"; return x<y?-1:x>y?1:a[1]-b[1]; }).map(v=>v[0]);
+}
 /* ===== 폰용 내용: PC가 가져온 급식·학사일정·뉴스·시세와 엑셀 읽은 결과를 폰이 볼 수 있게 올림 =====
    · 동기화하는 위젯만 · 바뀐 게 있을 때만 · 자주 바뀌는 것(live)은 2분에 한 번까지, 큰 엑셀 자료(xl)는 따로 */
 const SNAP_XL=new Set(["timetable","contacts","roster"]);
@@ -2595,7 +2599,7 @@ const WIDGETS = {
       }catch(e){ box.style.display="none"; } },
     airGrade(v,[a,b,c]){ if(v<=a)return {t:"좋음",c:"g1"}; if(v<=b)return {t:"보통",c:"g2"}; if(v<=c)return {t:"나쁨",c:"g3"}; return {t:"매우나쁨",c:"g4"}; } },
 
-  todo:{ title:"할 일", icon:"✓", desc:"날짜별 할 일. 목록·달력 모드.",
+  todo:{ title:"할 일", icon:"✓", desc:"날짜별 할 일. 목록·달력 모드. 날짜순으로 자동 정렬.",
     defaultCfg:()=>({items:[],tab:"list",sel:null,moff:0}),
     mount(b,w){ b.classList.add("todo"); if(!w.config.tab) w.config.tab="list";
       b.innerHTML=`<div class="ttabs" data-tabs><button data-t="list">목록</button><button data-t="cal">달력</button></div><div class="tbody" data-body></div>`;
@@ -2631,10 +2635,10 @@ const WIDGETS = {
     drawList(b,w){ const body=$("[data-body]",b); body.innerHTML=""; body.appendChild(this.addRow(b,w));
       const list=el("div","list"); body.appendChild(list); const items=w.config.items;
       if(!items.length){ list.innerHTML=`<div class="empty">아직 할 일이 없어요. 날짜를 고르고 입력해 보세요.</div>`; return; }
-      const active=items.filter(i=>!i.done), done=items.filter(i=>i.done);
+      const active=todoByDate(items.filter(i=>!i.done)), done=items.filter(i=>i.done);   /* 날짜순 자동 정렬 */
       active.forEach(it=>list.appendChild(this.make(b,w,it,true,true)));
       if(done.length){ const open=!!w.config.showDone; const hdr=el("div","donehdr"+(open?" open":"")); hdr.innerHTML=`<span class="chev">▸</span> 완료됨 ${done.length}`; hdr.onclick=()=>{ w.config.showDone=!w.config.showDone; persist(); this.drawList(b,w); }; list.appendChild(hdr); if(open){ done.forEach(it=>list.appendChild(this.make(b,w,it,true,true))); } }
-      enableListDnD(list, w.config.items, persist); },
+    },
     drawCal(b,w){ const body=$("[data-body]",b); const todayStr=ymd(new Date());
       if(!w.config.sel || w.config.selSetOn!==todayStr){ w.config.sel=todayStr; w.config.moff=0; w.config.selSetOn=todayStr; }
       const base=new Date(); base.setDate(1); base.setMonth(base.getMonth()+(w.config.moff||0));
@@ -5057,7 +5061,7 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-09-22.13";
+const APP_VER="2026-09-22.14";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`;

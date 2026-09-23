@@ -25,11 +25,11 @@
   [hidden]{display:none !important;}
   body, .txt, .dd .n{word-break:keep-all; overflow-wrap:anywhere;}   /* 한글 낱말 중간에서 줄이 바뀌지 않게 */
   :focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
-  .wrap{max-width:560px; margin:0 auto; padding:0 16px 56px;}
+  .wrap{max-width:var(--wrapw,560px); margin:0 auto; padding:0 16px 56px;}
 
   /* 상단 줄 */
   .bar{position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:8px;
-    padding:calc(8px + env(safe-area-inset-top)) max(16px, calc((100% - 560px)/2 + 16px)) 8px;
+    padding:calc(8px + env(safe-area-inset-top)) max(16px, calc((100% - var(--wrapw,560px))/2 + 16px)) 8px;
     background:color-mix(in srgb, var(--bg) 80%, transparent); -webkit-backdrop-filter:saturate(1.3) blur(14px); backdrop-filter:saturate(1.3) blur(14px);}
   .bar .st{flex:1; min-width:0; font-size:12.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .bar .st.err{color:var(--danger); font-weight:600;}
@@ -228,6 +228,33 @@
   .pk input{width:20px; height:20px; flex:none; margin:0; accent-color:var(--accent);}
   .pk-i{flex:none; width:24px; text-align:center;} .pk-t{min-width:0;} .pk-t b{display:block; font-size:14.5px;}
   .pk-t i{display:block; font-style:normal; font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+
+  /* ===== 폰·태블릿 배치 ===== */
+  .grid{display:grid; grid-template-columns:repeat(var(--cols,1),minmax(0,1fr)); grid-auto-rows:8px; column-gap:14px; row-gap:0;
+    grid-auto-flow:row dense; margin-top:14px; align-items:start;}
+  .grid > .card{margin:0; align-self:start; min-width:0;}
+  .grid > .card.fixh{display:flex; flex-direction:column;} .grid > .card.fixh > .body{flex:1; min-height:0; overflow:auto;}
+  .grid > .card > .head{-webkit-user-select:none; user-select:none; -webkit-touch-callout:none;}
+  .arr, .grip{display:none;}
+  .arranging .arr{display:flex; align-items:center; gap:6px; margin:-4px -4px 10px; padding:6px 8px; border-radius:var(--radius-sm);
+    background:var(--accent-soft); color:var(--accent-2); font-size:13px; font-weight:700; touch-action:none; cursor:grab; -webkit-user-select:none; user-select:none;}
+  .arr-h{font-size:19px; line-height:1;} .arr-t{flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .arr-n{min-width:34px; text-align:center;}
+  .arr button{min-height:32px; min-width:32px; padding:0 9px; border-radius:9px; border:1px solid var(--border); background:var(--card); color:var(--text); font-size:13px; font-weight:700;}
+  .arranging .grid > .card{box-shadow:0 0 0 2px var(--accent-soft), var(--shadow);}
+  .arranging .grid > .card > .head, .arranging .grid > .card > .body{pointer-events:none;}
+  .arranging .grid > .card > .body{opacity:.75;}
+  .arranging .grip{display:grid; place-items:center; position:absolute; right:6px; bottom:6px; z-index:3; width:36px; height:36px;
+    border-radius:10px; background:var(--accent); color:var(--accent-ink); font-size:15px; touch-action:none; cursor:nwse-resize;}
+  .szlbl{position:absolute; right:48px; bottom:12px; z-index:3; padding:3px 8px; border-radius:8px; background:var(--text); color:var(--bg); font-size:12px; font-weight:700;}
+  .lay-over{box-shadow:0 0 0 3px var(--accent) !important;}
+  .lay-src{opacity:.3;}
+  .lay-ghost{position:fixed; z-index:80; margin:0; overflow:hidden; pointer-events:none; opacity:.92; box-shadow:0 18px 44px rgba(0,0,0,.28) !important;}
+  .arrbar{position:fixed; left:0; right:0; bottom:0; z-index:50; display:none; align-items:center; gap:8px;
+    padding:10px max(14px, env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)); background:linear-gradient(var(--card),var(--card)), var(--bg);
+    border-top:1px solid var(--border); box-shadow:0 -8px 24px rgba(0,0,0,.14);}
+  .arrbar p{flex:1; min-width:0; margin:0; font-size:13px; color:var(--muted);}
+  .arranging .arrbar{display:flex;} .arranging .wrap{padding-bottom:120px;}
 
   /* ===== PC 테마 (PC index.html에서 자동으로 옮겨 온 모양) ===== */
 :root,[data-theme="light"]{--bg:#F3EFE6;--bg-soft:#FBF9F2;--card:#FFFFFF;--card-2:#F6F1E7;--border:#E8E1D0;--border-strong:#D7CDB6;--text:#231D12;--muted:#7F7666;--faint:#AEA48F;--accent:#B88923;--accent-2:#9A7115;--accent-soft:rgba(184,137,35,.12);--accent-ink:#2A2005;--teal:#2E9E92;--danger:#D25A50;--good:#3F9E55;--dot:rgba(70,56,28,.06);--radius:20px;--radius-sm:12px;--shadow:0 1px 2px rgba(56,44,20,.05), 0 14px 34px -20px rgba(56,44,20,.18);--shadow-lift:0 5px 12px rgba(56,44,20,.08), 0 26px 52px -18px rgba(56,44,20,.22)}
@@ -449,9 +476,12 @@
 <div class="menu" id="menu"><div class="sheet">
   <p id="menuWho"></p>
   <button class="big" id="pickBtn">폰에 보일 항목 고르기</button>
+  <button class="big sub" id="arrBtn">위젯 배치 편집</button>
   <button class="big sub" id="logoutBtn">로그아웃</button>
   <button class="big sub" id="closeMenu">닫기</button>
 </div></div>
+<div class="arrbar" id="arrbar"><p>배치 편집 · ⠿를 끌어 옮기고 ◢로 크기를 바꿔요</p>
+  <button class="mini" id="arrReset">처음 배치로</button><button class="mini go" id="arrDone">완료</button></div>
 <div class="menu" id="pickMenu"><div class="sheet" id="pickSheet" role="dialog" aria-label="폰에 보일 항목"></div></div>
 <div class="menu" id="themeMenu"><div class="sheet" id="themeSheet" role="dialog" aria-label="화면 꾸미기"></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -604,7 +634,8 @@ async function refresh(force){
 }
 async function _refresh(force){
   const ae=document.activeElement;
-  if(!force && ae && (ae.classList.contains("memo") || ae.tagName==="INPUT")) return;   // 메모·검색칸에 입력 중엔 건드리지 않음
+  if(!force && ae && (ae.classList.contains("memo") || ae.tagName==="INPUT")) return;
+  if(S.arrange) return;                                                           // 배치 편집 중엔 건드리지 않음   // 메모·검색칸에 입력 중엔 건드리지 않음
   try{
     if(S.file && !force){ const m=await fileMeta(S.file.id); if(m.modifiedTime===S.file.modifiedTime){ setStatus("최신"); return; } }
     setStatus("불러오는 중…");
@@ -884,7 +915,7 @@ async function loadSnaps(force){
   try{ const r=await api(`${API}/files?spaces=appDataFolder&pageSize=200&fields=files(id,name,modifiedTime)`); const j=await r.json(); let changed=false;
     for(const f of ["live","xl"]){ const it=(j.files||[]).find(x=>x.name===`snap_${f}.json`); if(!it || it.modifiedTime===S.snapMt[f]) continue;
       const doc=await download(it.id); if(doc && doc.widgets && typeof doc.widgets==="object"){ S.snap[f]=doc; S.snapMt[f]=it.modifiedTime; changed=true; } }
-    if(changed && S.data) render();
+    if(changed && S.data && !S.arrange) render();
   }catch(e){ if(e instanceof AuthError) needLogin(); }
 }
 function snapOf(w){ const doc=S.snap[/^(timetable|contacts|roster)$/.test(w.type)?"xl":"live"]; const x=doc&&doc.widgets&&doc.widgets[w.id]; return (x&&x.d)?x:null; }
@@ -1097,7 +1128,96 @@ DRAW.roster=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&
     x.sphone?h("a",{class:"tel",href:telOf(x.sphone),text:"학생 ☎ "+x.sphone}):null, x.pphone?h("a",{class:"tel",href:telOf(x.pphone),text:"보호자 ☎ "+x.pphone}):null)));
 };
 
+/* ================= 폰·태블릿 배치 (이 기기에만 기억, 동기화 안 함) =================
+   · 화면 폭에 따라 칸 수: 폰 1칸 · 태블릿 세로(폰 가로) 2칸 · 태블릿 가로 3칸 · 아주 넓으면 4칸
+   · 칸 수(= 세로/가로 모드)마다 순서·크기를 따로 기억
+   · 처음에는 PC 순서대로 빈틈없이, 그 뒤로는 PC에서 옮겨도 이 기기 배치는 그대로 */
+const LAY_GAP=14, LAY_ROW=8;
+function layCols(){ const w=window.innerWidth||document.documentElement.clientWidth||400; return w<600?1:w<1000?2:w<1500?3:4; }
+function layAll(){ try{ const o=JSON.parse(localStorage.getItem("m.layout")||"{}"); return (o&&typeof o==="object")?o:{}; }catch(e){ return {}; } }
+function layCur(){ const o=layAll()["c"+layCols()]; const L=(o&&typeof o==="object")?o:{};
+  L.order=Array.isArray(L.order)?L.order:[]; L.size=(L.size&&typeof L.size==="object")?L.size:{}; return L; }
+function laySave(L){ const all=layAll(); all["c"+layCols()]=L; try{ localStorage.setItem("m.layout", JSON.stringify(all)); }catch(e){} }
+function layOrder(ids){ const L=layCur(), fresh=ids.filter(id=>!L.order.includes(id));
+  if(fresh.length){ L.order=L.order.concat(fresh); laySave(L); }                 /* 새로 생긴 것은 맨 뒤에 */
+  return L.order.slice(); }
+/* 빈틈없이: 격자 줄 높이를 잘게 나누고, 카드마다 자기 높이만큼 줄을 차지 (내용이 바뀌면 다시 계산) */
+function spanOf(sec){ if(!sec||!sec.isConnected) return; const hh=sec.getBoundingClientRect().height;
+  sec.style.gridRowEnd="span "+Math.max(1,Math.ceil((hh+LAY_GAP)/LAY_ROW)); }
+function layGrid(grid){ const cards=[...grid.children].filter(c=>c.classList.contains("card")); cards.forEach(spanOf);
+  if(window.ResizeObserver){ if(!S.lro) S.lro=new ResizeObserver(en=>en.forEach(x=>spanOf(x.target))); cards.forEach(c=>S.lro.observe(c)); } }
+let _lastCols=layCols();
+window.addEventListener("resize",()=>{ const c=layCols(); if(c!==_lastCols){ _lastCols=c; if(S.data) render(); } });   /* 세로↔가로 바뀌면 그 모드의 배치로 */
+
+/* ---- 배치 편집: ⠿ 끌어서 옮기기, ◢ 크기 조절 ---- */
+S.arrange=false;
+function arrangeOn(v){ S.arrange=!!v; document.body.classList.toggle("arranging", S.arrange); if(S.data) render(); }
+function setSize(id, patch){ const L=layCur(); const z=Object.assign({}, L.size[id]||{}, patch); if(!z.h) delete z.h; if(!(z.s>1)) delete z.s;
+  if(Object.keys(z).length) L.size[id]=z; else delete L.size[id]; laySave(L); render(); }
+function decorateArrange(grid){
+  const cols=layCols(), L=layCur();
+  grid.querySelectorAll(":scope > .card").forEach(sec=>{
+    const id=sec.dataset.lid, sz=L.size[id]||{}, span=Math.min(sz.s||1,cols), title=((sec.querySelector(".ttl")||{}).textContent)||"";
+    const bar=h("div",{class:"arr"}, h("span",{class:"arr-h",text:"⠿"}), h("span",{class:"arr-t",text:title}),
+      cols>1?h("button",{"aria-label":"폭 줄이기",text:"−",onclick:e=>{ e.stopPropagation(); setSize(id,{s:span-1}); }}):null,
+      cols>1?h("span",{class:"arr-n",text:`${span}칸`}):null,
+      cols>1?h("button",{"aria-label":"폭 늘리기",text:"＋",onclick:e=>{ e.stopPropagation(); setSize(id,{s:Math.min(cols,span+1)}); }}):null,
+      sz.h?h("button",{text:"높이 자동",onclick:e=>{ e.stopPropagation(); setSize(id,{h:0}); }}):null);
+    sec.insertBefore(bar, sec.firstChild);
+    const grip=h("div",{class:"grip","aria-label":"크기 조절",text:"◢"}); sec.appendChild(grip);
+    bindLayDrag(sec,bar,id); bindLayResize(sec,grip,id);
+  });
+}
+function bindLayDrag(sec, handle, id){
+  handle.addEventListener("pointerdown",e=>{
+    if(e.button>0 || e.target.closest("button")) return; e.preventDefault();
+    const sx=e.clientX, sy=e.clientY, r=sec.getBoundingClientRect(); let ghost=null, over=null, raf=0, py=sy;
+    const setOver=t=>{ if(over===t) return; if(over) over.classList.remove("lay-over"); over=t; if(over) over.classList.add("lay-over"); };
+    const find=(x,y)=>{ const el=document.elementFromPoint(x,y), c=el&&el.closest(".grid > .card"); return c&&c!==sec?c:null; };
+    const auto=()=>{ const H=window.innerHeight, dy=py<80?-14:py>H-120?14:0; if(dy) window.scrollBy(0,dy); raf=requestAnimationFrame(auto); };   /* 화면 끝에 가면 저절로 스크롤 */
+    const move=ev=>{ py=ev.clientY;
+      if(!ghost){ if(Math.hypot(ev.clientX-sx,ev.clientY-sy)<6) return;
+        S.dragging=true; ghost=sec.cloneNode(true); ghost.classList.add("lay-ghost");
+        Object.assign(ghost.style,{left:r.left+"px",top:r.top+"px",width:r.width+"px",height:Math.min(r.height,260)+"px"});
+        document.body.appendChild(ghost); sec.classList.add("lay-src"); raf=requestAnimationFrame(auto); }
+      ev.preventDefault(); ghost.style.transform=`translate(${ev.clientX-sx}px,${ev.clientY-sy}px)`; setOver(find(ev.clientX,ev.clientY)); };
+    const end=ok=>{ document.removeEventListener("pointermove",move); document.removeEventListener("pointerup",up); document.removeEventListener("pointercancel",cancel);
+      cancelAnimationFrame(raf); if(!ghost) return;
+      ghost.remove(); sec.classList.remove("lay-src"); const t=ok?over:null; setOver(null); S.dragging=false; S.renderLater=false;
+      if(t){ const L=layCur(), o=L.order, tid=t.dataset.lid, to0=o.indexOf(tid), from=o.indexOf(id);
+        o.splice(from,1); const ti=o.indexOf(tid); o.splice(from<to0?ti+1:ti, 0, id); laySave(L); }   /* 놓은 칸의 자리로 */
+      render(); };
+    const up=()=>end(true), cancel=()=>end(false);
+    document.addEventListener("pointermove",move,{passive:false}); document.addEventListener("pointerup",up); document.addEventListener("pointercancel",cancel);
+  });
+}
+function bindLayResize(sec, grip, id){
+  grip.addEventListener("pointerdown",e=>{
+    e.preventDefault(); e.stopPropagation(); try{ grip.setPointerCapture(e.pointerId); }catch(_){}
+    const cols=layCols(), gw=sec.parentElement.getBoundingClientRect().width, cw=(gw-(cols-1)*LAY_GAP)/cols, r=sec.getBoundingClientRect(), sx=e.clientX, sy=e.clientY;
+    let s=Math.max(1,Math.round((r.width+LAY_GAP)/(cw+LAY_GAP))), hh=Math.round(r.height), moved=false;
+    const lbl=h("div",{class:"szlbl"}); sec.appendChild(lbl); S.dragging=true;
+    const move=ev=>{ ev.preventDefault(); if(Math.hypot(ev.clientX-sx,ev.clientY-sy)>4) moved=true; if(!moved) return;
+      s=cols>1?Math.min(cols,Math.max(1,Math.round((r.width+ev.clientX-sx+LAY_GAP)/(cw+LAY_GAP)))):1;
+      hh=Math.max(120,Math.round((r.height+ev.clientY-sy)/20)*20);
+      sec.style.gridColumn=s>1?`span ${s}`:""; sec.style.height=hh+"px"; sec.classList.add("fixh"); lbl.textContent=(cols>1?`${s}칸 · `:"")+`높이 ${hh}`; spanOf(sec); };
+    const up=()=>{ grip.removeEventListener("pointermove",move); grip.removeEventListener("pointerup",up); grip.removeEventListener("pointercancel",up);
+      lbl.remove(); S.dragging=false; S.renderLater=false; if(moved) setSize(id,{s,h:hh}); else render(); };
+    grip.addEventListener("pointermove",move); grip.addEventListener("pointerup",up); grip.addEventListener("pointercancel",up);
+  });
+}
+/* 카드 제목을 길게 누르면 배치 편집 */
+document.addEventListener("pointerdown",e=>{
+  if(S.arrange || !S.data) return; const hd=e.target.closest(".grid > .card > .head"); if(!hd || e.target.closest("button,a,input,textarea")) return;
+  const sx=e.clientX, sy=e.clientY;
+  const done=()=>{ clearTimeout(t); document.removeEventListener("pointermove",mv); document.removeEventListener("pointerup",done); document.removeEventListener("pointercancel",done); };
+  const mv=ev=>{ if(Math.hypot(ev.clientX-sx,ev.clientY-sy)>8) done(); };
+  const t=setTimeout(()=>{ done(); try{ if(navigator.vibrate) navigator.vibrate(15); }catch(_){} arrangeOn(true); toast("⠿를 끌어 옮기고, ◢로 크기를 바꿔요"); }, 600);
+  document.addEventListener("pointermove",mv); document.addEventListener("pointerup",done); document.addEventListener("pointercancel",done);
+});
+
 function render(){
+  if(S.dragging){ S.renderLater=true; return; }                   // 배치를 옮기는 중에는 다시 그리지 않음
   applyTheme();
   const app=$("#app"); app.innerHTML="";
   const d=S.data; if(!d){ renderEmpty(); return; }
@@ -1107,27 +1227,37 @@ function render(){
   app.appendChild(h("section",{class:"today"},
     h("h1",{class:"date"}, `${now.getMonth()+1}월 ${now.getDate()}일`, h("span",{class:"dow", text:`${DOW[now.getDay()]}요일`})),
     h("p",{class:"sum", text: left||late ? (left&&late ? `오늘 할 일 ${left}개와 지난 할 일 ${late}개가 남았어요.` : left ? `오늘 할 일이 ${left}개 남았어요.` : `지난 할 일이 ${late}개 남았어요.`) : "오늘 남은 할 일이 없어요."})));
-  const skip=[]; let memoDone=false;
+  const skip=[], entries=[];                                          // 보여줄 칸들 (메모는 한 칸: __memo)
   const anyNote=(d.notes||[]).some(n=>n&&noteShown(n.id));
   orderWidgets(d).forEach(w=>{
     if(w.type!=="memo" && !wShown(w)) return;                       // 이 폰에서 안 보기로 한 위젯
     if(!SUPPORTED.has(w.type)){ skip.push(TITLES[w.type]||w.type); return; }
-    if(w.type==="memo"){ if(!anyNote) return;                                // 메모 위젯이 여러 개여도 메모 목록은 한 번만
-      if(!memoDone){ memoDone=true; const sec=h("section",{class:"card sec"}); app.appendChild(sec); drawNotes(sec); } return; }
+    if(w.type==="memo"){ if(anyNote && !entries.some(e=>e.id==="__memo")) entries.push({id:"__memo", draw:sec=>drawNotes(sec)}); return; }
     const title=(typeof w.title==="string"&&w.title.trim())?w.title:TITLES[w.type];
-    const sec=h("section",{class:"card sec"}); app.appendChild(sec);
-    if(w.type==="todo") drawTodo(sec,w,title);
-    else if(w.type==="dday") drawDday(sec,w,title);
-    else if(DRAW[w.type]) DRAW[w.type](sec,w,title);
-    else drawLinks(sec,w,title);
+    entries.push({id:w.id, draw:sec=>{ if(w.type==="todo") drawTodo(sec,w,title); else if(w.type==="dday") drawDday(sec,w,title);
+      else if(DRAW[w.type]) DRAW[w.type](sec,w,title); else drawLinks(sec,w,title); }});
   });
-  if(!memoDone && anyNote){ const sec=h("section",{class:"card sec"}); app.appendChild(sec); drawNotes(sec); }
+  if(anyNote && !entries.some(e=>e.id==="__memo")) entries.push({id:"__memo", draw:sec=>drawNotes(sec)});
+  /* 이 기기에 기억한 배치대로 (처음이면 PC 순서를 그대로 기억 → 이후 PC에서 옮겨도 이 기기는 그대로) */
+  const cols=layCols(), ord=layOrder(entries.map(e=>e.id)), L=layCur();
+  document.documentElement.style.setProperty("--cols", cols);
+  document.documentElement.style.setProperty("--wrapw", cols>1?"1400px":"560px");
+  entries.sort((a,b)=>ord.indexOf(a.id)-ord.indexOf(b.id));
+  const grid=h("div",{class:"grid"}); app.appendChild(grid);
+  entries.forEach(e=>{ const sec=h("section",{class:"card sec"}); sec.dataset.lid=e.id;
+    const sz=L.size[e.id]||{}; if(cols>1 && sz.s>1) sec.style.gridColumn=`span ${Math.min(sz.s,cols)}`;
+    if(sz.h){ sec.style.height=sz.h+"px"; sec.classList.add("fixh"); }
+    grid.appendChild(sec); e.draw(sec); });
+  if(S.arrange) decorateArrange(grid);
+  layGrid(grid);
   if(skip.length) app.appendChild(h("p",{class:"pconly", text:`PC에서만 볼 수 있는 위젯: ${[...new Set(skip)].join(", ")}`}));
 }
 
 function drawTodo(sec,w,title){
   const items=(cfg(w).items||[]).filter(x=>x&&typeof x==="object");
-  const undone=items.filter(x=>!x.done), done=items.filter(x=>x.done);
+  /* PC와 같은 순서: 날짜 빠른 순 → 같은 날은 먼저 추가한 순 → 날짜 없는 할 일은 맨 아래 */
+  const undone=items.filter(x=>!x.done).map((it,i)=>[it,i]).sort((a,b)=>{ const x=a[0].date||"99999999", y=b[0].date||"99999999"; return x<y?-1:x>y?1:a[1]-b[1]; }).map(v=>v[0]);
+  const done=items.filter(x=>x.done);
   sec.appendChild(h("div",{class:"head"}, h("h2",{class:"ttl", text:title})));
   const p=h("div",{class:"body"}); sec.appendChild(p);
   const row=(it)=>{
@@ -1289,6 +1419,10 @@ $("#closeMenu").onclick=()=>$("#menu").classList.remove("on");
 $("#menu").addEventListener("click",e=>{ if(e.target.id==="menu") $("#menu").classList.remove("on"); });
 $("#logoutBtn").onclick=logout;
 $("#pickBtn").onclick=()=>{ $("#menu").classList.remove("on"); openPick(false); };
+$("#arrBtn").onclick=()=>{ $("#menu").classList.remove("on"); arrangeOn(true); toast("⠿를 끌어 옮기고, ◢로 크기를 바꿔요"); };
+$("#arrDone").onclick=()=>{ arrangeOn(false); toast("배치를 저장했어요 (이 기기에만)"); };
+$("#arrReset").onclick=()=>{ if(!confirm("지금 화면 모드의 배치를 처음(PC 순서)으로 되돌릴까요?")) return;
+  const all=layAll(); delete all["c"+layCols()]; try{ localStorage.setItem("m.layout", JSON.stringify(all)); }catch(e){} render(); };
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden && S.tok) refresh(false); });
 (function loop(){ setTimeout(()=>{ if(!document.hidden && S.tok) refresh(false); loop(); }, Date.now()<_burstUntil ? 2000 : 5000); })();   // 5초마다 (방금 바뀌었으면 2초)
 setInterval(()=>{ if(S.tok && Date.now()>S.exp){ S.tok=null; needLogin(); } }, 30000);
