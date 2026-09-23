@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; connect-src https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://accounts.google.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data:; frame-src https://accounts.google.com">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; connect-src https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com https://api.open-meteo.com https://air-quality-api.open-meteo.com https://ko.wikipedia.org https://api.wikimedia.org https://api.dictionaryapi.dev https://api.mymemory.translated.net https://stdict.korean.go.kr; style-src 'self' 'unsafe-inline' https://accounts.google.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https://upload.wikimedia.org; frame-src https://accounts.google.com">
 <meta name="theme-color" id="themeColor" content="#F3EFE6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="대시보드">
@@ -158,6 +158,76 @@
   .tile .tn small{display:block; font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .tile.on{box-shadow:0 0 0 3px var(--accent);}
   .tile.on .tn b::after{content:" ✓"; color:var(--accent-2);}
+
+  /* ===== PC 위젯들 (폰) ===== */
+  .stamp{flex:none; font-size:11.5px; color:var(--faint); font-variant-numeric:tabular-nums;}
+  .sub{font-size:13px; color:var(--muted); padding:2px 0 8px;}
+  .card .note{margin:8px 0 0; font-size:12.5px; color:var(--faint);}
+  .srch{display:flex; gap:8px; margin:2px 0 8px;}
+  .srch input{flex:1; min-width:0; height:44px;}
+  .hit{display:flex; align-items:baseline; gap:8px; width:100%; min-height:46px; padding:8px 2px; border:none; border-top:1px solid var(--border);
+    background:none; color:var(--text); text-align:left; font-size:15.5px;}
+  .hit small{color:var(--muted); font-size:12.5px;}
+  .kv{display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-top:1px solid var(--border); font-size:14.5px;}
+  .kv span{color:var(--muted); flex:none;} .kv b,.kv a{text-align:right; font-weight:600; color:var(--text);}
+  .seg{display:flex; flex-wrap:wrap; gap:6px; margin:0 0 8px;}
+  .seg button{min-height:36px; padding:0 12px; border-radius:999px; border:1px solid var(--border); background:var(--bg-soft); color:var(--text); font-size:13.5px;}
+  .seg button.on{background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:700;}
+  .more{display:inline-block; margin-top:8px; padding:6px 0; border:none; background:none; color:var(--accent-2); font-size:14px; font-weight:600; text-decoration:none;}
+  .src{margin-top:8px; font-size:12px; color:var(--faint);}
+  /* 시계 */
+  .clk{padding:4px 0 6px;} .clk-t{font-size:44px; font-weight:800; letter-spacing:-.03em; font-variant-numeric:tabular-nums;}
+  .clk-s{margin-left:6px; font-size:20px; color:var(--accent-2); font-weight:700; font-variant-numeric:tabular-nums;} .clk-d{color:var(--muted); font-size:14px;}
+  /* 날씨 */
+  .wx-now{display:flex; align-items:center; gap:14px;} .wx-e{font-size:44px; line-height:1;}
+  .wx-t{font-size:38px; font-weight:800; letter-spacing:-.03em;} .wx-t small{font-size:16px; color:var(--muted); margin-left:2px;}
+  .wx-k{color:var(--muted); font-size:14px;}
+  .wx-meta{display:flex; flex-wrap:wrap; gap:6px 14px; margin:10px 0 4px; font-size:13.5px; color:var(--muted);} .wx-meta b{color:var(--text);}
+  .dotg{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px; vertical-align:1px;}
+  .dotg.g1{background:#3b82f6;} .dotg.g2{background:#22c55e;} .dotg.g3{background:#f59e0b;} .dotg.g4{background:#ef4444;}
+  .wx-h{display:flex; gap:4px; overflow-x:auto; padding:8px 0; border-top:1px solid var(--border); -webkit-overflow-scrolling:touch;}
+  .wx-hh{flex:none; width:52px; display:flex; flex-direction:column; align-items:center; gap:2px; font-size:13px;}
+  .wx-hh small{color:var(--muted);} .wx-hh i{font-style:normal; font-size:11.5px; color:var(--faint);} .wx-hh i.wet{color:var(--accent-2); font-weight:700;}
+  .wx-d{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding-top:8px; border-top:1px solid var(--border);}
+  .wx-d > div{display:flex; flex-direction:column; align-items:center; gap:2px; font-size:13.5px;} .wx-d small{color:var(--muted);} .wx-d i{font-style:normal; font-size:12px; color:var(--accent-2);}
+  /* 명언·국가·백과·사전·역사 */
+  .qt{margin:4px 0 6px; font-size:17px; line-height:1.6; font-weight:600;} .qa{margin:0; color:var(--muted); font-size:14px;}
+  .ctry{display:flex; align-items:center; gap:12px; padding:6px 0 10px;} .cf{font-size:40px;} .ctry b{display:block; font-size:18px;} .ctry small{color:var(--muted);}
+  .enc{display:flex; align-items:center; gap:12px; padding:4px 0 6px;} .enc img{width:64px; height:64px; object-fit:cover; border-radius:var(--radius-sm);} .enc b{font-size:17px;}
+  .enc-t{margin:0; font-size:14.5px; line-height:1.7;}
+  .dw b{font-size:20px;} .dw small{color:var(--muted);} .dtr{margin:6px 0; font-size:17px; font-weight:600;}
+  .dm{padding:8px 0; border-top:1px solid var(--border);} .dm p{margin:2px 0; font-size:14.5px; line-height:1.6;} .dex{color:var(--muted); font-size:13.5px !important;}
+  .dpos{display:inline-block; padding:1px 8px; border-radius:999px; background:var(--accent-soft); color:var(--accent-2); font-size:12px; font-weight:700;}
+  .hrow{display:flex; gap:12px; padding:9px 0; border-top:1px solid var(--border); color:var(--text); text-decoration:none; font-size:14.5px; line-height:1.55;}
+  .hrow:first-child{border-top:none;} .hrow b{flex:none; min-width:44px; color:var(--accent-2); font-variant-numeric:tabular-nums;}
+  /* 급식·학사일정·뉴스·시세 */
+  .meal{padding:8px 0; border-top:1px solid var(--border);} .meal b{font-size:13px; color:var(--accent-2);} .meal p{margin:3px 0; font-size:15px; line-height:1.6;} .meal small{color:var(--faint);}
+  .ev{display:flex; gap:12px; padding:8px 0; border-top:1px solid var(--border); font-size:14.5px;} .evd{flex:none; min-width:62px; color:var(--muted); font-variant-numeric:tabular-nums;}
+  .ev.now{font-weight:700;} .ev.now .evd{color:var(--accent-2);} .ev.past{opacity:.5;}
+  .nw{display:block; padding:10px 0; border-top:1px solid var(--border); color:var(--text); text-decoration:none; font-size:14.5px; line-height:1.55;}
+  .sq{display:grid; grid-template-columns:1fr auto; gap:0 10px; padding:9px 0; border-top:1px solid var(--border);}
+  .sq b{font-size:15px;} .sqp{text-align:right; font-weight:700; font-variant-numeric:tabular-nums;} .sqc{grid-column:2; text-align:right; font-size:12.5px; font-variant-numeric:tabular-nums;}
+  .sqc.up{color:#e5484d;} .sqc.down{color:#3b82f6;}
+  /* 시간표·연락처·학생 */
+  .ttw{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .tt{width:100%; border-collapse:collapse; font-size:12.5px; table-layout:fixed;}
+  .tt th,.tt td{border:1px solid var(--border); padding:4px 2px; text-align:center; vertical-align:middle;}
+  .tt th{background:var(--bg-soft); color:var(--muted); font-weight:700;} .tt .pn{width:26px;}
+  .tt td b{display:block; font-size:12.5px;} .tt td small{display:block; color:var(--muted); font-size:11px;}
+  .tt .now{background:var(--accent-soft);}
+  .res{display:flex; flex-direction:column; gap:2px; padding:10px 0; border-top:1px solid var(--border);} .res > b{font-size:16px;}
+  .res .rc{color:var(--muted); font-size:13.5px;} .res .kv{border-top:none; padding:2px 0;}
+  .tel{align-self:flex-start; margin-top:2px; color:var(--accent-2); font-weight:700; text-decoration:none; font-size:15px;}
+  /* 폰에 보일 항목 고르기 */
+  .pk-note{margin:0 0 12px; font-size:13.5px; color:var(--muted); line-height:1.6;}
+  .pk-tools{display:flex; gap:8px; margin-bottom:10px;}
+  .pk-list{display:flex; flex-direction:column; gap:6px; margin-bottom:14px;}
+  .pk-sub{margin:10px 2px 2px; font-size:12.5px; font-weight:700; color:var(--muted);}
+  .pk{display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--bg-soft);}
+  .pk.off{opacity:.55;}
+  .pk input{width:20px; height:20px; flex:none; margin:0; accent-color:var(--accent);}
+  .pk-i{flex:none; width:24px; text-align:center;} .pk-t{min-width:0;} .pk-t b{display:block; font-size:14.5px;}
+  .pk-t i{display:block; font-style:normal; font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 
   /* ===== PC 테마 (PC index.html에서 자동으로 옮겨 온 모양) ===== */
 :root,[data-theme="light"]{--bg:#F3EFE6;--bg-soft:#FBF9F2;--card:#FFFFFF;--card-2:#F6F1E7;--border:#E8E1D0;--border-strong:#D7CDB6;--text:#231D12;--muted:#7F7666;--faint:#AEA48F;--accent:#B88923;--accent-2:#9A7115;--accent-soft:rgba(184,137,35,.12);--accent-ink:#2A2005;--teal:#2E9E92;--danger:#D25A50;--good:#3F9E55;--dot:rgba(70,56,28,.06);--radius:20px;--radius-sm:12px;--shadow:0 1px 2px rgba(56,44,20,.05), 0 14px 34px -20px rgba(56,44,20,.18);--shadow-lift:0 5px 12px rgba(56,44,20,.08), 0 26px 52px -18px rgba(56,44,20,.22)}
@@ -378,9 +448,11 @@
 <main class="wrap" id="app"></main>
 <div class="menu" id="menu"><div class="sheet">
   <p id="menuWho"></p>
+  <button class="big" id="pickBtn">폰에 보일 항목 고르기</button>
   <button class="big sub" id="logoutBtn">로그아웃</button>
   <button class="big sub" id="closeMenu">닫기</button>
 </div></div>
+<div class="menu" id="pickMenu"><div class="sheet" id="pickSheet" role="dialog" aria-label="폰에 보일 항목"></div></div>
 <div class="menu" id="themeMenu"><div class="sheet" id="themeSheet" role="dialog" aria-label="화면 꾸미기"></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -396,7 +468,7 @@ const TITLES = {clock:"시계",weather:"날씨",todo:"할 일",meal:"급식",nei
   encyc:"백과사전",history:"오늘의 역사",country:"세계 국가정보",timetable:"시간표",contacts:"교사 연락처",roster:"학생 찾기",
   dday:"D-Day",links:"바로가기",memo:"메모",shortcuts:"아이콘 바로가기",files:"폴더·파일",news:"경제 뉴스",stocks:"시세",
   netswitch:"인터넷 전환",aiusage:"Claude 사용량"};
-const SUPPORTED = new Set(["todo","memo","dday","links","shortcuts"]);
+const SUPPORTED = new Set(["todo","memo","dday","links","shortcuts","clock","weather","meal","neis","quote","dict","encyc","history","country","timetable","contacts","roster","news","stocks"]);
 
 /* ===== 화면 꾸미기 (PC 테마와 같은 이름·모양) ===== */
 const THEMES={
@@ -527,9 +599,12 @@ async function refresh(force){
   if(!S.tok || S.pending.length || S.flushing || S.refreshing) return;
   S.refreshing=true;
   try{ await _refresh(force); }finally{ S.refreshing=false; }
+  loadSnaps(!!force);
+  if(S.data && !pickPref() && !S.pickShown){ S.pickShown=true; openPick(true); }   // 처음 연결: 폰에서 볼 항목 고르기
 }
 async function _refresh(force){
-  if(!force && document.activeElement && document.activeElement.classList.contains("memo")) return;   // 메모 쓰는 중엔 건드리지 않음
+  const ae=document.activeElement;
+  if(!force && ae && (ae.classList.contains("memo") || ae.tagName==="INPUT")) return;   // 메모·검색칸에 입력 중엔 건드리지 않음
   try{
     if(S.file && !force){ const m=await fileMeta(S.file.id); if(m.modifiedTime===S.file.modifiedTime){ setStatus("최신"); return; } }
     setStatus("불러오는 중…");
@@ -651,28 +726,402 @@ function fmtDue(ymd){
 }
 const CHECK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
 
+
+/* ================= 폰: PC의 모든 위젯 (PC 전용 3개 빼고) =================
+   · 폰이 직접: 시계·명언·국가정보(폰 안에서), 날씨·백과사전·사전·오늘의 역사(인터넷에서 직접)
+   · PC가 올려 준 내용으로: 급식·학사일정·뉴스·시세·시간표·교사 연락처·학생 찾기 */
+const PC_ONLY = new Set(["netswitch","aiusage","files"]);
+const W_ICON = {clock:"🕐",weather:"⛅",todo:"✓",meal:"🍱",neis:"📅",quote:"💬",dict:"📖",encyc:"📚",history:"📜",country:"🌍",
+  timetable:"📆",contacts:"☎️",roster:"🎒",dday:"📌",links:"🔗",memo:"📝",shortcuts:"🚀",files:"📂",news:"📰",stocks:"📈",netswitch:"🌐",aiusage:"🤖"};
+const QUOTES = [
+      {t:"상상력은 지식보다 중요하다.",a:"알베르트 아인슈타인"},
+      {t:"삶에는 두 가지 방법이 있다. 하나는 기적이 없다고 여기는 것이고, 다른 하나는 모든 것이 기적이라 여기는 것이다.",a:"알베르트 아인슈타인"},
+      {t:"내가 더 멀리 보았다면, 그것은 거인들의 어깨 위에 서 있었기 때문이다.",a:"아이작 뉴턴"},
+      {t:"인생에서 두려워할 것은 아무것도 없다. 이해해야 할 것만 있을 뿐이다.",a:"마리 퀴리"},
+      {t:"천재는 1퍼센트의 영감과 99퍼센트의 노력이다.",a:"토머스 에디슨"},
+      {t:"살아남는 종은 강한 종도, 똑똑한 종도 아니라 변화에 가장 잘 적응하는 종이다.",a:"찰스 다윈"},
+      {t:"나는 생각한다, 고로 존재한다.",a:"르네 데카르트"},
+      {t:"너 자신을 알라.",a:"소크라테스"},
+      {t:"우리는 반복적으로 행하는 것의 결과다. 그러므로 탁월함은 습관이다.",a:"아리스토텔레스"},
+      {t:"배우기만 하고 생각하지 않으면 얻는 것이 없고, 생각만 하고 배우지 않으면 위태롭다.",a:"공자"},
+      {t:"그대를 죽이지 못하는 것은 그대를 더 강하게 만든다.",a:"프리드리히 니체"},
+      {t:"내 위의 별이 빛나는 하늘과 내 안의 도덕 법칙.",a:"이마누엘 칸트"},
+      {t:"아는 것이 힘이다.",a:"프랜시스 베이컨"},
+      {t:"인간은 자유롭도록 선고받았다.",a:"장폴 사르트르"},
+      {t:"세상에서 보고 싶은 변화가 있다면, 스스로 그 변화가 되어라.",a:"마하트마 간디"},
+      {t:"결코, 결코, 결코 포기하지 말라.",a:"윈스턴 처칠"},
+      {t:"성공은 영원하지 않고, 실패는 치명적이지 않다. 중요한 것은 계속하는 용기다.",a:"윈스턴 처칠"},
+      {t:"국민의, 국민에 의한, 국민을 위한 정부.",a:"에이브러햄 링컨"},
+      {t:"국가가 당신을 위해 무엇을 할지 묻지 말고, 당신이 국가를 위해 무엇을 할지 물으라.",a:"존 F. 케네디"},
+      {t:"교육은 세상을 바꾸는 가장 강력한 무기다.",a:"넬슨 만델라"},
+      {t:"가장 큰 영광은 넘어지지 않는 데 있지 않고, 넘어질 때마다 일어서는 데 있다.",a:"넬슨 만델라"},
+      {t:"오늘 할 수 있는 일을 내일로 미루지 말라.",a:"벤저민 프랭클린"},
+      {t:"자유가 아니면 죽음을 달라.",a:"패트릭 헨리"},
+      {t:"펜은 칼보다 강하다.",a:"에드워드 불워리턴"},
+      {t:"위대한 일은 결코 쉽게 이루어지지 않는다.",a:"세네카"},
+      {t:"행복은 습관이다. 그것을 몸에 지녀라.",a:"엘버트 허버드"},
+      {t:"지혜의 시작은 용어의 정의다.",a:"소크라테스"},
+      {t:"인내는 쓰지만 그 열매는 달다.",a:"장자크 루소"},
+      {t:"흐르지 않는 물은 썩는다. 끊임없이 나아가라.",a:"레오나르도 다빈치"}
+    ];
+const COUNTRIES=[
+  {ko:"대한민국",en:"South Korea",cc:"KR",cap:"서울",region:"아시아",pop:51700000,lang:"한국어"},
+  {ko:"북한",en:"North Korea",cc:"KP",cap:"평양",region:"아시아",pop:26000000,lang:"한국어"},
+  {ko:"일본",en:"Japan",cc:"JP",cap:"도쿄",region:"아시아",pop:124000000,lang:"일본어"},
+  {ko:"중국",en:"China",cc:"CN",cap:"베이징",region:"아시아",pop:1410000000,lang:"중국어"},
+  {ko:"대만",en:"Taiwan",cc:"TW",cap:"타이베이",region:"아시아",pop:23400000,lang:"중국어"},
+  {ko:"미국",en:"United States",cc:"US",cap:"워싱턴 D.C.",region:"북아메리카",pop:334000000,lang:"영어"},
+  {ko:"캐나다",en:"Canada",cc:"CA",cap:"오타와",region:"북아메리카",pop:39000000,lang:"영어·프랑스어"},
+  {ko:"멕시코",en:"Mexico",cc:"MX",cap:"멕시코시티",region:"북아메리카",pop:128000000,lang:"스페인어"},
+  {ko:"영국",en:"United Kingdom",cc:"GB",cap:"런던",region:"유럽",pop:67000000,lang:"영어"},
+  {ko:"프랑스",en:"France",cc:"FR",cap:"파리",region:"유럽",pop:68000000,lang:"프랑스어"},
+  {ko:"독일",en:"Germany",cc:"DE",cap:"베를린",region:"유럽",pop:84000000,lang:"독일어"},
+  {ko:"이탈리아",en:"Italy",cc:"IT",cap:"로마",region:"유럽",pop:59000000,lang:"이탈리아어"},
+  {ko:"스페인",en:"Spain",cc:"ES",cap:"마드리드",region:"유럽",pop:48000000,lang:"스페인어"},
+  {ko:"포르투갈",en:"Portugal",cc:"PT",cap:"리스본",region:"유럽",pop:10000000,lang:"포르투갈어"},
+  {ko:"네덜란드",en:"Netherlands",cc:"NL",cap:"암스테르담",region:"유럽",pop:18000000,lang:"네덜란드어"},
+  {ko:"벨기에",en:"Belgium",cc:"BE",cap:"브뤼셀",region:"유럽",pop:11700000,lang:"네덜란드어·프랑스어"},
+  {ko:"스위스",en:"Switzerland",cc:"CH",cap:"베른",region:"유럽",pop:8800000,lang:"독일어·프랑스어"},
+  {ko:"오스트리아",en:"Austria",cc:"AT",cap:"빈",region:"유럽",pop:9000000,lang:"독일어"},
+  {ko:"스웨덴",en:"Sweden",cc:"SE",cap:"스톡홀름",region:"유럽",pop:10500000,lang:"스웨덴어"},
+  {ko:"노르웨이",en:"Norway",cc:"NO",cap:"오슬로",region:"유럽",pop:5500000,lang:"노르웨이어"},
+  {ko:"덴마크",en:"Denmark",cc:"DK",cap:"코펜하겐",region:"유럽",pop:5900000,lang:"덴마크어"},
+  {ko:"핀란드",en:"Finland",cc:"FI",cap:"헬싱키",region:"유럽",pop:5600000,lang:"핀란드어"},
+  {ko:"폴란드",en:"Poland",cc:"PL",cap:"바르샤바",region:"유럽",pop:38000000,lang:"폴란드어"},
+  {ko:"체코",en:"Czechia",cc:"CZ",cap:"프라하",region:"유럽",pop:10500000,lang:"체코어"},
+  {ko:"헝가리",en:"Hungary",cc:"HU",cap:"부다페스트",region:"유럽",pop:9700000,lang:"헝가리어"},
+  {ko:"그리스",en:"Greece",cc:"GR",cap:"아테네",region:"유럽",pop:10400000,lang:"그리스어"},
+  {ko:"아일랜드",en:"Ireland",cc:"IE",cap:"더블린",region:"유럽",pop:5100000,lang:"영어·아일랜드어"},
+  {ko:"러시아",en:"Russia",cc:"RU",cap:"모스크바",region:"유럽",pop:144000000,lang:"러시아어"},
+  {ko:"우크라이나",en:"Ukraine",cc:"UA",cap:"키이우",region:"유럽",pop:38000000,lang:"우크라이나어"},
+  {ko:"튀르키예",en:"Turkey",cc:"TR",cap:"앙카라",region:"아시아",pop:85000000,lang:"튀르키예어"},
+  {ko:"인도",en:"India",cc:"IN",cap:"뉴델리",region:"아시아",pop:1430000000,lang:"힌디어·영어"},
+  {ko:"인도네시아",en:"Indonesia",cc:"ID",cap:"자카르타",region:"아시아",pop:277000000,lang:"인도네시아어"},
+  {ko:"베트남",en:"Vietnam",cc:"VN",cap:"하노이",region:"아시아",pop:98000000,lang:"베트남어"},
+  {ko:"태국",en:"Thailand",cc:"TH",cap:"방콕",region:"아시아",pop:72000000,lang:"태국어"},
+  {ko:"필리핀",en:"Philippines",cc:"PH",cap:"마닐라",region:"아시아",pop:115000000,lang:"필리핀어·영어"},
+  {ko:"말레이시아",en:"Malaysia",cc:"MY",cap:"쿠알라룸푸르",region:"아시아",pop:34000000,lang:"말레이어"},
+  {ko:"싱가포르",en:"Singapore",cc:"SG",cap:"싱가포르",region:"아시아",pop:5900000,lang:"영어·중국어·말레이어"},
+  {ko:"몽골",en:"Mongolia",cc:"MN",cap:"울란바토르",region:"아시아",pop:3400000,lang:"몽골어"},
+  {ko:"네팔",en:"Nepal",cc:"NP",cap:"카트만두",region:"아시아",pop:30000000,lang:"네팔어"},
+  {ko:"파키스탄",en:"Pakistan",cc:"PK",cap:"이슬라마바드",region:"아시아",pop:240000000,lang:"우르두어·영어"},
+  {ko:"방글라데시",en:"Bangladesh",cc:"BD",cap:"다카",region:"아시아",pop:170000000,lang:"벵골어"},
+  {ko:"사우디아라비아",en:"Saudi Arabia",cc:"SA",cap:"리야드",region:"아시아",pop:37000000,lang:"아랍어"},
+  {ko:"아랍에미리트",en:"United Arab Emirates",cc:"AE",cap:"아부다비",region:"아시아",pop:9900000,lang:"아랍어"},
+  {ko:"이란",en:"Iran",cc:"IR",cap:"테헤란",region:"아시아",pop:89000000,lang:"페르시아어"},
+  {ko:"이라크",en:"Iraq",cc:"IQ",cap:"바그다드",region:"아시아",pop:45000000,lang:"아랍어"},
+  {ko:"이스라엘",en:"Israel",cc:"IL",cap:"예루살렘",region:"아시아",pop:9700000,lang:"히브리어·아랍어"},
+  {ko:"이집트",en:"Egypt",cc:"EG",cap:"카이로",region:"아프리카",pop:112000000,lang:"아랍어"},
+  {ko:"남아프리카 공화국",en:"South Africa",cc:"ZA",cap:"프리토리아",region:"아프리카",pop:60000000,lang:"영어 외"},
+  {ko:"나이지리아",en:"Nigeria",cc:"NG",cap:"아부자",region:"아프리카",pop:223000000,lang:"영어"},
+  {ko:"케냐",en:"Kenya",cc:"KE",cap:"나이로비",region:"아프리카",pop:54000000,lang:"스와힐리어·영어"},
+  {ko:"모로코",en:"Morocco",cc:"MA",cap:"라바트",region:"아프리카",pop:37000000,lang:"아랍어"},
+  {ko:"브라질",en:"Brazil",cc:"BR",cap:"브라질리아",region:"남아메리카",pop:215000000,lang:"포르투갈어"},
+  {ko:"아르헨티나",en:"Argentina",cc:"AR",cap:"부에노스아이레스",region:"남아메리카",pop:46000000,lang:"스페인어"},
+  {ko:"칠레",en:"Chile",cc:"CL",cap:"산티아고",region:"남아메리카",pop:19000000,lang:"스페인어"},
+  {ko:"페루",en:"Peru",cc:"PE",cap:"리마",region:"남아메리카",pop:34000000,lang:"스페인어"},
+  {ko:"콜롬비아",en:"Colombia",cc:"CO",cap:"보고타",region:"남아메리카",pop:52000000,lang:"스페인어"},
+  {ko:"호주",en:"Australia",cc:"AU",cap:"캔버라",region:"오세아니아",pop:26000000,lang:"영어"},
+  {ko:"뉴질랜드",en:"New Zealand",cc:"NZ",cap:"웰링턴",region:"오세아니아",pop:5200000,lang:"영어·마오리어"}
+];
+function wcode(c, isDay){ const m={0:["☀️","맑음"],1:["🌤️","대체로 맑음"],2:["⛅","구름 많음"],3:["☁️","흐림"],45:["🌫️","안개"],48:["🌫️","짙은 안개"],51:["🌦️","약한 이슬비"],53:["🌦️","이슬비"],55:["🌧️","강한 이슬비"],56:["🌧️","약한 어는 이슬비"],57:["🌧️","어는 이슬비"],61:["🌧️","약한 비"],63:["🌧️","비"],65:["🌧️","강한 비"],66:["🌧️","약한 어는 비"],67:["🌧️","어는 비"],71:["🌨️","약한 눈"],73:["🌨️","눈"],75:["❄️","강한 눈"],77:["🌨️","싸락눈"],80:["🌦️","약한 소나기"],81:["🌧️","소나기"],82:["⛈️","강한 소나기"],85:["🌨️","약한 눈 소나기"],86:["🌨️","강한 눈 소나기"],95:["⛈️","뇌우"],96:["⛈️","뇌우·약한 우박"],99:["⛈️","뇌우·강한 우박"]};
+  const v=m[c]||["🌡️","—"]; let e=v[0];
+  if(isDay===0){ if(c===0)e="🌙"; else if(c===1)e="🌙"; else if(c===2)e="☁️"; }
+  return {e:e, k:v[1]}; }
+function flagEmoji(cc){ try{ return [...cc.toUpperCase()].map(ch=>String.fromCodePoint(0x1F1E6+ch.charCodeAt(0)-65)).join(""); }catch(e){ return ""; } }
+const DMODES = {"국어":{ph:"우리말 단어 (예: 나무)",kr:true,inLang:"ko-KR"},"영영":{ph:"영어 단어 (예: apple)",en:true,inLang:"en-US"},"영한":{ph:"영어 단어 → 한국어",pair:"en|ko",en:true,inLang:"en-US",outLang:"ko-KR"},"한영":{ph:"한국어 단어 → 영어",pair:"ko|en",inLang:"ko-KR",outLang:"en-US"},"일한":{ph:"일본어 단어 → 한국어",pair:"ja|ko",inLang:"ja-JP",outLang:"ko-KR",jaIn:true},"한일":{ph:"한국어 단어 → 일본어",pair:"ko|ja",inLang:"ko-KR",outLang:"ja-JP"}};
+const _ui = {}; const UI = w => _ui[w.id] || (_ui[w.id] = {});
+const pad2 = n => String(n).padStart(2,"0");
+const telOf = p => "tel:" + String(p||"").replace(/[^0-9+]/g,"");
+
+/* ---- 이 폰에서 볼 항목 (체크를 풀어도 PC·클라우드에는 그대로) ---- */
+function pickPref(){ try{ const o=JSON.parse(localStorage.getItem("m.pick")||"null"); return (o&&typeof o==="object")?o:null; }catch(e){ return null; } }
+function pickSave(o){ try{ localStorage.setItem("m.pick", JSON.stringify(o)); }catch(e){} }
+function wShown(w){ const p=pickPref(); return !(p && p.w && p.w[w.id]===false); }
+function noteShown(id){ const p=pickPref(); return !(p && p.nh && p.nh[id]); }
+function wSub(w){
+  const c=w.config||{}, it=Array.isArray(c.items)?c.items:[];
+  if(PC_ONLY.has(w.type)) return "PC 전용 · 폰에서는 쓸 수 없어요";
+  if(w.type==="todo"){ const n=it.filter(x=>x&&!x.done).length; return `남은 할 일 ${n}개`; }
+  if(w.type==="dday") return `${(c.events||[]).length}개`;
+  if(/^(links|shortcuts|stocks)$/.test(w.type)) return it.length?`${it.length}개 · ${it.slice(0,3).map(x=>x.name||x.label||"").filter(Boolean).join(", ")}`:"비어 있음";
+  if(w.type==="weather") return c.name?`지역: ${c.name}`:"";
+  if(/^(meal|neis)$/.test(w.type)) return c.school&&c.school.name?`학교: ${c.school.name}`:"";
+  if(/^(timetable|contacts|roster)$/.test(w.type)) return c.fileName?`엑셀: ${c.fileName}`:"";
+  return "";
+}
+function openPick(first){
+  const d=S.data; if(!d) return;
+  const p=pickPref()||{}; p.w=p.w||{}; p.nh=p.nh||{};
+  const sh=$("#pickSheet"); sh.innerHTML=""; const boxes=[];
+  const row=(icon,title,sub,checked,onchg,off)=>{ const cb=h("input",{type:"checkbox"}); cb.checked=!!checked; cb.disabled=!!off;
+    if(!off){ boxes.push(cb); cb.addEventListener("change",()=>onchg(cb.checked)); }
+    return h("label",{class:"pk"+(off?" off":"")}, cb, h("span",{class:"pk-i",text:icon}), h("span",{class:"pk-t"}, h("b",{text:title}), sub?h("i",{text:sub}):null)); };
+  const all=v=>boxes.forEach(b=>{ if(b.checked!==v){ b.checked=v; b.dispatchEvent(new Event("change")); } });
+  sh.append(h("h2",{text:first?"폰에서 볼 항목 고르기":"폰에 보일 항목"}),
+    h("p",{class:"pk-note", text:"PC에서 동기화하는 내용 중 이 폰에서 볼 것만 체크하세요. 체크를 풀어도 PC와 클라우드에는 그대로 남아요."+(first?" 나중에 ⋯ 메뉴에서 바꿀 수 있어요.":"")}),
+    h("div",{class:"pk-tools"}, h("button",{class:"mini",text:"모두 체크",onclick:()=>all(true)}), h("button",{class:"mini",text:"모두 해제",onclick:()=>all(false)})));
+  const list=h("div",{class:"pk-list"}); sh.appendChild(list);
+  list.appendChild(row("🎨","화면 꾸미기","PC에서 고른 꾸미기를 따름", thPref().sync, v=>{ const q=thPref(); if(!v) q.pick=currentTheme(); q.sync=v; thSave(q); applyTheme(); }));
+  const notes=(Array.isArray(d.notes)?d.notes:[]).filter(n=>n&&typeof n.id==="string").slice().sort((a,b)=>(+b.at||0)-(+a.at||0));
+  if(notes.length){ list.appendChild(h("div",{class:"pk-sub",text:`📝 메모 ${notes.length}개`}));
+    notes.forEach(n=>list.appendChild(row("📝", noteTitle(n), (String(n.text||"").trim().split("\n")[1]||"").trim().slice(0,40), !p.nh[n.id], v=>{ if(v) delete p.nh[n.id]; else p.nh[n.id]=true; }))); }
+  list.appendChild(h("div",{class:"pk-sub",text:"위젯"}));
+  orderWidgets(d).forEach(w=>{ if(w.type==="memo") return;
+    const title=(typeof w.title==="string"&&w.title.trim())?w.title:(TITLES[w.type]||w.type);
+    list.appendChild(row(W_ICON[w.type]||"▫️", title, wSub(w), PC_ONLY.has(w.type)?false:p.w[w.id]!==false, v=>{ if(v) delete p.w[w.id]; else p.w[w.id]=false; }, PC_ONLY.has(w.type))); });
+  sh.appendChild(h("button",{class:"big",text:"완료",onclick:()=>{ pickSave(p); $("#pickMenu").classList.remove("on"); render(); }}));
+  $("#pickMenu").classList.add("on");
+  $("#pickMenu").onclick=e=>{ if(e.target.id==="pickMenu"){ pickSave(p); $("#pickMenu").classList.remove("on"); render(); } };
+}
+
+/* ---- PC가 올려 준 내용 (자주 바뀌는 것 / 엑셀) — 1분에 한 번 확인 ---- */
+S.snap={live:null, xl:null}; S.snapMt={live:"", xl:""}; S.snapAt=0;
+async function loadSnaps(force){
+  if(!S.tok || (!force && Date.now()-S.snapAt<60000)) return;
+  const a=document.activeElement; if(a && /^(INPUT|TEXTAREA)$/.test(a.tagName)) return;      /* 입력 중이면 다음에 */
+  S.snapAt=Date.now();
+  try{ const r=await api(`${API}/files?spaces=appDataFolder&pageSize=200&fields=files(id,name,modifiedTime)`); const j=await r.json(); let changed=false;
+    for(const f of ["live","xl"]){ const it=(j.files||[]).find(x=>x.name===`snap_${f}.json`); if(!it || it.modifiedTime===S.snapMt[f]) continue;
+      const doc=await download(it.id); if(doc && doc.widgets && typeof doc.widgets==="object"){ S.snap[f]=doc; S.snapMt[f]=it.modifiedTime; changed=true; } }
+    if(changed && S.data) render();
+  }catch(e){ if(e instanceof AuthError) needLogin(); }
+}
+function snapOf(w){ const doc=S.snap[/^(timetable|contacts|roster)$/.test(w.type)?"xl":"live"]; const x=doc&&doc.widgets&&doc.widgets[w.id]; return (x&&x.d)?x:null; }
+function stampEl(at){ if(!at) return null; const d=new Date(at), same=new Date().toDateString()===d.toDateString();
+  return h("span",{class:"stamp", text:`PC ${same?"":(d.getMonth()+1)+"/"+d.getDate()+" "}${pad2(d.getHours())}:${pad2(d.getMinutes())}`}); }
+function cardBody(sec, title, right){ sec.appendChild(h("div",{class:"head"}, h("h2",{class:"ttl",text:title}), right||null)); const b=h("div",{class:"body"}); sec.appendChild(b); return b; }
+function noSnap(b){ b.appendChild(h("div",{class:"empty",text:"아직 PC에서 받은 내용이 없어요. PC 프로그램(1.5.5 이상)에서 이 위젯이 한 번 열리면 여기에 보여요."})); }
+function empty(b,t){ b.appendChild(h("div",{class:"empty",text:t})); }
+function searchRow(b, u, ph, go, extra){
+  const inp=h("input",{type:"search", placeholder:ph, enterkeyhint:"search"}); inp.value=u.q||"";
+  if(extra) Object.keys(extra).forEach(k=>inp.setAttribute(k, extra[k]));
+  const run=()=>{ u.q=inp.value.trim(); inp.blur(); go(); };
+  inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); run(); } });
+  b.appendChild(h("div",{class:"srch"}, inp, h("button",{class:"mini go",text:"찾기",onclick:run}))); return inp;
+}
+function kv(k,v,href){ return h("div",{class:"kv"}, h("span",{text:k}), href?h("a",{href,text:v}):h("b",{text:v})); }
+const DRAW = {};
+
+/* 시계 */
+DRAW.clock=(sec,w,title)=>{ const b=cardBody(sec,title); b.appendChild(h("div",{class:"clk"}, h("div",{}, h("b",{class:"clk-t"}), h("span",{class:"clk-s"})), h("div",{class:"clk-d"}))); tickClock(); };
+function tickClock(){ const n=new Date(); document.querySelectorAll(".clk").forEach(c=>{
+  c.querySelector(".clk-t").textContent=`${pad2(n.getHours())}:${pad2(n.getMinutes())}`; c.querySelector(".clk-s").textContent=pad2(n.getSeconds());
+  c.querySelector(".clk-d").textContent=`${n.getFullYear()}년 ${n.getMonth()+1}월 ${n.getDate()}일 ${DOW[n.getDay()]}요일`; }); }
+setInterval(tickClock, 1000);
+
+/* 날씨 (open-meteo에서 직접, 10분마다) */
+const WX={};
+async function loadWx(key,c){ const x=WX[key]=WX[key]||{}; if(x.busy) return; x.busy=true;
+  try{ const base=`https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,is_day&hourly=temperature_2m,precipitation_probability,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&wind_speed_unit=ms&timezone=auto&forecast_days=4`;
+    const inKR=c.lat>=33&&c.lat<=38.8&&c.lon>=124.5&&c.lon<=132.2; let data=null;
+    for(const u of (inKR?[base+"&models=kma_seamless",base]:[base])){ try{ const j=await (await fetch(u)).json();
+      if(j&&j.current&&j.current.temperature_2m!=null&&j.daily&&j.daily.temperature_2m_max&&j.daily.temperature_2m_max[0]!=null){ data=j; break; } }catch(e){} }
+    if(!data) throw new Error("no");
+    let air=null; try{ const a=await (await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${c.lat}&longitude=${c.lon}&current=pm10,pm2_5&timezone=auto`)).json(); air=(a&&a.current)||null; }catch(e){}
+    x.data={w:data, air}; x.err=false;
+  }catch(e){ x.err=true; }
+  x.at=Date.now(); x.busy=false; if(S.data) render();
+}
+const airG=(v,[a,b,c])=>v<=a?["좋음","g1"]:v<=b?["보통","g2"]:v<=c?["나쁨","g3"]:["매우나쁨","g4"];
+DRAW.weather=(sec,w,title)=>{ const c=w.config||{}; const b=cardBody(sec,title);
+  if(c.lat==null){ empty(b,"PC에서 날씨 지역을 먼저 정해 주세요."); return; }
+  const key=`${c.lat},${c.lon}`, x=WX[key];
+  if(!x || (!x.busy && Date.now()-(x.at||0)>600000)) loadWx(key,c);
+  if(!x || !x.data){ empty(b, x&&x.err?"날씨를 불러오지 못했어요. 잠시 뒤 다시 확인할게요.":"날씨 불러오는 중…"); return; }
+  const data=x.data.w, cur=data.current, dy=data.daily, wc=wcode(cur.weather_code, cur.is_day);
+  b.appendChild(h("div",{class:"wx-now"}, h("span",{class:"wx-e",text:wc.e}), h("div",{},
+    h("div",{class:"wx-t"}, String(Math.round(cur.temperature_2m)), h("small",{text:"°C"})), h("div",{class:"wx-k",text:`📍 ${c.name||""} · ${wc.k}`}))));
+  const meta=h("div",{class:"wx-meta"});
+  [["체감",Math.round(cur.apparent_temperature)+"°"],["최고·최저",`${Math.round(dy.temperature_2m_max[0])}° / ${Math.round(dy.temperature_2m_min[0])}°`],["습도",cur.relative_humidity_2m+"%"],["바람",(+cur.wind_speed_10m).toFixed(1)+"㎧"]]
+    .forEach(([k,v])=>meta.appendChild(h("span",{}, k+" ", h("b",{text:v}))));
+  if(x.data.air){ const a=x.data.air, p10=Math.round(a.pm10), p25=Math.round(a.pm2_5);     /* 값이 비어 오면 표시하지 않음 */
+    if(Number.isFinite(p10)){ const g=airG(p10,[30,80,150]); meta.appendChild(h("span",{}, h("i",{class:"dotg "+g[1]}), "미세 ", h("b",{text:g[0]}))); }
+    if(Number.isFinite(p25)){ const g=airG(p25,[15,35,75]); meta.appendChild(h("span",{}, h("i",{class:"dotg "+g[1]}), "초미세 ", h("b",{text:g[0]}))); } }
+  b.appendChild(meta);
+  const hy=data.hourly; if(hy&&hy.time){ const nowH=(cur.time||"").slice(0,13); let s=hy.time.findIndex(t=>t.slice(0,13)>=nowH); if(s<0) s=0;
+    const strip=h("div",{class:"wx-h"});
+    for(let i=s;i<Math.min(s+10,hy.time.length);i++){ const hh=+hy.time[i].slice(11,13), wi=wcode(hy.weather_code?hy.weather_code[i]:0,(hh>=6&&hh<19)?1:0), pp=hy.precipitation_probability?hy.precipitation_probability[i]:null;
+      strip.appendChild(h("div",{class:"wx-hh"}, h("small",{text:i===s?"지금":hh+"시"}), h("span",{text:wi.e}), h("b",{text:Math.round(hy.temperature_2m[i])+"°"}), h("i",{class:(pp>=30?"wet":""),text:pp!=null?pp+"%":""}))); }
+    b.appendChild(strip); }
+  const days=h("div",{class:"wx-d"});
+  for(let i=1;i<Math.min(4,dy.time.length);i++){ const dd=new Date(dy.time[i]+"T00:00"), wi=wcode(dy.weather_code[i]), pp=dy.precipitation_probability_max?dy.precipitation_probability_max[i]:null;
+    days.appendChild(h("div",{}, h("small",{text:DOW[dd.getDay()]}), h("span",{text:wi.e}), h("b",{text:`${Math.round(dy.temperature_2m_max[i])}° / ${Math.round(dy.temperature_2m_min[i])}°`}), pp?h("i",{text:pp+"%"}):null)); }
+  b.appendChild(days);
+};
+
+/* 오늘의 명언 (PC와 같은 목록, 같은 날 같은 명언) */
+DRAW.quote=(sec,w,title)=>{ const u=UI(w); const b=cardBody(sec,title, h("button",{class:"tool",text:"다른 명언",onclick:()=>{ u.qi=Math.floor(Math.random()*QUOTES.length); render(); }}));
+  const q=QUOTES[u.qi!=null?u.qi:Math.floor(Date.now()/86400000)%QUOTES.length];
+  b.append(h("p",{class:"qt",text:`“${q.t}”`}), h("p",{class:"qa",text:`— ${q.a}`})); };
+
+/* 세계 국가정보 (PC와 같은 자료) */
+DRAW.country=(sec,w,title)=>{ const u=UI(w); const b=cardBody(sec,title);
+  searchRow(b,u,"나라 이름 (예: 프랑스, Japan)",()=>{ u.sel=null; render(); });
+  if(!u.q) return;
+  const ql=u.q.toLowerCase(), hits=COUNTRIES.filter(c=>c.ko.includes(u.q)||c.en.toLowerCase().includes(ql)||c.cc.toLowerCase()===ql);
+  if(!hits.length){ empty(b,`‘${u.q}’ 나라를 찾지 못했어요.`); return; }
+  const c=u.sel?hits.find(x=>x.cc===u.sel):(hits.length===1?hits[0]:null);
+  if(!c){ hits.slice(0,8).forEach(x=>b.appendChild(h("button",{class:"hit",onclick:()=>{ u.sel=x.cc; render(); }}, `${flagEmoji(x.cc)} ${x.ko}`, h("small",{text:x.en})))); return; }
+  b.appendChild(h("div",{class:"ctry"}, h("span",{class:"cf",text:flagEmoji(c.cc)}), h("div",{}, h("b",{text:c.ko}), h("small",{text:c.en}))));
+  [["수도",c.cap],["지역",c.region],["인구","약 "+c.pop.toLocaleString()+"명"],["언어",c.lang]].forEach(([k,v])=>b.appendChild(kv(k,v)));
+};
+
+/* 백과사전 (위키백과에서 직접) */
+async function encycPage(u,t){ try{ const d=await (await fetch(`https://ko.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&exintro=1&explaintext=1&redirects=1&pithumbsize=180&format=json&origin=*&titles=${encodeURIComponent(t)}`)).json();
+    const pages=d.query&&d.query.pages, pg=pages&&pages[Object.keys(pages)[0]];
+    if(!pg||pg.missing!==undefined||!pg.extract){ u.page={title:t, txt:"내용을 찾지 못했어요."}; return; }
+    let txt=pg.extract.trim(); if(txt.length>700) txt=txt.slice(0,700)+"…";
+    u.page={title:pg.title, txt, img:pg.thumbnail&&safeUrl(pg.thumbnail.source), url:`https://ko.wikipedia.org/wiki/${encodeURIComponent(pg.title)}`};
+  }catch(e){ u.page={title:t, txt:"불러오지 못했어요."}; } }
+DRAW.encyc=(sec,w,title)=>{ const u=UI(w); const b=cardBody(sec,title);
+  searchRow(b,u,"찾을 항목 (예: 광합성, 세종대왕)",async()=>{ u.busy=true; u.list=null; u.page=null; u.err=""; render();
+    try{ const d=await (await fetch(`https://ko.wikipedia.org/w/api.php?action=query&list=search&srlimit=8&format=json&origin=*&srsearch=${encodeURIComponent(u.q)}`)).json();
+      const rs=(d.query&&d.query.search)||[]; u.list=rs.map(r=>r.title);
+      if(!rs.length) u.err="검색 결과가 없어요."; else if(rs.length===1||rs[0].title===u.q) await encycPage(u,rs[0].title);
+    }catch(e){ u.err="검색하지 못했어요."; }
+    u.busy=false; render(); });
+  if(u.busy){ empty(b,"찾는 중…"); return; }
+  if(u.err){ empty(b,u.err); return; }
+  if(u.page){ const p=u.page;
+    b.appendChild(h("div",{class:"enc"}, p.img?h("img",{src:p.img, alt:""}):null, h("b",{text:p.title})));
+    b.appendChild(h("p",{class:"enc-t",text:p.txt}));
+    if(p.url) b.appendChild(h("a",{class:"more", href:p.url, target:"_blank", rel:"noopener", text:"위키백과에서 더 보기 ›"}));
+    if(u.list&&u.list.length>1) b.appendChild(h("button",{class:"more",text:"‹ 검색 결과로",onclick:()=>{ u.page=null; render(); }}));
+    return; }
+  (u.list||[]).forEach(t=>b.appendChild(h("button",{class:"hit",onclick:async()=>{ u.busy=true; render(); await encycPage(u,t); u.busy=false; render(); }}, t)));
+};
+
+/* 사전 (PC와 같은 모드, 인터넷에서 직접) */
+async function dictLookup(mode, word, c){
+  const md=DMODES[mode];
+  try{
+    if(md.kr){ if(!c.krKey) return {err:"PC 사전 위젯 설정에서 국어사전 인증키를 넣으면 폰에서도 찾을 수 있어요."};
+      const d=await (await fetch(`https://stdict.korean.go.kr/api/search.do?key=${encodeURIComponent(c.krKey)}&q=${encodeURIComponent(word)}&req_type=json&num=10`)).json();
+      let items=(d.channel&&d.channel.item)||[]; if(!Array.isArray(items)) items=[items];
+      if(!items.length) return {err:`‘${word}’을(를) 찾지 못했어요.`};
+      return {word:items[0].word||word, items:items.slice(0,5).map(it=>{ let sn=it.sense; if(Array.isArray(sn)) sn=sn[0]; return sn?{pos:it.pos||"", def:sn.definition||""}:null; }).filter(Boolean), src:"국립국어원 표준국어대사전"}; }
+    if(mode==="영영"){ const arr=await (await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word.toLowerCase())}`)).json();
+      if(!Array.isArray(arr)||!arr[0]||!arr[0].meanings) return {err:`‘${word}’ 뜻을 찾지 못했어요. 철자를 확인해 보세요.`};
+      const e=arr[0]; return {word:e.word, ph:e.phonetic||((e.phonetics||[]).find(p=>p.text)||{}).text||"",
+        items:e.meanings.slice(0,3).map(m=>{ const df=(m.definitions||[])[0]; return df?{pos:m.partOfSpeech||"", def:df.definition||"", ex:df.example||""}:null; }).filter(Boolean), src:"Free Dictionary"}; }
+    const d=await (await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=${encodeURIComponent(md.pair)}`)).json();
+    const t=d&&d.responseData&&d.responseData.translatedText; return t?{word, tr:t, src:"MyMemory 번역"}:{err:"번역하지 못했어요."};
+  }catch(e){ return {err: md.kr ? "폰에서는 국어사전에 연결하지 못했어요. PC에서 찾아 주세요." : "불러오지 못했어요. 잠시 뒤 다시 해 보세요."}; }
+}
+DRAW.dict=(sec,w,title)=>{ const u=UI(w), c=w.config||{}; if(!u.mode) u.mode=DMODES[c.mode]?c.mode:"영영"; const b=cardBody(sec,title);
+  b.appendChild(h("div",{class:"seg"}, ...Object.keys(DMODES).map(k=>h("button",{class:k===u.mode?"on":"", text:k, onclick:()=>{ u.mode=k; u.res=null; render(); }}))));
+  searchRow(b,u,DMODES[u.mode].ph,async()=>{ if(!u.q) return; u.busy=true; u.res=null; render(); u.res=await dictLookup(u.mode,u.q,c); u.busy=false; render(); });
+  if(u.busy){ empty(b,"찾는 중…"); return; }
+  const r=u.res; if(!r) return; if(r.err){ empty(b,r.err); return; }
+  b.appendChild(h("div",{class:"dw"}, h("b",{text:r.word}), r.ph?h("small",{text:" "+r.ph}):null));
+  if(r.tr) b.appendChild(h("p",{class:"dtr",text:r.tr}));
+  (r.items||[]).forEach(it=>b.appendChild(h("div",{class:"dm"}, it.pos?h("span",{class:"dpos",text:it.pos}):null, h("p",{text:it.def}), it.ex?h("p",{class:"dex",text:`“${it.ex}”`}):null)));
+  b.appendChild(h("div",{class:"src",text:"출처: "+r.src}));
+};
+
+/* 오늘의 역사 (위키백과에서 직접) */
+const HIST={};
+async function loadHist(key,d){ const x=HIST[key]={busy:true}; const mm=pad2(d.getMonth()+1), dd=pad2(d.getDate());
+  for(const u of [`https://api.wikimedia.org/feed/v1/wikipedia/ko/onthisday/events/${mm}/${dd}`,`https://ko.wikipedia.org/api/rest_v1/feed/onthisday/events/${mm}/${dd}`]){
+    try{ const j=await (await fetch(u)).json(); if(j&&Array.isArray(j.events)&&j.events.length){
+      x.evs=j.events.map(e=>({year:e.year, text:e.text, page:safeUrl(e.pages&&e.pages[0]&&e.pages[0].content_urls&&(e.pages[0].content_urls.mobile||e.pages[0].content_urls.desktop||{}).page)}))
+        .sort((a,c)=>(+c.year||0)-(+a.year||0)); break; } }catch(e){} }
+  if(!x.evs) x.err=true; x.busy=false; if(S.data) render(); }
+DRAW.history=(sec,w,title)=>{ const d=new Date(), key=`${d.getMonth()+1}-${d.getDate()}`; let x=HIST[key];
+  const b=cardBody(sec,`${title} · ${d.getMonth()+1}월 ${d.getDate()}일`);
+  if(!x){ loadHist(key,d); x=HIST[key]; }
+  if(x.busy){ empty(b,"불러오는 중…"); return; } if(x.err){ empty(b,"불러오지 못했어요."); return; }
+  x.evs.slice(0,10).forEach(ev=>b.appendChild(h(ev.page?"a":"div",Object.assign({class:"hrow"}, ev.page?{href:ev.page,target:"_blank",rel:"noopener"}:{}), h("b",{text:String(ev.year??"")}), h("span",{text:ev.text||""}))));
+};
+
+/* ---- PC가 올려 준 내용으로 보여 주는 위젯 ---- */
+const md8=s=>`${+String(s).slice(4,6)}/${+String(s).slice(6,8)}`;
+DRAW.meal=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b); return; }
+  const d=sn.d, isToday=d.date===ymdNow();
+  b.appendChild(h("div",{class:"sub",text:`${d.school||""} · ${isToday?"오늘":md8(d.date)}`}));
+  if(!(d.meals||[]).length) empty(b, isToday?"오늘은 급식 정보가 없어요.":"급식 정보가 없어요.");
+  (d.meals||[]).forEach(m=>b.appendChild(h("div",{class:"meal"}, h("b",{text:m.name||"식단"}), h("p",{text:(m.dishes||[]).join(" · ")}), m.cal?h("small",{text:m.cal}):null)));
+  if(!isToday) b.appendChild(h("div",{class:"note",text:"PC가 아직 오늘 급식을 불러오지 않았어요."}));
+};
+DRAW.neis=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b); return; }
+  const d=sn.d, today=ymdNow(); b.appendChild(h("div",{class:"sub",text:`${d.school||""} · ${d.y}년 ${d.m}월`}));
+  if(!(d.events||[]).length){ empty(b,`${d.m}월 학사일정이 없어요.`); return; }
+  d.events.forEach(e=>{ const dt=new Date(+e.d.slice(0,4),+e.d.slice(4,6)-1,+e.d.slice(6,8));
+    b.appendChild(h("div",{class:"ev"+(e.d===today?" now":e.d<today?" past":"")}, h("span",{class:"evd",text:`${dt.getMonth()+1}/${dt.getDate()} ${DOW[dt.getDay()]}`}), h("span",{text:e.n}))); });
+};
+DRAW.news=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b); return; }
+  b.appendChild(h("div",{class:"sub",text:sn.d.feed||""}));
+  (sn.d.items||[]).forEach(n=>{ const u=safeUrl(n.link); b.appendChild(h(u?"a":"div",Object.assign({class:"nw"}, u?{href:u,target:"_blank",rel:"noopener"}:{}), n.t||"")); });
+};
+DRAW.stocks=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b); return; }
+  if(!(sn.d.items||[]).length){ empty(b,"관심 종목이 없어요."); return; }
+  sn.d.items.forEach(x=>b.appendChild(h("div",{class:"sq"}, h("b",{text:x.name||""}), h("span",{class:"sqp",text:x.p||"-"}), h("span",{class:"sqc "+(x.up?"up":"down"),text:x.c||""}))));
+};
+DRAW.timetable=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b); return; }
+  const d=sn.d, u=UI(w); if(u.tab==null){ u.tab=d.tab==="class"?"class":"teacher"; u.q=d.sel||""; }
+  const isT=u.tab!=="class";
+  b.appendChild(h("div",{class:"seg"}, h("button",{class:isT?"on":"",text:"교사별",onclick:()=>{ u.tab="teacher"; u.q=""; render(); }}), h("button",{class:isT?"":"on",text:"학반별",onclick:()=>{ u.tab="class"; u.q=""; render(); }})));
+  const dl="dl-"+w.id; const opts=h("datalist",{id:dl}); (isT?(d.teachers||[]):(d.classes||[]).map(c=>c.name)).forEach(v=>opts.appendChild(h("option",{value:v}))); b.appendChild(opts);
+  searchRow(b,u,isT?"교사 이름 (예: 홍길동)":"학반 (예: 1-3)",()=>render(),{list:dl});
+  const key=isT?(u.q||"").replace(/\s/g,""):(u.q||"").replace(/\s/g,"").replace(/학년|반/g,"-").replace(/-+/g,"-").replace(/-$/,"");
+  if(!key){ empty(b,isT?"교사 이름을 입력해 보세요.":"학반을 입력해 보세요."); return; }
+  const rows=(d.lessons||[]).filter(x=>isT?x.teacher===key:x.cls===key);
+  if(!rows.length){ empty(b,`‘${key}’ 시간표가 없어요.`); return; }
+  const days=["월","화","수","목","금"], maxP=Math.max(...rows.map(x=>x.period),6), ti=[-1,0,1,2,3,4,-1][new Date().getDay()];
+  const tb=h("table",{class:"tt"}); tb.appendChild(h("tr",{}, h("th"), ...days.map((dn,i)=>h("th",{class:i===ti?"now":"",text:dn}))));
+  for(let p=1;p<=maxP;p++){ tb.appendChild(h("tr",{}, h("th",{class:"pn",text:String(p)}), ...days.map((dn,i)=>{ const c=rows.find(x=>x.day===dn&&x.period===p);
+    return h("td",{class:i===ti?"now":""}, c?h("b",{text:c.subject||""}):null, c?h("small",{text:isT?(c.cls||""):(c.teacher||"")}):null); }))); }
+  b.appendChild(h("div",{class:"ttw"}, tb)); b.appendChild(h("div",{class:"sub",text:`주당 ${rows.length}시간`}));
+};
+DRAW.contacts=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b); return; }
+  const d=sn.d, u=UI(w); searchRow(b,u,"이름 또는 장소 (예: 홍길동, 보건실)",()=>render());
+  const s2=(u.q||"").trim(); if(!s2){ b.appendChild(h("div",{class:"sub",text:`교사 ${(d.people||[]).length}명 · 특별실 ${(d.rooms||[]).length}곳`})); return; }
+  const ppl=(d.people||[]).filter(p=>(p.name||"").includes(s2)||(p.duty||"").includes(s2)||(p.office||"").includes(s2));
+  const rms=(d.rooms||[]).filter(x=>(x.room||"").includes(s2)||(x.person||"").includes(s2));
+  const oth=(d.others||[]).filter(x=>(x.place||"").includes(s2)||(x.person||"").includes(s2));
+  if(!ppl.length&&!rms.length&&!oth.length){ empty(b,`‘${s2}’ 결과가 없어요.`); return; }
+  const card=(name,phone,lines)=>h("div",{class:"res"}, h("b",{text:name||""}), phone?h("a",{class:"tel",href:telOf(phone),text:"☎ "+phone}):null, ...lines.filter(x=>x[1]).map(([k,v])=>kv(k,v)));
+  ppl.slice(0,30).forEach(p=>b.appendChild(card(p.name,p.phone,[["소속",[p.bldg,p.office,p.zone].filter(Boolean).join(" · ")],["업무",p.duty],["자리",p.seat?`${p.seat} (행,열)`:""]])));
+  rms.slice(0,20).forEach(x=>b.appendChild(card(x.room||x.place,x.phone,[["담당",x.person],["건물",x.bldg]])));
+  oth.slice(0,20).forEach(x=>b.appendChild(card(x.place,x.phone,[["담당",x.person],["구분",x.cat]])));
+};
+DRAW.roster=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b); return; }
+  const d=sn.d, u=UI(w), list=d.students||[]; searchRow(b,u,"이름 또는 학급 (예: 홍길동, 1-3)",()=>render());
+  const s2=(u.q||"").trim(); if(!s2){ b.appendChild(h("div",{class:"sub",text:`${(d.count||list.length).toLocaleString()}명`})); return; }
+  const cm=s2.match(/^(\d)\s*[-학년]*\s*(\d{1,2})\s*반?$/), ck=x=>`${+x.grade}-${+x.cls}`;
+  const hits=cm?list.filter(x=>ck(x)===`${+cm[1]}-${+cm[2]}`).sort((a,c)=>(+a.no)-(+c.no)):list.filter(x=>(x.name||"").includes(s2));
+  if(!hits.length){ empty(b,`‘${s2}’ 결과가 없어요.`); return; }
+  if(hits.length>1) b.appendChild(h("div",{class:"sub",text:`${hits.length}명`}));
+  hits.slice(0,60).forEach(x=>b.appendChild(h("div",{class:"res"}, h("b",{text:x.name||""}), h("span",{class:"rc",text:`${+x.grade}학년 ${+x.cls}반 ${+x.no}번`+(x.teacher?` · 담임 ${x.teacher}`:"")}),
+    x.sphone?h("a",{class:"tel",href:telOf(x.sphone),text:"학생 ☎ "+x.sphone}):null, x.pphone?h("a",{class:"tel",href:telOf(x.pphone),text:"보호자 ☎ "+x.pphone}):null)));
+};
+
 function render(){
   applyTheme();
   const app=$("#app"); app.innerHTML="";
   const d=S.data; if(!d){ renderEmpty(); return; }
   const now=new Date(), today=ymdNow();
-  const todos=(d.widgets||[]).filter(w=>w.type==="todo").flatMap(w=>(w.config&&w.config.items)||[]);
+  const todos=(d.widgets||[]).filter(w=>w.type==="todo"&&wShown(w)).flatMap(w=>(w.config&&w.config.items)||[]);
   const left=todos.filter(t=>!t.done && t.date===today).length, late=todos.filter(t=>!t.done && t.date && t.date<today).length;
   app.appendChild(h("section",{class:"today"},
     h("h1",{class:"date"}, `${now.getMonth()+1}월 ${now.getDate()}일`, h("span",{class:"dow", text:`${DOW[now.getDay()]}요일`})),
     h("p",{class:"sum", text: left||late ? (left&&late ? `오늘 할 일 ${left}개와 지난 할 일 ${late}개가 남았어요.` : left ? `오늘 할 일이 ${left}개 남았어요.` : `지난 할 일이 ${late}개 남았어요.`) : "오늘 남은 할 일이 없어요."})));
   const skip=[]; let memoDone=false;
+  const anyNote=(d.notes||[]).some(n=>n&&noteShown(n.id));
   orderWidgets(d).forEach(w=>{
+    if(w.type!=="memo" && !wShown(w)) return;                       // 이 폰에서 안 보기로 한 위젯
     if(!SUPPORTED.has(w.type)){ skip.push(TITLES[w.type]||w.type); return; }
-    if(w.type==="memo"){                                // 메모 위젯이 여러 개여도 메모 목록은 한 번만
+    if(w.type==="memo"){ if(!anyNote) return;                                // 메모 위젯이 여러 개여도 메모 목록은 한 번만
       if(!memoDone){ memoDone=true; const sec=h("section",{class:"card sec"}); app.appendChild(sec); drawNotes(sec); } return; }
     const title=(typeof w.title==="string"&&w.title.trim())?w.title:TITLES[w.type];
     const sec=h("section",{class:"card sec"}); app.appendChild(sec);
     if(w.type==="todo") drawTodo(sec,w,title);
     else if(w.type==="dday") drawDday(sec,w,title);
+    else if(DRAW[w.type]) DRAW[w.type](sec,w,title);
     else drawLinks(sec,w,title);
   });
-  if(!memoDone && Array.isArray(d.notes) && d.notes.length){ const sec=h("section",{class:"card sec"}); app.appendChild(sec); drawNotes(sec); }
+  if(!memoDone && anyNote){ const sec=h("section",{class:"card sec"}); app.appendChild(sec); drawNotes(sec); }
   if(skip.length) app.appendChild(h("p",{class:"pconly", text:`PC에서만 볼 수 있는 위젯: ${[...new Set(skip)].join(", ")}`}));
 }
 
@@ -717,7 +1166,7 @@ function drawTodo(sec,w,title){
 
 const openNotes = new Set(); let focusNote = null;
 function drawNotes(sec){
-  const list=(Array.isArray(S.data.notes)?S.data.notes:[]).filter(n=>n&&typeof n.id==="string").slice().sort((a,b)=>(+b.at||0)-(+a.at||0));
+  const list=(Array.isArray(S.data.notes)?S.data.notes:[]).filter(n=>n&&typeof n.id==="string"&&noteShown(n.id)).slice().sort((a,b)=>(+b.at||0)-(+a.at||0));
   sec.appendChild(h("div",{class:"head"}, h("h2",{class:"ttl", text:"메모"})));
   const p=h("div",{class:"body"}); sec.appendChild(p);
   if(!list.length) p.appendChild(h("div",{class:"empty", text:"메모가 없어요."}));
@@ -839,6 +1288,7 @@ $("#menuBtn").onclick=()=>{ $("#menuWho").textContent=S.email?`${S.email}로 로
 $("#closeMenu").onclick=()=>$("#menu").classList.remove("on");
 $("#menu").addEventListener("click",e=>{ if(e.target.id==="menu") $("#menu").classList.remove("on"); });
 $("#logoutBtn").onclick=logout;
+$("#pickBtn").onclick=()=>{ $("#menu").classList.remove("on"); openPick(false); };
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden && S.tok) refresh(false); });
 (function loop(){ setTimeout(()=>{ if(!document.hidden && S.tok) refresh(false); loop(); }, Date.now()<_burstUntil ? 2000 : 5000); })();   // 5초마다 (방금 바뀌었으면 2초)
 setInterval(()=>{ if(S.tok && Date.now()>S.exp){ S.tok=null; needLogin(); } }, 30000);

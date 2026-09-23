@@ -2245,6 +2245,30 @@ document.addEventListener("visibilitychange",()=>{
     const w=(state.widgets||[]).find(x=>x.id===c.dataset.id), b=$(".body",c);
     if(w&&b) WIDGETS.netswitch.load(b,w,true,true); });
 });
+/* ===== 폰용 내용: PC가 가져온 급식·학사일정·뉴스·시세와 엑셀 읽은 결과를 폰이 볼 수 있게 올림 =====
+   · 동기화하는 위젯만 · 바뀐 게 있을 때만 · 자주 바뀌는 것(live)은 2분에 한 번까지, 큰 엑셀 자료(xl)는 따로 */
+const SNAP_XL=new Set(["timetable","contacts","roster"]);
+const Snap={ files:{live:{},xl:{}}, sig:{live:"",xl:""}, last:{live:0,xl:0}, timer:{},
+  init(){ try{ const o=JSON.parse(localStorage.getItem("dash.snap")||"null"); if(o&&o.live&&o.xl) this.files=o; }catch(e){} },
+  set(w, d){ if(!w||!isShared(w)) return; const f=SNAP_XL.has(w.type)?"xl":"live";
+    this.files[f][w.id]={kind:w.type, at:Date.now(), d};
+    try{ localStorage.setItem("dash.snap", JSON.stringify(this.files)); }catch(e){}
+    this.queue(f); },
+  queue(f){ if(this.timer[f]) return;
+    const wait=Math.max(5000, (f==="live"?120000:10000)-(Date.now()-this.last[f]));
+    this.timer[f]=setTimeout(()=>{ this.timer[f]=null; this.flush(f); }, wait); },
+  async flush(f){
+    if(!Sync.on||Sync.needApp||!hasApi("gdrive_put_snap")) return;
+    const ids=new Set((state.widgets||[]).filter(isShared).map(w=>w.id)), src=this.files[f], out={};
+    Object.keys(src).forEach(id=>{ if(ids.has(id)) out[id]=src[id]; });                  /* 지웠거나 동기화를 푼 위젯은 뺌 */
+    const sig=_h(JSON.stringify(Object.keys(out).sort().map(id=>[id,out[id].d])));
+    if(sig===this.sig[f]) return;
+    let r=null; try{ r=await Sync.api().gdrive_put_snap(`snap_${f}.json`, JSON.stringify({v:1, at:Date.now(), widgets:out})); }catch(e){}
+    this.last[f]=Date.now();
+    if(r&&r.ok) this.sig[f]=sig; else this.queue(f);                                     /* 실패하면 나중에 다시 */
+  } };
+setInterval(()=>{ Snap.queue("live"); Snap.queue("xl"); }, 300000);                     /* 연결 뒤·위젯 정리 뒤에도 맞춰지게 */
+
 /* ===== 메모 목록 (컬러노트처럼: 메모는 목록에 모아 두고, 위젯마다 띄울 메모를 고름) ===== */
 const NOTE_COLORS={"":"", yellow:"#F2C94C", orange:"#F2994A", red:"#EB6F6F", pink:"#F29BC4",
   purple:"#A98BEA", blue:"#6FA8F0", green:"#6FC48C", gray:"#9AA3B2"};
@@ -2666,6 +2690,7 @@ const WIDGETS = {
       const out=$("[data-body]",b);
       try{ let url=`https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&ATPT_OFCDC_SC_CODE=${sc.atpt}&SD_SCHUL_CODE=${sc.code}&MLSV_YMD=${ymd(d)}`; if(w.config.key)url+=`&KEY=${w.config.key}`;
         const data=JSON.parse(await httpGet(url)); const rows=(data.mealServiceDietInfo&&data.mealServiceDietInfo[1]&&data.mealServiceDietInfo[1].row)||[];
+        if(!(w.config.offset||0)) Snap.set(w,{school:sc.name, date:ymd(d), meals:rows.map(r=>({name:r.MMEAL_SC_NM||"식단", dishes:cleanDish(r.DDISH_NM), cal:r.CAL_INFO||""}))});
         if(!rows.length){out.innerHTML=`<div class="empty">${days[d.getDay()]}요일 (${d.getMonth()+1}/${d.getDate()})에는 급식 정보가 없어요.</div>`; return;}
         out.innerHTML=""; rows.forEach(r=>{const dishes=cleanDish(r.DDISH_NM); const blk=el("div","block"); blk.innerHTML=`<div class="bt">${escapeHtml(r.MMEAL_SC_NM||"식단")}</div>`; const wr=el("div","dishes"); dishes.forEach(n=>wr.appendChild(el("span",null,n))); blk.appendChild(wr); out.appendChild(blk);});
       }catch(e){ out.innerHTML=`<div class="empty">급식 정보를 불러오지 못했어요. 자주 끊기면 설정(⚙)에서 NEIS 인증키를 넣어 보세요.</div>`; } } },
@@ -2704,6 +2729,7 @@ const WIDGETS = {
       try{ let url=`https://open.neis.go.kr/hub/SchoolSchedule?Type=json&pSize=200&ATPT_OFCDC_SC_CODE=${sc.atpt}&SD_SCHUL_CODE=${sc.code}&AA_FROM_YMD=${ymd(first)}&AA_TO_YMD=${ymd(last)}`; if(w.config.key)url+=`&KEY=${w.config.key}`;
         const data=JSON.parse(await httpGet(url)); const rows=(data.SchoolSchedule&&data.SchoolSchedule[1]&&data.SchoolSchedule[1].row)||[];
         const seen={}, evs=[]; rows.forEach(r=>{ const nm=(r.EVENT_NM||"").trim(); if(!nm||nm==="토요휴업일")return; const k=r.AA_YMD+"|"+nm; if(seen[k])return; seen[k]=1; evs.push(r); });
+        if(!(w.config.moff||0)) Snap.set(w,{school:sc.name, y, m:m+1, events:evs.map(r=>({d:r.AA_YMD, n:(r.EVENT_NM||"").trim()}))});
         if(!evs.length){ out.innerHTML=`<div class="empty">${m+1}월 학사일정이 없어요.</div>`; return; }
         const todayY=ymd(new Date()); out.innerHTML=""; const wrap=el("div","schlist");
         evs.forEach(r=>{ const dd=r.AA_YMD; const dt=new Date(+dd.slice(0,4),+dd.slice(4,6)-1,+dd.slice(6,8)); const row=el("div","sch"+(dd===todayY?" today":""));
@@ -2904,6 +2930,7 @@ const WIDGETS = {
       if(!res||!res.ok){ const why=res&&res.error==="openpyxl_missing"?"엑셀 읽기 도구가 없어요. 최신 build.bat으로 다시 빌드해 주세요.":res&&res.error==="notfound"?"파일을 찾을 수 없어요. 다시 올려 주세요.":res&&res.error==="noformat"?"요일·교시 제목줄을 찾지 못했어요.":"시간표를 읽지 못했어요.";
         b.innerHTML=`<div class="empty">${escapeHtml(why)}</div><div class="rup"><label class="mini go up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div>`; this.hookFile(b,w,b); return; }
       w._tt=res;
+      Snap.set(w,{file:w.config.fileName||res.file, teachers:res.teachers, classes:res.classes, lessons:res.lessons, tab:w.config.tab, sel:w.config.sel});
       const isT=()=>w.config.tab!=="class";
       b.innerHTML=`<div class="ttabs" data-tabs><button data-t="teacher">교사별</button><button data-t="class">학반별</button></div>
         <div class="row"><input data-q><button class="mini go" data-find>보기</button></div><div class="rcount"></div><div class="ttgrid" data-grid></div>`;
@@ -2969,6 +2996,7 @@ const WIDGETS = {
       if(!res||!res.ok){ const why=res&&res.error==="openpyxl_missing"?"엑셀 읽기 도구가 없어요. 최신 build.bat으로 다시 빌드해 주세요.":res&&res.error==="notfound"?"파일을 찾을 수 없어요. 다시 올려 주세요.":res&&res.error==="noformat"?"이름·전화번호 제목줄을 찾지 못했어요.":"연락처를 읽지 못했어요.";
         b.innerHTML=`<div class="empty">${escapeHtml(why)}</div><div class="rup"><label class="mini go up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div>`; this.hookFile(b,w,b); return; }
       w._ctc=res;
+      Snap.set(w,{file:w.config.fileName||res.file, people:res.people||[], rooms:res.rooms||[], others:res.others||[]});
       b.innerHTML=`<div class="row"><input placeholder="이름 또는 장소 (예: 홍길동, 보건실)" data-q><button class="mini go" data-find>찾기</button></div><div class="rcount"></div><div class="rbody" data-body></div>`;
       $(".rcount",b).textContent=`${w.config.fileName||res.file} · 교사 ${res.people.length} · 특별실 ${res.rooms.length}`;
       this.dropZone(b,w,b);
@@ -3048,6 +3076,8 @@ const WIDGETS = {
       if(!res||!res.ok){ const why=res&&res.error==="openpyxl_missing"?"엑셀 읽기 도구가 없어요. 최신 build.bat으로 다시 빌드해 주세요.":res&&res.error==="notfound"?"파일을 찾을 수 없어요. 다시 올려 주세요.":res&&res.error==="noformat"?"학년·반·이름 제목줄을 찾지 못했어요.":"명렬표를 읽지 못했어요.";
         b.innerHTML=`<div class="empty">${escapeHtml(why)}</div><div class="rup"><label class="mini go up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div>`; this.hookFile(b,w,b); return; }
       w._roster=res.students;
+      Snap.set(w,{file:w.config.fileName||res.file, count:res.count, phone:!!w.config.showPhone,     /* 학생·보호자 연락처는 PC에서 보이게 한 경우에만 */
+        students:(res.students||[]).map(x=>{ const o=Object.assign({},x); if(!w.config.showPhone){ delete o.sphone; delete o.pphone; } return o; })});
       b.innerHTML=`<div class="row"><input placeholder="이름 또는 학급 (예: 홍길동, 1-3)" data-q><button class="mini go" data-find>찾기</button></div><div class="rcount"></div><div class="rbody" data-body></div>`;
       $(".rcount",b).textContent=`${w.config.fileName||res.file} · ${res.count.toLocaleString()}명`;
       this.dropZone(b,w,b);
@@ -3221,6 +3251,7 @@ const WIDGETS = {
         let items=[...doc.querySelectorAll("item")]; if(!items.length) items=[...doc.querySelectorAll("entry")];
         const arr=items.slice(0,12).map(it=>{ const tn=it.querySelector("title"); const t=(tn?tn.textContent:"").trim(); let link=""; const l=it.querySelector("link"); if(l) link=(l.getAttribute("href")||l.textContent||"").trim(); return {t,link}; }).filter(x=>x.t);
         if(!arr.length){ out.innerHTML=`<div class="empty">불러올 뉴스가 없어요. 다른 출처를 눌러 보세요.</div>`; return; }
+        Snap.set(w,{feed:f.name, items:arr.slice(0,12)});
         out.innerHTML=""; arr.forEach(n=>{ const row=el("div","nitem"); const tt=el("div","ntitle"); tt.textContent=n.t; row.appendChild(tt); if(n.link) row.onclick=()=>openLink(n.link); out.appendChild(row); });
       }catch(e){ out.innerHTML=`<div class="empty">뉴스를 불러오지 못했어요. 다른 출처를 눌러 보거나 잠시 후 다시 시도하세요.</div>`; } } },
 
@@ -3270,7 +3301,10 @@ const WIDGETS = {
       enableListDnD(list, w.config.items, persist); },
     async loadQuote(row,it){ const r=$(".sq-r",row); if(!r)return; const num=v=>typeof v==="number"?v:parseFloat(String(v==null?"":v).replace(/,/g,""))||0;
       const krw=v=>Math.abs(v)>=100?Math.round(v).toLocaleString():v.toLocaleString(undefined,{maximumFractionDigits:2});
-      const finish=(price,ccy,html)=>{ _lastQuote[it.id]=html; r.innerHTML=html; if(_cvtOpen.has(it.id)) this.appendConv(r,price,ccy); };
+      const finish=(price,ccy,html)=>{ _lastQuote[it.id]=html; r.innerHTML=html; if(_cvtOpen.has(it.id)) this.appendConv(r,price,ccy);
+        try{ const card=row.closest(".card"), w=card&&(state.widgets||[]).find(x=>x.id===card.dataset.id); if(w){ const t=document.createElement("div"); t.innerHTML=html;
+          const pc=t.querySelector(".sq-p"), cc=t.querySelector(".sq-c"); (w._sq=w._sq||{})[it.id]={name:it.name, p:pc?pc.textContent:"", c:cc?cc.textContent:"", up:!!(cc&&cc.classList.contains("up"))};
+          Snap.set(w,{items:w.config.items.map(x=>w._sq[x.id]).filter(Boolean)}); } }catch(e){} };
       try{
         if(it.src==="coin"){
           let d=null; try{ const j=JSON.parse(await httpGet(`https://api.upbit.com/v1/ticker?markets=${it.code}`)); d=Array.isArray(j)?j[0]:null; }catch(_){}
@@ -5023,7 +5057,7 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-09-22.12";
+const APP_VER="2026-09-22.13";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`;
@@ -5056,7 +5090,7 @@ var bootedWithApi=false, _ready=false;
 async function boot(){
   if(booted && (bootedWithApi || !hasApi("load_state"))) return;
   booted=true; bootedWithApi=hasApi("load_state"); _ready=false;
-  await loadState(); if(!state.theme)state.theme="light"; ensureDefaults(); ensureNotes(); adaptLayouts(); assignLayouts();
+  await loadState(); if(!state.theme)state.theme="light"; ensureDefaults(); ensureNotes(); Snap.init(); adaptLayouts(); assignLayouts();
   if(hasApi("is_maximized")){ try{ if(await window.pywebview.api.is_maximized()){ isMax=true; mode="max"; } }catch(e){} }
   const _mb=$("#winMax"); if(_mb){ _mb.textContent=isMax?"❐":"▢"; _mb.title=isMax?"이전 크기로":"최대화"; }
   applyTheme(); updateTopbar(); _bootPhase=true; renderAll(); requestAnimationFrame(()=>runMountQueue());
