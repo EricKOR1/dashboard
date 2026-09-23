@@ -1,9 +1,11 @@
 {
-  "ui_version": "2026-09-22.14",
+  "ui_version": "2026-09-23.4",
   "ui_url": "https://raw.githubusercontent.com/EricKOR1/dashboard/main/index.html",
-  "app_version": "1.5.6",
+  "app_version": "1.5.10",
   "app_url": "https://github.com/EricKOR1/dashboard/releases/latest/download/MyDashboard.zip",
   "page_url": "https://github.com/EricKOR1/dashboard/releases",
-  "notes": "폰에서도 PC의 모든 위젯(PC 전용 3개 제외)을 볼 수 있어요. 폰에서 볼 항목 고르기. 할 일은 날짜순 자동 정렬. 동기화할 항목 고르기, 메모 목록, 자동 배열, 더 빠른 동기화.",
-  "ui_sha256": "f38424781776a69e65263ea5f63a0ad12e5834665fba8f2ff752522ea046067c"
+  "notes": "익명 사용 통계(사용 시간·버전, PC 번호만 — 동기화 창에서 끌 수 있음) 추가. 파일 정리 위젯: 틀에 맞춰 정리.",
+  "ui_sha256": "118371864f51179aa44081844cd0f7cc93b3f723c72714c65b3e9db09cc08593",
+  "ai_relay": "https://script.google.com/macros/s/AKfycbyMowwC0FkVsS_gi2-n6tRhKQNBRfhoNrLh1ZOxPQwUWGRvtZtJ1I7S_3iDNcH5Q5Dz/exec",
+  "app_sha256": "73a26251c5996a99636093ce852fcefd321fec8a6f2da6460dc0ce0e40ffc9e7"
 }
