@@ -1490,6 +1490,53 @@
   .row{display:flex; gap:8px;}
   .mini{height:38px; padding:0 13px; border-radius:11px; font-size:13px; font-weight:600; background:var(--card); color:var(--text); border:1px solid var(--border); display:inline-flex; align-items:center; gap:6px; transition:border-color .13s var(--ease), background .13s var(--ease); white-space:nowrap;}
   .mini:hover{border-color:var(--border-strong);}
+  /* 파일 정리 위젯 */
+  .org .og-top{display:flex; align-items:center; gap:6px; margin-bottom:10px;}
+  .org .og-where{flex:1; min-width:0; font-weight:700; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .org .og-mode{display:flex; flex-wrap:wrap; gap:6px 14px; margin:2px 0 12px; font-size:13px;}
+  .org .og-mode label.off{color:var(--faint);}
+  .org .og-big{width:100%; height:44px; font-size:14.5px;}
+  .org .og-how{font-size:12px; color:var(--muted); margin-bottom:2px;}
+  .org .og-tabs{display:flex; gap:4px; margin-bottom:10px; padding:3px; border-radius:12px; background:var(--card-2); border:1px solid var(--border);}
+  .org .og-tabs button{flex:1; height:32px; border:none; border-radius:9px; background:none; color:var(--muted); font-size:12.5px; font-weight:700; cursor:pointer;}
+  .org .og-tabs button.on{background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.08);}
+  .org .og-frame{display:flex; flex-direction:column; gap:6px;}
+  .org .og-fr{border:1px solid var(--border); border-radius:var(--radius-sm); padding:6px; background:var(--card-2); display:flex; flex-direction:column; gap:5px;}
+  .org .og-fr1, .org .og-fr2{display:flex; gap:5px; align-items:center;}
+  .org .og-fr1 input{flex:1; min-width:0; height:30px; font-weight:700;} .org .og-fr2 input{flex:1; min-width:0; height:32px; padding:0 8px; font-size:12px;}
+  .org .og-fr2 select{flex:none; height:32px; padding:0 6px; line-height:1.2; font-size:12px; max-width:140px;}
+  .org .og-x{flex:none; width:26px; height:26px; padding:0; border:1px solid var(--border); border-radius:8px; background:var(--card); color:var(--muted); cursor:pointer;}
+  .org .og-chips{display:flex; flex-wrap:wrap; gap:5px; align-items:center; margin-bottom:10px;}
+  .org .og-chip{font-size:12px; padding:3px 9px; border-radius:999px; background:var(--accent-soft); color:var(--accent-2); font-weight:700;}
+  .org .og-edit{border:none; background:none; color:var(--muted); font-size:12px; text-decoration:underline; cursor:pointer;}
+  .org .og-picked{margin-top:10px; max-height:180px; overflow:auto; border-top:1px solid var(--border); padding-top:6px;}
+  .org .og-pk{display:flex; align-items:center; gap:6px; font-size:12.5px; min-height:26px;}
+  .org .og-path{flex:1; min-width:0; font-weight:700; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .org .og-m.new{color:var(--accent-2); border-color:var(--accent-2);}
+  .org .og-g.unsure{border-style:dashed; background:none;}
+  .org .og-q{flex:none; width:16px; text-align:center; color:var(--muted);}
+  .org .og-consent{padding:10px 12px; border-radius:var(--radius-sm); background:var(--accent-soft); font-size:13px; line-height:1.6;}
+  .org .og-consent p{margin:6px 0 0;}
+  .org .og-note{margin-top:10px; font-size:12px; color:var(--muted); line-height:1.6;}
+  .org .og-undo{width:100%; margin-top:10px;}
+  .org .og-sum{font-size:13.5px; margin-bottom:8px;} .org .og-sum span{color:var(--muted); font-size:12.5px;}
+  .org .og-groups{display:flex; flex-direction:column; gap:6px;}
+  .org .og-g{border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--card-2);}
+  .org .og-g.none{opacity:.55;}
+  .org .og-gh{display:flex; align-items:center; gap:6px; padding:6px 8px;}
+  .org .og-tg{flex:none; width:24px; height:24px; padding:0; border:none; background:none; color:var(--muted); cursor:pointer;}
+  .org .og-gn{flex:1; min-width:0; height:30px; padding:0 8px; font-weight:700;}
+  .org .og-n{flex:none; min-width:36px; text-align:center; font-size:12px; font-weight:700; color:var(--accent-2); background:var(--accent-soft); border-radius:999px; padding:2px 8px;}
+  .org .og-m{flex:none; font-size:11px; color:var(--muted); border:1px solid var(--border); border-radius:999px; padding:1px 7px;}
+  .org .og-items{padding:2px 8px 8px 38px; display:flex; flex-direction:column; gap:2px;}
+  .org .og-it{display:flex; align-items:center; gap:6px; min-height:30px; font-size:12.5px;}
+  .org .og-it.off .og-nm{color:var(--faint); text-decoration:line-through;}
+  .org .og-nm{flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .org .og-it select{flex:none; max-width:150px; height:30px; padding:0 6px; line-height:1.2; font-size:11.5px;}
+  .org .og-act{display:flex; gap:6px; margin-top:12px;} .org .og-act .og-run{flex:1;}
+  .org .og-run.sure{background:var(--danger); color:#fff;}
+  .org .og-skip{margin-top:6px; font-size:12.5px; border-top:1px solid var(--border); padding-top:6px;}
+  .org .og-skip > div{display:flex; gap:8px; padding:3px 0;} .org .og-skip small{flex:none; color:var(--muted);}
   .mini.go{background:var(--accent-soft); color:var(--accent-2); border-color:transparent; font-weight:700;}
   .mini.go:hover{background:rgba(184,137,35,.2);}
   .empty{color:var(--muted); font-size:13px; line-height:1.6; padding:6px 2px;}
@@ -2033,6 +2080,8 @@
   .sync-sheet .sy-chk i{display:block; font-style:normal; font-size:11.5px; color:var(--muted); margin-top:1px;}
   .sync-sheet .sy-sub{font-size:11.5px; font-weight:700; color:var(--muted); margin:6px 2px 0;}
   .sync-sheet .sy-chk.sm{padding:8px 12px;}
+  .sync-sheet .sy-usage{margin-top:14px; padding-top:12px; border-top:1px solid var(--border);}
+  .sync-sheet .sy-usage label{display:flex; align-items:center; gap:8px; font-size:13.5px; cursor:pointer;}
   .sync-sheet .sy-chk.many{align-items:flex-start;}
   .sync-sheet .sy-chk.many input, .sync-sheet .sy-chk.many .ic{margin-top:2px;}
   .sync-sheet .sy-dot{display:inline-block; width:12px; height:12px; border-radius:50%; box-shadow:inset 0 0 0 1px var(--border); vertical-align:middle;}
@@ -2245,10 +2294,98 @@ document.addEventListener("visibilitychange",()=>{
     const w=(state.widgets||[]).find(x=>x.id===c.dataset.id), b=$(".body",c);
     if(w&&b) WIDGETS.netswitch.load(b,w,true,true); });
 });
+/* ===== 바탕화면 파일 정리: 규칙으로 묶기 (AI 없이) =====
+   학교 문서에 흔한 낱말로 먼저 묶고, 나머지는 파일 종류로. 폴더·프로그램 파일은 기본으로 "정리 안 함" */
+const ORG_TYPES=[["한글 문서",["hwp","hwpx","hwt","hml"]],["워드 문서",["doc","docx","rtf","odt"]],["PDF",["pdf"]],
+  ["엑셀·표",["xls","xlsx","xlsm","csv","cell","ods"]],["발표 자료",["ppt","pptx","show","key","odp"]],
+  ["이미지",["jpg","jpeg","png","gif","bmp","webp","heic","svg","tif","tiff"]],["영상",["mp4","mov","avi","mkv","wmv","webm","m4v"]],
+  ["음악·소리",["mp3","wav","m4a","aac","flac","ogg","wma"]],["압축 파일",["zip","7z","rar","alz","egg","tar","gz"]],
+  ["텍스트",["txt","md","log"]],["프로그램·설치 파일",["exe","msi","bat","cmd","apk","dmg"]]];
+const ORG_WORDS=[["수업·평가",/수업|수행|평가|시험|문제|학습지|교안|지도안|채점|성적|진도|실험|과제|단원|교과/],
+  ["학생·상담",/상담|명렬|출결|생기부|생활기록|학부모|가정통신|동아리|학급|담임|학생/],
+  ["행정·공문",/공문|계획|보고|결재|기안|신청|협조|품의|예산|정산|복무|안내|제출|양식/],
+  ["회의·연수",/회의|협의|연수|워크숍|세미나|위원회|교육청|컨설팅/]];
+const ORG_DOC=new Set(["hwp","hwpx","hwt","hml","doc","docx","rtf","odt","pdf","xls","xlsx","xlsm","csv","cell","ods","ppt","pptx","show","key","odp","txt","md"]);
+function orgRuleGroups(items){
+  const by=new Map(), add=(g,it,on)=>{ if(!by.has(g)) by.set(g,[]); by.get(g).push(Object.assign({},it,{on})); };
+  items.forEach(it=>{
+    if(it.kind==="folder"){ add("폴더", it, false); return; }                     /* 폴더는 이름만으론 알기 어려워 기본은 정리 안 함 */
+    const ext=(it.ext||"").replace(".","").toLowerCase(), base=it.name.replace(/\.[^.]+$/,"");
+    const w=ORG_DOC.has(ext) && ORG_WORDS.find(([,re])=>re.test(base));
+    if(w){ add(w[0], it, true); return; }
+    const t=ORG_TYPES.find(([,exts])=>exts.includes(ext));
+    if(t){ add(t[0], it, t[0]!=="프로그램·설치 파일"); return; }               /* 프로그램 파일은 옮기면 안 되는 경우가 있어 기본은 정리 안 함 */
+    add("기타", it, true);
+  });
+  const order=[...ORG_WORDS.map(x=>x[0]), ...ORG_TYPES.map(x=>x[0]), "기타", "폴더"];
+  return order.filter(g=>by.has(g)).map(g=>({name:g, items:by.get(g), open:false}));
+}
+/* AI 결과 → 미리보기 묶음. 폴더도 묶되, 프로그램 파일은 안전하게 기본 "정리 안 함", AI가 빠뜨린 것도 "정리 안 함" 묶음으로 */
+function orgAiGroups(ai, items){
+  const byName=new Map(items.map(it=>[it.name,it])), used=new Set(), out=[];
+  const isProg=it=>["exe","msi","bat","cmd","apk","dmg"].includes((it.ext||"").replace(".","").toLowerCase());
+  (ai.groups||[]).forEach(g=>{ const name=orgSafe(g.name)||"기타";
+    const its=(g.items||[]).map(n=>byName.get(n)).filter(it=>it&&!used.has(it.name));
+    if(!its.length) return; its.forEach(it=>used.add(it.name));
+    const ex=out.find(x=>x.name===name), list=its.map(it=>Object.assign({},it,{on:!isProg(it)}));
+    if(ex) ex.items.push(...list); else out.push({name, items:list, open:false}); });
+  const left=items.filter(it=>!used.has(it.name));
+  if(left.length) out.push({name:"AI가 묶지 않은 항목", items:left.map(it=>Object.assign({},it,{on:false})), open:false});
+  return out;
+}
+/* 정리 틀: 학교용 기본 (바탕화면에 바로 만듦). auto = AI가 기준에 따라 세부 폴더를 새로 만들 수 있는 분류 */
+const ORG_FRAME_DEFAULT=()=>[
+  {name:"1. 수업·평가", subs:[], auto:"학년별"},
+  {name:"2. 담임·학생", subs:["상담","출결·생활","가정통신"], auto:""},
+  {name:"3. 업무·행정", subs:["공문","계획·보고","예산·물품"], auto:""},
+  {name:"4. 행사", subs:[], auto:"행사 이름별"},
+  {name:"5. 회의·연수", subs:[], auto:""},
+  {name:"6. 개인·기타", subs:[], auto:""}];
+const ORG_AUTO=["","학년별","과목별","행사 이름별","월별"];
+/* AI를 못 쓸 때: 규칙 낱말로 틀의 분류에 맞춰 보기 (애매하면 확인 필요) */
+function orgRuleToFrame(items, frame){
+  const find=re=>frame.find(c=>re.test(c.name)), out=new Map(), unsure=[];
+  const map={"수업·평가":find(/수업|평가|교과/), "학생·상담":find(/학생|담임|상담/), "행정·공문":find(/업무|행정|공문/), "회의·연수":find(/회의|연수/)};
+  items.forEach(it=>{ const base=it.name.replace(/\.[^.]+$/,""), w=ORG_WORDS.find(([,re])=>re.test(base)), c=w&&map[w[0]];
+    if(!c){ unsure.push(it); return; }
+    const sub=(c.subs||[]).find(x=>base.includes(x))||"", key=c.name+"/"+sub;
+    if(!out.has(key)) out.set(key,{name:sub?`${c.name} › ${sub}`:c.name, path:sub?[c.name,sub]:[c.name], items:[], isNew:false, open:false});
+    out.get(key).items.push(Object.assign({},it,{on:true})); });
+  const gs=[...out.values()];
+  if(unsure.length) gs.push({name:"확인 필요", path:null, items:unsure.map(it=>Object.assign({},it,{on:false})), open:true, unsure:true});
+  return gs;
+}
+const orgSafe=n=>String(n||"").replace(/[\\/:*?"<>|\u0000-\u001f]/g,"").trim().replace(/[. ]+$/,"").slice(0,60);
 /* 할 일 날짜순: 날짜 빠른 순(지난 할 일이 맨 위) → 같은 날은 먼저 추가한 순 → 날짜 없는 할 일은 맨 아래 */
 function todoByDate(arr){
   return arr.map((it,i)=>[it,i]).sort((a,b)=>{ const x=a[0].date||"99999999", y=b[0].date||"99999999"; return x<y?-1:x>y?1:a[1]-b[1]; }).map(v=>v[0]);
 }
+/* ===== 익명 사용 통계: 이 PC에서 시간만 재고, 켤 때와 1시간마다 중계소로 (익명 PC 번호와 숫자만) =====
+   켜짐 = 프로그램이 실행 중인 분 · 보임 = 창이 가려지지 않고 보이던 분 · 실제 사용 = 최근 2분 안에 누르거나 입력한 분 */
+const Usage={ key:"dash.usage", lastInput:0, started:false,
+  day(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; },
+  load(){ try{ const o=JSON.parse(localStorage.getItem(this.key)||"{}"); return (o&&typeof o==="object")?o:{}; }catch(e){ return {}; } },
+  save(o){ try{ localStorage.setItem(this.key, JSON.stringify(o)); }catch(e){} },
+  row(o){ const d=this.day(); return o[d]||(o[d]={on:0,shown:0,active:0,starts:0,hours:{}}); },
+  tick(){ const o=this.load(), r=this.row(o), h=new Date().getHours();
+    r.on++; if(!document.hidden) r.shown++; if(Date.now()-this.lastInput<120000) r.active++;
+    r.hours[h]=(r.hours[h]||0)+1;
+    Object.keys(o).sort().slice(0,-14).forEach(k=>delete o[k]);                        /* 이 PC에는 2주치만 */
+    this.save(o); },
+  enabled(){ return state.usageOff!==true; },
+  async send(){ if(!this.enabled() || !hasApi("usage_report")) return false;
+    const o=this.load(), days={}; Object.keys(o).sort().slice(-3).forEach(d=>{ days[d]=o[d]; });   /* 최근 3일치 (중계소는 날짜별로 덮어씀) */
+    const widgets={}; (state.widgets||[]).forEach(w=>{ widgets[w.type]=(widgets[w.type]||0)+1; });
+    try{ const r=await window.pywebview.api.usage_report({days, widgets, ui:APP_VER}); return !!(r&&r.ok); }catch(e){ return false; } },
+  start(){ if(this.started) return; this.started=true;
+    const o=this.load(); this.row(o).starts++; this.save(o);
+    ["pointerdown","keydown","wheel"].forEach(ev=>window.addEventListener(ev,()=>{ this.lastInput=Date.now(); },{passive:true,capture:true}));
+    this.lastInput=Date.now();
+    setInterval(()=>this.tick(), 60000);
+    setTimeout(()=>this.send(), 20000); setInterval(()=>this.send(), 3600000);
+    if(!state.usageNoticed && hasApi("usage_report")){ state.usageNoticed=true; saveLocalOnly();     /* 처음 한 번 알림 */
+      setTimeout(()=>toastAction("익명 사용 통계(PC 번호·사용 시간)를 보내요","설정",()=>Sync.openPanel()), 8000); } } };
+
 /* ===== 폰용 내용: PC가 가져온 급식·학사일정·뉴스·시세와 엑셀 읽은 결과를 폰이 볼 수 있게 올림 =====
    · 동기화하는 위젯만 · 바뀐 게 있을 때만 · 자주 바뀌는 것(live)은 2분에 한 번까지, 큰 엑셀 자료(xl)는 따로 */
 const SNAP_XL=new Set(["timetable","contacts","roster"]);
@@ -3212,6 +3349,209 @@ const WIDGETS = {
         list.appendChild(tile);});
       enableListDnD(list, w.config.items, persist); } },
 
+  organize:{ title:"파일 정리", icon:"🗂️", desc:"바탕화면(또는 고른 폴더)의 파일을 비슷한 것끼리 폴더로 묶어 정리. 미리보기·되돌리기 가능, 이 PC에만 적용.",
+    defaultCfg:()=>({folder:"", mode:"rule", aiOk:false, how:"frame", frame:null, frameMade:false}),
+    mount(b,w){ b.classList.add("org");
+      const st=b._og={phase:"idle", scan:null, groups:[], result:null, confirm:false, busy:false, status:null};
+      const api=()=>window.pywebview&&window.pywebview.api;
+      const draw=()=>this.draw(b,w);
+      st.run=async(fn)=>{ if(st.busy) return; st.busy=true; draw(); try{ await fn(); }catch(e){ toast("처리하지 못했어요"); } st.busy=false; draw(); };
+      st.refreshStatus=async()=>{ if(hasApi("organize_status")){ try{ st.status=await api().organize_status(); }catch(e){} } draw(); };
+      st.analyze=()=>{
+        const ai=w.config.mode==="ai" && hasApi("organize_ai");
+        if(ai && !w.config.aiOk){ st.phase="consent"; draw(); return; }            /* 처음 한 번: 이름이 AI로 간다는 안내 */
+        st.run(async()=>{ const r=await api().organize_scan(w.config.folder||"");
+          if(!r||!r.ok){ toast((r&&r.error)||"폴더를 읽지 못했어요"); return; }
+          st.scan=r; st.how="rule";
+          if(ai && r.items.length){ let a=null; st.aiWait=true; draw();
+            try{ a=await api().organize_ai(r.items, r.folders||[]); }catch(e){}
+            st.aiWait=false;
+            if(a&&a.ok&&(a.groups||[]).length){ st.groups=orgAiGroups(a, r.items); st.how="ai"; }
+            else { toast(((a&&a.error)||"AI 정리를 쓸 수 없어요.")+" 규칙으로 묶었어요."); st.groups=orgRuleGroups(r.items); } }
+          else st.groups=orgRuleGroups(r.items);
+          st.phase="preview"; st.confirm=false; }); };
+      st.execute=()=>st.run(async()=>{
+        const plan={folder:st.scan.folder, groups:st.groups.map(g=>({name:orgSafe(g.name), items:g.items.filter(i=>i.on).map(i=>i.name)})).filter(g=>g.items.length)};
+        const r=await api().organize_execute(plan);
+        if(!r||!r.ok){ toast((r&&r.error)||"정리하지 못했어요"); return; }
+        st.result=r; st.phase="result"; st.confirm=false; await st.refreshStatus(); });
+      st.undo=()=>st.run(async()=>{ const r=await api().organize_undo();
+        if(!r||!r.ok){ toast((r&&r.error)||"되돌리지 못했어요"); return; }
+        toast(`${r.back.length}개를 원래 자리로 되돌렸어요`+(r.skipped.length?` · ${r.skipped.length}개는 못 했어요`:""));
+        st.result=Object.assign({undo:r}, st.result||{}); st.phase=st.phase==="result"?"result":"idle"; await st.refreshStatus(); });
+      st.refreshStatus(); },
+    tabs(w){ if(!hasApi("organize_pick")) return "";
+      const how=w.config.how==="auto"?"auto":"frame";
+      return `<div class="og-tabs"><button data-how="frame" class="${how==="frame"?"on":""}">📂 틀에 맞춰 정리</button><button data-how="auto" class="${how==="auto"?"on":""}">🧩 알아서 묶기</button></div>`; },
+    bindTabs(b,w){ b.querySelectorAll("[data-how]").forEach(x=>x.onclick=()=>{ w.config.how=x.dataset.how; persist(); const st=b._og; st.phase="idle"; st.confirm=false; this.draw(b,w); }); },
+    drawFrame(b,w){ const st=b._og, api=window.pywebview.api;
+      const frame=w.config.frame||(w.config.frame=ORG_FRAME_DEFAULT());
+      st.picked=st.picked||[];
+      const re=()=>this.draw(b,w);
+      let h=this.tabs(w);
+      if(!w.config.frameMade || st.phase==="fedit"){
+        h+=`<div class="og-note" style="margin:0 0 8px">바탕화면에 아래 폴더들을 만들어요. 이름·세부 폴더를 고치고, <b>자동</b>을 고르면 AI가 그 기준으로 세부 폴더를 만들어요.</div>
+          <div class="og-frame">${frame.map((c,i)=>`<div class="og-fr" data-fi="${i}">
+            <div class="og-fr1"><input data-fn value="${escapeHtml(c.name)}" maxlength="60" aria-label="분류 이름">
+              <button class="og-x" data-fup title="위로">↑</button><button class="og-x" data-fdel title="지우기">✕</button></div>
+            <div class="og-fr2"><input data-fs value="${escapeHtml((c.subs||[]).join(", "))}" placeholder="세부 폴더 (쉼표로 나눔)" aria-label="세부 폴더">
+              <select data-fa aria-label="자동 세부 폴더">${ORG_AUTO.map(a=>`<option value="${escapeHtml(a)}" ${a===(c.auto||"")?"selected":""}>${a?"자동: "+escapeHtml(a):"자동 없음"}</option>`).join("")}</select></div>
+          </div>`).join("")}</div>
+          <div class="og-act"><button class="mini" data-fadd>＋ 분류 추가</button><button class="mini" data-fdef>학교용 기본 틀로</button></div>
+          <div class="og-act"><button class="mini go og-run" data-fmake ${st.busy?"disabled":""}>${st.busy?"만드는 중…":(w.config.frameMade?"틀 고친 내용 적용":"바탕화면에 틀 만들기")}</button>
+            ${w.config.frameMade?`<button class="mini" data-fcancel>취소</button>`:""}</div>`;
+      } else if(st.phase==="fconsent"){
+        h+=`<div class="og-consent"><b>AI로 넣기 전에 알려 드려요</b>
+            <p>고른 파일·폴더의 <b>이름</b>(과 수정한 날짜)과 정리 틀이 AI 서비스로 보내져요. 파일 <b>내용</b>은 보내지 않아요.</p>
+            <p>학생 이름이 들어간 파일 이름도 그대로 보내지니, 걱정되면 <b>규칙으로</b>를 눌러 주세요.</p></div>
+          <div class="og-act"><button class="mini" data-frule>규칙으로</button><button class="mini go og-run" data-fagree>알겠어요, AI로 넣기</button></div>`;
+      } else if(st.phase==="fpreview"){
+        const on=st.groups.reduce((a,g)=>a+(g.path?g.items.filter(i=>i.on).length:0),0);
+        const targets=[]; frame.forEach(c=>{ targets.push([c.name]); (c.subs||[]).forEach(x=>targets.push([c.name,x])); });
+        st.groups.forEach(g=>{ if(g.path&&!targets.some(t=>t.join("/")===g.path.join("/"))) targets.push(g.path); });
+        const tv=t=>t.join(" › ");
+        h+=`<div class="og-how">${st.how==="ai"?"🤖 AI가 틀에 맞춰 넣었어요":"📏 규칙으로 틀에 맞춰 넣었어요"}</div>
+          <div class="og-sum"><b>${on}개</b>를 틀에 넣어요${st.groups.some(g=>g.unsure)?` <span>· 확인 필요한 항목은 기본으로 그대로 둬요</span>`:""}</div>
+          <div class="og-groups">${st.groups.map((g,gi)=>{ const n=g.items.filter(i=>i.on).length;
+            return `<div class="og-g${g.unsure?" unsure":""}${n||g.unsure?"":" none"}" data-gi="${gi}">
+              <div class="og-gh"><button class="og-tg" data-tg aria-label="펼치기">${g.open?"▾":"▸"}</button>
+                <span class="og-path">${g.unsure?"⚠ 확인 필요":escapeHtml(g.name)}</span>${g.isNew?`<span class="og-m new">새 폴더</span>`:""}<span class="og-n">${g.unsure?g.items.length:n}개</span></div>
+              ${g.open?`<div class="og-items">${g.items.map((it,ii)=>`<label class="og-it${it.on?"":" off"}">${g.unsure?`<span class="og-q" title="넣을 곳을 골라 주세요">⚠</span>`:`<input type="checkbox" data-ii="${ii}" ${it.on?"checked":""}>`}
+                <span class="og-ic">${it.kind==="folder"?"📁":"📄"}</span><span class="og-nm" title="${escapeHtml(it.name)}">${escapeHtml(it.name)}</span>
+                <select data-mt="${ii}" aria-label="넣을 곳">${g.unsure?`<option value="">넣을 곳 고르기…</option>`:""}${targets.map(t=>`<option value="${escapeHtml(tv(t))}" ${g.path&&tv(t)===tv(g.path)?"selected":""}>${escapeHtml(tv(t))}</option>`).join("")}</select></label>`).join("")}</div>`:""}
+            </div>`; }).join("")}</div>
+          <div class="og-act"><button class="mini" data-fback>처음으로</button>
+            <button class="mini go og-run${st.confirm?" sure":""}" data-frun ${on&&!st.busy?"":"disabled"}>${st.busy?"옮기는 중…":st.confirm?`정말 ${on}개를 옮길까요? 한 번 더 누르세요`:"정리 실행"}</button></div>
+          <div class="og-note">▸를 눌러 파일마다 넣을 곳을 바꿀 수 있어요. 체크를 풀면 그 파일은 그대로 둬요.</div>`;
+      } else {
+        const last=st.status&&st.status.last;
+        h+=`<div class="og-chips">${frame.map(c=>`<span class="og-chip" title="${escapeHtml([...(c.subs||[]), c.auto?"자동: "+c.auto:""].filter(Boolean).join(", "))}">${escapeHtml(c.name)}</span>`).join("")}
+            <button class="og-edit" data-fedit>틀 고치기</button></div>
+          <div class="og-act"><button class="mini go og-run" data-pf ${st.busy?"disabled":""}>📄 정리할 파일 고르기</button><button class="mini" data-pd ${st.busy?"disabled":""}>📁 폴더</button></div>
+          ${st.picked.length?`<div class="og-picked"><div class="og-sum"><b>${st.picked.length}개</b> 골랐어요 <button class="og-edit" data-pclear>비우기</button></div>
+            ${st.picked.map((it,i)=>`<div class="og-pk"><span>${it.kind==="folder"?"📁":"📄"}</span><span class="og-nm" title="${escapeHtml(it.name)}">${escapeHtml(it.name)}</span><button class="og-x" data-prm="${i}" title="빼기">✕</button></div>`).join("")}</div>
+            <button class="mini go og-big" data-place ${st.busy?"disabled":""}>${st.busy?(st.aiWait?"AI가 넣을 곳을 고르는 중… (최대 2분)":"살펴보는 중…"):(hasApi("organize_ai")?"🤖 AI로 틀에 넣기":"📏 틀에 넣기")}</button>`
+          :`<div class="og-note">바탕화면이 열린 탐색기 창에서 <b>끌어서 범위 선택</b>, Ctrl·Shift 클릭으로 여러 개를 고르세요. 폴더는 [📁 폴더]로 따로 골라요.</div>`}
+          ${last&&last.can_undo?`<button class="mini og-undo" data-undo>↩ 지난 정리 되돌리기 (${last.count}개)</button>`:""}`;
+      }
+      b.innerHTML=h; this.bindTabs(b,w);
+      const $$=q=>b.querySelector(q);
+      /* 틀 고치기 */
+      b.querySelectorAll(".og-fr").forEach(el=>{ const i=+el.dataset.fi, c=frame[i];
+        el.querySelector("[data-fn]").onchange=e=>{ const v=orgSafe(e.target.value); if(!v){ e.target.value=c.name; toast("폴더 이름으로 쓸 수 없어요"); return; } c.name=v; persist(); };
+        el.querySelector("[data-fs]").onchange=e=>{ c.subs=e.target.value.split(/[,，]/).map(orgSafe).filter(Boolean).slice(0,30); persist(); };
+        el.querySelector("[data-fa]").onchange=e=>{ c.auto=e.target.value; persist(); };
+        el.querySelector("[data-fup]").onclick=()=>{ if(i>0){ frame.splice(i-1,0,frame.splice(i,1)[0]); persist(); re(); } };
+        el.querySelector("[data-fdel]").onclick=()=>{ if(frame.length>1){ frame.splice(i,1); persist(); re(); } }; });
+      const fa=$$("[data-fadd]"); if(fa) fa.onclick=()=>{ frame.push({name:`${frame.length+1}. 새 분류`, subs:[], auto:""}); persist(); re(); };
+      const fd=$$("[data-fdef]"); if(fd) fd.onclick=()=>{ w.config.frame=ORG_FRAME_DEFAULT(); persist(); re(); };
+      const fc=$$("[data-fcancel]"); if(fc) fc.onclick=()=>{ st.phase="idle"; re(); };
+      const fe=$$("[data-fedit]"); if(fe) fe.onclick=()=>{ st.phase="fedit"; re(); };
+      const fm=$$("[data-fmake]"); if(fm) fm.onclick=()=>st.run(async()=>{ const r=await api.organize_frame_create(frame);
+        if(!r||!r.ok){ toast((r&&r.error)||"틀을 만들지 못했어요"); return; }
+        w.config.frameMade=true; persist(); st.phase="idle";
+        toast(r.created.length?`바탕화면에 폴더 ${r.created.length}개를 만들었어요`:"틀 폴더가 이미 모두 있어요"+(r.bad.length?` · 못 만든 이름: ${r.bad.join(", ")}`:"")); });
+      /* 고르기 */
+      const addPicked=r=>{ if(!r||r.cancelled) return; if(!r.ok){ toast(r.error||"고르지 못했어요"); return; }
+        r.items.forEach(it=>{ if(!st.picked.some(x=>x.name===it.name)) st.picked.push(it); });
+        st.pickFolders=r.folders||[]; st.pickRoot=r.folder||st.pickRoot;
+        if(r.rejected&&r.rejected.length) toast(`${r.rejected.length}개는 뺐어요: ${r.rejected[0].why}`); };
+      const pf=$$("[data-pf]"); if(pf) pf.onclick=()=>st.run(async()=>addPicked(await api.organize_pick("file")));
+      const pd=$$("[data-pd]"); if(pd) pd.onclick=()=>st.run(async()=>addPicked(await api.organize_pick("folder")));
+      const pc=$$("[data-pclear]"); if(pc) pc.onclick=()=>{ st.picked=[]; re(); };
+      b.querySelectorAll("[data-prm]").forEach(x=>x.onclick=()=>{ st.picked.splice(+x.dataset.prm,1); re(); });
+      /* 틀에 넣기 (AI → 안 되면 규칙) */
+      const place=(useAi)=>st.run(async()=>{ st.how="rule"; let gs=null;
+        if(useAi){ st.aiWait=true; re(); let a=null; try{ a=await api.organize_ai(st.picked, st.pickFolders||[], frame); }catch(e){} st.aiWait=false;
+          if(a&&a.ok&&((a.groups||[]).length||(a.unsure||[]).length)){ st.how="ai";
+            const by=new Map(st.picked.map(it=>[it.name,it])), used=new Set(); gs=[];
+            (a.groups||[]).forEach(g=>{ const its=(g.items||[]).map(n=>by.get(n)).filter(it=>it&&!used.has(it.name)); if(!its.length||!Array.isArray(g.path)) return;
+              its.forEach(it=>used.add(it.name)); gs.push({name:g.path.join(" › "), path:g.path, isNew:!!g.new, open:false, items:its.map(it=>Object.assign({},it,{on:true}))}); });
+            const rest=st.picked.filter(it=>!used.has(it.name));
+            if(rest.length) gs.push({name:"확인 필요", path:null, unsure:true, open:true, items:rest.map(it=>Object.assign({},it,{on:false}))}); }
+          else toast(((a&&a.error)||"AI를 쓸 수 없어요.")+" 규칙으로 넣었어요."); }
+        st.groups=gs||orgRuleToFrame(st.picked, frame); st.phase="fpreview"; st.confirm=false; });
+      const pl=$$("[data-place]"); if(pl) pl.onclick=()=>{ if(hasApi("organize_ai")&&!w.config.aiOk){ st.phase="fconsent"; re(); return; } place(hasApi("organize_ai")); };
+      const ag=$$("[data-fagree]"); if(ag) ag.onclick=()=>{ w.config.aiOk=true; persist(); st.phase="idle"; place(true); };
+      const fr=$$("[data-frule]"); if(fr) fr.onclick=()=>{ st.phase="idle"; place(false); };
+      /* 미리보기 */
+      b.querySelectorAll(".og-g").forEach(gel=>{ const g=st.groups[+gel.dataset.gi];
+        gel.querySelector("[data-tg]").onclick=()=>{ g.open=!g.open; re(); };
+        gel.querySelectorAll("[data-ii]").forEach(cb=>cb.onchange=()=>{ g.items[+cb.dataset.ii].on=cb.checked; st.confirm=false; re(); });
+        gel.querySelectorAll("[data-mt]").forEach(sel=>sel.onchange=()=>{ if(!sel.value) return; const path=sel.value.split(" › ");
+          const it=g.items.splice(+sel.dataset.mt,1)[0]; let to=st.groups.find(x=>x.path&&x.path.join(" › ")===sel.value);
+          if(!to){ to={name:sel.value, path, isNew:false, open:true, items:[]}; st.groups.splice(st.groups.length-(st.groups[st.groups.length-1].unsure?1:0),0,to); }
+          it.on=true; to.items.push(it); to.open=true; if(g.unsure&&!g.items.length) st.groups.splice(st.groups.indexOf(g),1); st.confirm=false; re(); }); });
+      const fb=$$("[data-fback]"); if(fb) fb.onclick=()=>{ st.phase="idle"; st.confirm=false; re(); };
+      const frn=$$("[data-frun]"); if(frn) frn.onclick=()=>{ if(!st.confirm){ st.confirm=true; re(); setTimeout(()=>{ if(st.confirm&&st.phase==="fpreview"){ st.confirm=false; re(); } },4000); return; }
+        st.run(async()=>{ const root=st.pickRoot||(st.status&&st.status.desktop)||""; if(!root){ toast("바탕화면 위치를 아직 모르겠어요. 다시 골라 주세요."); return; }
+          const plan={folder:root, groups:st.groups.filter(g=>g.path).map(g=>({path:g.path, items:g.items.filter(i=>i.on).map(i=>i.name)})).filter(g=>g.items.length)};
+          const r=await api.organize_execute(plan); if(!r||!r.ok){ toast((r&&r.error)||"정리하지 못했어요"); return; }
+          st.result=r; st.phase="result"; st.confirm=false; st.picked=[]; await st.refreshStatus(); }); };
+      b.querySelectorAll("[data-undo]").forEach(x=>x.onclick=()=>st.undo());
+    },
+    draw(b,w){ const st=b._og; if(!st) return;
+      if(!hasApi("organize_scan")){ b.innerHTML=`<div class="empty">이 기능은 프로그램 업데이트(1.5.9 이상) 후에 쓸 수 있어요.</div>`; return; }
+      const how=(w.config.how==="auto"||!hasApi("organize_pick"))?"auto":"frame";
+      if(how==="frame" && st.phase!=="result"){ this.drawFrame(b,w); return; }
+      const desk=(st.status&&st.status.desktop)||"", folder=w.config.folder||"";
+      const fname=!folder?"바탕화면":folder.split(/[\\/]/).filter(Boolean).pop();
+      const top=this.tabs(w)+`<div class="og-top"><span class="og-where" title="${escapeHtml(folder||desk)}">📁 ${escapeHtml(fname)}</span>
+        <button class="mini" data-desk ${!folder?"disabled":""}>바탕화면</button><button class="mini" data-pick>다른 폴더…</button></div>`;
+      if(st.phase==="idle"){
+        const last=st.status&&st.status.last;
+        const aiOn=hasApi("organize_ai"), mode=aiOn&&w.config.mode==="ai"?"ai":"rule";
+        b.innerHTML=top+`<div class="og-mode"><label><input type="radio" name="ogm-${w.id}" value="rule" ${mode==="rule"?"checked":""}> 규칙으로 묶기 <small>(파일 종류·낱말)</small></label>
+            <label class="${aiOn?"":"off"}"><input type="radio" name="ogm-${w.id}" value="ai" ${mode==="ai"?"checked":""} ${aiOn?"":"disabled"}> AI로 묶기 <small>(주제·행사별)</small></label></div>
+          <button class="mini go og-big" data-go ${st.busy?"disabled":""}>${st.busy?(st.aiWait?"AI가 살펴보는 중… (최대 2분)":"살펴보는 중…"):"분석 시작"}</button>
+          <div class="og-note">먼저 <b>미리보기</b>로 보여 드리고, [정리 실행]을 눌러야 실제로 옮겨요. 바로가기·숨김 파일은 건드리지 않아요.</div>
+          ${last&&last.can_undo?`<button class="mini og-undo" data-undo>↩ 지난 정리 되돌리기 (${last.count}개)</button>`:""}`;
+      } else if(st.phase==="consent"){
+        b.innerHTML=top+`<div class="og-consent"><b>AI로 묶기 전에 알려 드려요</b>
+            <p>정리할 파일·폴더의 <b>이름</b>(과 수정한 날짜)이 AI 서비스로 보내져요. 파일 <b>내용</b>은 보내지 않아요.</p>
+            <p>학생 이름이 들어간 파일 이름도 그대로 보내지니, 걱정되면 <b>규칙으로 묶기</b>를 써 주세요.</p></div>
+          <div class="og-act"><button class="mini" data-rule>규칙으로 할게요</button><button class="mini go og-run" data-agree>알겠어요, AI로 묶기</button></div>`;
+      } else if(st.phase==="preview"){
+        const on=st.groups.reduce((a,g)=>a+g.items.filter(i=>i.on).length,0), gcount=st.groups.filter(g=>g.items.some(i=>i.on)).length;
+        const exist=new Set((st.scan.folders||[]).map(x=>x.toLowerCase()));
+        const opts=st.groups.map((g,gi)=>`<option value="${gi}">${escapeHtml(g.name)}</option>`).join("");
+        b.innerHTML=top+`<div class="og-how">${st.how==="ai"?"🤖 AI로 묶었어요":"📏 규칙으로 묶었어요"}</div><div class="og-sum"><b>${on}개</b>를 <b>${gcount}개 폴더</b>로 정리해요${st.scan.skipped.length?` <span>· 바로가기·숨김 등 ${st.scan.skipped.length}개는 그대로</span>`:""}</div>
+          <div class="og-groups">${st.groups.map((g,gi)=>{ const n=g.items.filter(i=>i.on).length, merge=exist.has(orgSafe(g.name).toLowerCase());
+            return `<div class="og-g${n?"":" none"}" data-gi="${gi}">
+              <div class="og-gh"><button class="og-tg" data-tg aria-label="펼치기">${g.open?"▾":"▸"}</button>
+                <input class="og-gn" data-gn value="${escapeHtml(g.name)}" maxlength="60" aria-label="폴더 이름">
+                <span class="og-n">${n}개</span>${merge?`<span class="og-m" title="이미 있는 폴더에 넣어요">기존 폴더</span>`:""}</div>
+              ${g.open?`<div class="og-items">${g.items.map((it,ii)=>`<label class="og-it${it.on?"":" off"}"><input type="checkbox" data-ii="${ii}" ${it.on?"checked":""}>
+                <span class="og-ic">${it.kind==="folder"?"📁":"📄"}</span><span class="og-nm" title="${escapeHtml(it.name)}">${escapeHtml(it.name)}</span>
+                <select data-mv="${ii}" aria-label="옮길 폴더">${opts.replace(`value="${gi}"`,`value="${gi}" selected`)}</select></label>`).join("")}</div>`:""}
+            </div>`; }).join("")}</div>
+          <div class="og-act"><button class="mini" data-back>처음으로</button>
+            <button class="mini go og-run${st.confirm?" sure":""}" data-run ${on&&!st.busy?"":"disabled"}>${st.busy?"옮기는 중…":st.confirm?`정말 ${on}개를 옮길까요? 한 번 더 누르세요`:"정리 실행"}</button></div>
+          <div class="og-note">▸를 눌러 파일을 보고, 체크를 풀면 그 파일은 그대로 둬요. 폴더 이름은 바로 고칠 수 있어요.</div>`;
+      } else {
+        const r=st.result||{moved:[],skipped:[],created:[]}, u=r.undo;
+        b.innerHTML=top+`<div class="og-sum">${u?`<b>${u.back.length}개</b>를 원래 자리로 되돌렸어요`:`<b>${r.moved.length}개</b>를 옮겼어요`}${!u&&r.created.length?` <span>· 새 폴더 ${r.created.length}개</span>`:""}</div>
+          ${(u?u.skipped:r.skipped).length?`<div class="og-skip"><b>${u?"되돌리지 못한":"옮기지 않은"} 항목</b>${(u?u.skipped:r.skipped).map(x=>`<div><span class="og-nm">${escapeHtml(x.name)}</span><small>${escapeHtml(x.why)}</small></div>`).join("")}</div>`:""}
+          <div class="og-act"><button class="mini" data-back>처음으로</button>${!u&&st.status&&st.status.last&&st.status.last.can_undo?`<button class="mini go" data-undo ${st.busy?"disabled":""}>↩ 되돌리기</button>`:""}</div>`;
+      }
+      const $$=q=>b.querySelector(q);
+      this.bindTabs(b,w);
+      const dk=$$("[data-desk]"); if(dk) dk.onclick=()=>{ w.config.folder=""; persist(); st.phase="idle"; this.draw(b,w); };
+      const pk=$$("[data-pick]"); if(pk) pk.onclick=async()=>{ try{ const r=await window.pywebview.api.pick_path("folder"); if(r&&r.ok&&r.path){ w.config.folder=r.path; persist(); st.phase="idle"; this.draw(b,w); } }catch(e){} };
+      const go=$$("[data-go]"); if(go) go.onclick=()=>st.analyze();
+      b.querySelectorAll(`input[name="ogm-${w.id}"]`).forEach(x=>x.onchange=()=>{ w.config.mode=x.value; persist(); });
+      const ag=$$("[data-agree]"); if(ag) ag.onclick=()=>{ w.config.aiOk=true; persist(); st.phase="idle"; st.analyze(); };
+      const rl=$$("[data-rule]"); if(rl) rl.onclick=()=>{ w.config.mode="rule"; persist(); st.phase="idle"; st.analyze(); };
+      b.querySelectorAll("[data-undo]").forEach(x=>x.onclick=()=>st.undo());
+      const bk=$$("[data-back]"); if(bk) bk.onclick=()=>{ st.phase="idle"; st.confirm=false; st.result=null; st.picked=[]; this.draw(b,w); };
+      const run=$$("[data-run]"); if(run) run.onclick=()=>{ if(!st.confirm){ st.confirm=true; this.draw(b,w); setTimeout(()=>{ if(st.confirm&&st.phase==="preview"){ st.confirm=false; this.draw(b,w); } },4000); return; } st.execute(); };
+      b.querySelectorAll(".og-g").forEach(gel=>{ const g=st.groups[+gel.dataset.gi];
+        gel.querySelector("[data-tg]").onclick=()=>{ g.open=!g.open; this.draw(b,w); };
+        const gn=gel.querySelector("[data-gn]"); gn.onchange=()=>{ const v=orgSafe(gn.value); if(!v){ gn.value=g.name; toast("폴더 이름으로 쓸 수 없어요"); return; } g.name=v; this.draw(b,w); };
+        gel.querySelectorAll("[data-ii]").forEach(cb=>cb.onchange=()=>{ g.items[+cb.dataset.ii].on=cb.checked; st.confirm=false; this.draw(b,w); });
+        gel.querySelectorAll("[data-mv]").forEach(sel=>sel.onchange=()=>{ const it=g.items.splice(+sel.dataset.mv,1)[0], to=st.groups[+sel.value]; it.on=true; to.items.push(it); to.open=true; st.confirm=false; this.draw(b,w); });
+      });
+    } },
   files:{ title:"폴더·파일", icon:"📂", desc:"내 PC의 폴더·파일·프로그램을 아이콘으로 열기.",
     defaultCfg:()=>({items:[]}),
     kindOf(path){ const p=(path||"").trim().replace(/["']/g,""); const low=p.toLowerCase();
@@ -3368,7 +3708,7 @@ const PRESETS=[
   {a:["트론","trx"],src:"coin",code:"KRW-TRX",name:"트론"}
 ];
 
-const DEF_SIZE={ clock:{w:300,h:150}, weather:{w:340,h:400}, todo:{w:320,h:300}, meal:{w:344,h:320}, dday:{w:308,h:236}, links:{w:344,h:180}, memo:{w:300,h:240}, shortcuts:{w:320,h:220}, stocks:{w:332,h:288}, neis:{w:344,h:360}, files:{w:320,h:240}, news:{w:340,h:340}, quote:{w:320,h:170}, dict:{w:320,h:300}, history:{w:340,h:340}, country:{w:320,h:300}, encyc:{w:340,h:340}, roster:{w:330,h:320}, timetable:{w:360,h:420}, aiusage:{w:300,h:270}, netswitch:{w:300,h:260}, contacts:{w:330,h:330} };
+const DEF_SIZE={ organize:{w:380,h:560}, clock:{w:300,h:150}, weather:{w:340,h:400}, todo:{w:320,h:300}, meal:{w:344,h:320}, dday:{w:308,h:236}, links:{w:344,h:180}, memo:{w:300,h:240}, shortcuts:{w:320,h:220}, stocks:{w:332,h:288}, neis:{w:344,h:360}, files:{w:320,h:240}, news:{w:340,h:340}, quote:{w:320,h:170}, dict:{w:320,h:300}, history:{w:340,h:340}, country:{w:320,h:300}, encyc:{w:340,h:340}, roster:{w:330,h:320}, timetable:{w:360,h:420}, aiusage:{w:300,h:270}, netswitch:{w:300,h:260}, contacts:{w:330,h:330} };
 
 function wcode(c, isDay){ const m={0:["☀️","맑음"],1:["🌤️","대체로 맑음"],2:["⛅","구름 많음"],3:["☁️","흐림"],45:["🌫️","안개"],48:["🌫️","짙은 안개"],51:["🌦️","약한 이슬비"],53:["🌦️","이슬비"],55:["🌧️","강한 이슬비"],56:["🌧️","약한 어는 이슬비"],57:["🌧️","어는 이슬비"],61:["🌧️","약한 비"],63:["🌧️","비"],65:["🌧️","강한 비"],66:["🌧️","약한 어는 비"],67:["🌧️","어는 비"],71:["🌨️","약한 눈"],73:["🌨️","눈"],75:["❄️","강한 눈"],77:["🌨️","싸락눈"],80:["🌦️","약한 소나기"],81:["🌧️","소나기"],82:["⛈️","강한 소나기"],85:["🌨️","약한 눈 소나기"],86:["🌨️","강한 눈 소나기"],95:["⛈️","뇌우"],96:["⛈️","뇌우·약한 우박"],99:["⛈️","뇌우·강한 우박"]};
   const v=m[c]||["🌡️","—"]; let e=v[0];
@@ -3932,7 +4272,7 @@ function sanitizeRemote(json){
 
 /* ================= 고른 항목만 동기화 ================= */
 /* 컴퓨터마다 달라야 하는 위젯은 처음엔 이 컴퓨터 전용 */
-const SYNC_LOCAL_TYPES=new Set(["files","netswitch","aiusage"]);
+const SYNC_LOCAL_TYPES=new Set(["files","netswitch","aiusage","organize"]);
 const SYNC_XL_TYPES=new Set(["timetable","roster","contacts"]);
 function isShared(w){ return !!w && (w.sync===undefined ? !SYNC_LOCAL_TYPES.has(w.type) : w.sync!==false); }
 function syncOpts(){ if(!state.syncOpts||typeof state.syncOpts!=="object") state.syncOpts={deco:true};
@@ -4471,6 +4811,13 @@ const Sync={
       this.runChoice(sh, "pull", done, dev, at);
     };
   },
+  usageRow(sh){ if(!hasApi("usage_report")) return;
+    const box=document.createElement("div"); box.className="sy-usage";
+    box.innerHTML=`<label><input type="checkbox" ${Usage.enabled()?"checked":""}> <b>익명 사용 통계 보내기</b></label>
+      <div class="sy-note">프로그램을 쓴 시간(켜짐·보임·실제 사용)과 켠 횟수, 앱 버전, 쓰는 위젯 종류의 개수만 <b>알아볼 수 없는 PC 번호</b>와 함께 보내요.
+      이름·이메일·파일·메모·일정 내용은 보내지 않아요. 프로그램을 더 낫게 만드는 데만 써요.</div>`;
+    box.querySelector("input").onchange=e=>{ state.usageOff=!e.target.checked; saveLocalOnly(); toast(e.target.checked?"사용 통계를 보내요":"사용 통계를 보내지 않아요"); };
+    sh.appendChild(box); },
   openPanel(){
     const sh=$("#syncSheet");
     if(!this.on){
@@ -4514,7 +4861,7 @@ const Sync={
         <div class="sy-mobile"><div class="qr">${mobileQr()}</div>
           <div><b>폰에서 보기</b><i>폰 카메라로 QR을 찍고 같은 구글 계정으로 로그인하면<br>할 일·메모·D-Day·바로가기를 보고 고칠 수 있어요.</i>
           <button class="mini" data-copyurl>주소 복사</button></div></div>
-        <div class="sy-note">창을 띄워 두면 10초마다, 최소화하면 2분마다 다른 컴퓨터의 변경을 확인합니다.<br>
+        <div class="sy-note">창을 띄워 두면 4초마다(방금 바뀌었으면 2초마다), 가려져 있으면 1분마다 다른 컴퓨터의 변경을 확인합니다.<br>
         창을 클릭하는 순간에도 바로 확인합니다.</div>`;
       $("[data-now]",sh).onclick=async(e)=>{ const b=e.currentTarget; b.disabled=true; b.textContent="확인 중…";
         await this.tick(); b.disabled=false; b.textContent="지금 동기화";
@@ -4528,6 +4875,7 @@ const Sync={
     }
     const bo=$("[data-bkopen]",sh); if(bo) bo.onclick=()=>this.openBackups();
     if(bo && !hasApi("state_backups")) bo.style.display="none";
+    this.usageRow(sh);
     $("#syncScrim").classList.add("on");
   },
   openPick(){
@@ -5061,7 +5409,7 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-09-22.14";
+const APP_VER="2026-09-23.4";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`;
@@ -5098,7 +5446,7 @@ async function boot(){
   if(hasApi("is_maximized")){ try{ if(await window.pywebview.api.is_maximized()){ isMax=true; mode="max"; } }catch(e){} }
   const _mb=$("#winMax"); if(_mb){ _mb.textContent=isMax?"❐":"▢"; _mb.title=isMax?"이전 크기로":"최대화"; }
   applyTheme(); updateTopbar(); _bootPhase=true; renderAll(); requestAnimationFrame(()=>runMountQueue());
-  _ready=true; setTimeout(runNotices,1500); setTimeout(()=>Sync.init(),1800); setTimeout(()=>checkUpdate(false),2500); }
+  _ready=true; Usage.start(); setTimeout(runNotices,1500); setTimeout(()=>Sync.init(),1800); setTimeout(()=>checkUpdate(false),2500); }
 window.addEventListener("pywebviewready",()=>{ document.body.classList.add("app"); boot(); });
 window.addEventListener("DOMContentLoaded",()=>{ updateTopbar(); setTimeout(()=>{ if(!window.pywebview) boot(); },1500); });
 </script>
