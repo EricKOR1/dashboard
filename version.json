@@ -1,11 +1,11 @@
 {
-  "ui_version": "2026-09-24.1",
+  "ui_version": "2026-09-24.5",
   "ui_url": "https://raw.githubusercontent.com/EricKOR1/dashboard/main/index.html",
   "app_version": "1.5.10",
   "app_url": "https://github.com/EricKOR1/dashboard/releases/latest/download/MyDashboard.zip",
   "page_url": "https://github.com/EricKOR1/dashboard/releases",
-  "notes": "동기화: 처음 연결 창에 '나가기(나중에 고르기)' 추가, 가져오기는 이 컴퓨터 위젯을 그대로 두고 고른 항목을 더하도록 바뀜.",
-  "ui_sha256": "43fce7cca911beaf3b884c939bf053be818c664e74be75f4c6d6a35030eeaeec",
+  "notes": "메모 위젯에 제목 칸 추가 (비우면 첫 줄이 제목). 동기화 창 정리·보관함 정리 포함.",
+  "ui_sha256": "7ce15acdd95b09a56ed502c942470fab56989635bf83e0a7a34dd78b13f83835",
   "ai_relay": "https://script.google.com/macros/s/AKfycbyMowwC0FkVsS_gi2-n6tRhKQNBRfhoNrLh1ZOxPQwUWGRvtZtJ1I7S_3iDNcH5Q5Dz/exec",
   "app_sha256": "73a26251c5996a99636093ce852fcefd321fec8a6f2da6460dc0ce0e40ffc9e7"
 }

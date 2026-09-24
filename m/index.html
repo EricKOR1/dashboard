@@ -89,6 +89,8 @@
     text-align:left; color:var(--text); font-size:15.5px;}
   .nt-dot{flex:none; width:10px; height:10px; border-radius:50%; background:var(--nc,transparent); box-shadow:inset 0 0 0 1.5px var(--border-strong);}
   .nt-t{flex:1; min-width:0; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .nt-ti{display:block; width:100%; box-sizing:border-box; margin:0 0 8px; padding:9px 11px; border:1px solid var(--border); border-radius:10px; font:inherit; font-weight:700; background:transparent; color:inherit;}
+  .nt-ti::placeholder{font-weight:500; opacity:.6;}
   .nt-d{flex:none; font-size:12.5px; color:var(--faint); font-variant-numeric:tabular-nums;}
   .nt.open{box-shadow:inset 3px 0 0 var(--nc,transparent);}
   .nt.open .nt-h{padding-left:12px;}
@@ -497,7 +499,7 @@ const API = "https://www.googleapis.com/drive/v3", UP = "https://www.googleapis.
 const TITLES = {clock:"시계",weather:"날씨",todo:"할 일",meal:"급식",neis:"학사일정",quote:"오늘의 명언",dict:"사전",
   encyc:"백과사전",history:"오늘의 역사",country:"세계 국가정보",timetable:"시간표",contacts:"교사 연락처",roster:"학생 찾기",
   dday:"D-Day",links:"바로가기",memo:"메모",shortcuts:"아이콘 바로가기",files:"폴더·파일",news:"경제 뉴스",stocks:"시세",
-  netswitch:"인터넷 전환",aiusage:"Claude 사용량"};
+  netswitch:"인터넷 전환",aiusage:"Claude 사용량",organize:"파일 정리"};
 const SUPPORTED = new Set(["todo","memo","dday","links","shortcuts","clock","weather","meal","neis","quote","dict","encyc","history","country","timetable","contacts","roster","news","stocks"]);
 
 /* ===== 화면 꾸미기 (PC 테마와 같은 이름·모양) ===== */
@@ -665,7 +667,9 @@ async function flush(){
     if(!f) throw new Error("gone");
     const latest = await download(f.id);
     if(!valid(latest)) throw new Error("bad");
+    const wsig=w=>JSON.stringify([w.title||"", w.config||{}]), before=new Map((latest.widgets||[]).map(w=>[w.id,wsig(w)]));
     ops.forEach(o=>o(latest));
+    (latest.widgets||[]).forEach(w=>{ if(before.get(w.id)!==wsig(w)) w.upd=Date.now(); });   /* 고친 위젯에 고친 날 (PC 보관함 정리용) */
     latest.savedAt = Date.now();
     const r = await upload(f.id, latest);
     S.file={id:r.id||f.id, modifiedTime:r.modifiedTime}; S.data=latest;
@@ -695,10 +699,12 @@ const NOTE_COLORS = {"":"", yellow:"#F2C94C", orange:"#F2994A", red:"#EB6F6F", p
   purple:"#A98BEA", blue:"#6FA8F0", green:"#6FC48C", gray:"#9AA3B2"};
 const Note = {                                         // PC와 같은 메모 목록(d.notes)
   set:(id,text)=>d=>{ const n=(d.notes||[]).find(x=>x.id===id); if(n){ n.text=text; n.at=Date.now(); } },
+  title:(id,tt)=>d=>{ const n=(d.notes||[]).find(x=>x.id===id); if(n){ const v=String(tt||"").trim().slice(0,60); if(v) n.title=v; else delete n.title; n.at=Date.now(); } },
   add:(n)=>d=>{ if(!Array.isArray(d.notes)) d.notes=[]; if(!d.notes.some(x=>x.id===n.id)) d.notes.push(n); },
   del:(id)=>d=>{ if(Array.isArray(d.notes)) d.notes=d.notes.filter(x=>x.id!==id); },
 };
-function noteTitle(n){ const t=String((n&&n.text)||"").trim().split("\n")[0].trim(); return t ? (t.length>40?t.slice(0,40)+"…":t) : "(빈 메모)"; }
+function noteAutoTitle(n){ const t=String((n&&n.text)||"").trim().split("\n")[0].trim(); return t ? (t.length>40?t.slice(0,40)+"…":t) : ""; }
+function noteTitle(n){ const tt=String((n&&n.title)||"").trim(); if(tt) return tt.length>40?tt.slice(0,40)+"…":tt; return noteAutoTitle(n)||"(빈 메모)"; }
 const List = {                                         // D-Day(events) · 바로가기(items)
   add:(wid,key,it)=>d=>{ const w=W(d,wid); if(!w) return; const a=cfg(w)[key]||(cfg(w)[key]=[]); if(!a.some(x=>x.id===it.id)) a.push(it); },
   del:(wid,key,id)=>d=>{ const w=W(d,wid); if(w&&Array.isArray(cfg(w)[key])) cfg(w)[key]=cfg(w)[key].filter(x=>x.id!==id); },
@@ -761,9 +767,9 @@ const CHECK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke
 /* ================= 폰: PC의 모든 위젯 (PC 전용 3개 빼고) =================
    · 폰이 직접: 시계·명언·국가정보(폰 안에서), 날씨·백과사전·사전·오늘의 역사(인터넷에서 직접)
    · PC가 올려 준 내용으로: 급식·학사일정·뉴스·시세·시간표·교사 연락처·학생 찾기 */
-const PC_ONLY = new Set(["netswitch","aiusage","files"]);
+const PC_ONLY = new Set(["netswitch","aiusage","files","organize"]);
 const W_ICON = {clock:"🕐",weather:"⛅",todo:"✓",meal:"🍱",neis:"📅",quote:"💬",dict:"📖",encyc:"📚",history:"📜",country:"🌍",
-  timetable:"📆",contacts:"☎️",roster:"🎒",dday:"📌",links:"🔗",memo:"📝",shortcuts:"🚀",files:"📂",news:"📰",stocks:"📈",netswitch:"🌐",aiusage:"🤖"};
+  timetable:"📆",contacts:"☎️",roster:"🎒",dday:"📌",links:"🔗",memo:"📝",shortcuts:"🚀",files:"📂",news:"📰",stocks:"📈",netswitch:"🌐",aiusage:"🤖",organize:"🗂️"};
 const QUOTES = [
       {t:"상상력은 지식보다 중요하다.",a:"알베르트 아인슈타인"},
       {t:"삶에는 두 가지 방법이 있다. 하나는 기적이 없다고 여기는 것이고, 다른 하나는 모든 것이 기적이라 여기는 것이다.",a:"알베르트 아인슈타인"},
@@ -1317,7 +1323,13 @@ function drawNotes(sec){
       ta.addEventListener("blur",()=>{ if(t){ clearTimeout(t); t=null; if(ta.value!==String(n.text||"")) commit(Note.set(n.id, ta.value), 0); } });
       const del=h("button",{class:"nt-x", text:"메모 지우기",
         onclick:()=>{ if(confirm(`"${noteTitle(n)}" 메모를 지울까요?`)){ openNotes.delete(n.id); commit(Note.del(n.id)); } }});
-      box.append(ta, h("div",{class:"nt-f"}, st, del));
+      const ti=h("input",{class:"nt-ti", placeholder:noteAutoTitle(n)||"제목 (비우면 첫 줄이 제목)", maxlength:"60", "aria-label":"메모 제목"});
+      ti.value=String(n.title||""); let tt2=null;
+      ti.addEventListener("input",()=>{ st.textContent="입력 중…"; clearTimeout(tt2);
+        tt2=setTimeout(()=>{ tt2=null; commit(Note.title(n.id, ti.value), 0); st.textContent="저장됨"; }, 1200); });
+      ti.addEventListener("blur",()=>{ if(tt2){ clearTimeout(tt2); tt2=null; if(ti.value.trim()!==String(n.title||"")) commit(Note.title(n.id, ti.value), 0); } });
+      ti.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); ta.focus(); } });
+      box.append(ti, ta, h("div",{class:"nt-f"}, st, del));
       (window.requestAnimationFrame||setTimeout)(()=>{ grow(); if(focusNote===n.id){ focusNote=null; ta.focus(); } });
     }
     p.appendChild(box);
