@@ -1,11 +1,11 @@
 {
-  "ui_version": "2026-09-25.1",
+  "ui_version": "2026-09-27.1",
   "ui_url": "https://raw.githubusercontent.com/EricKOR1/dashboard/main/index.html",
-  "app_version": "1.5.11",
+  "app_version": "1.5.12",
   "app_url": "https://github.com/EricKOR1/dashboard/releases/latest/download/MyDashboard.zip",
   "page_url": "https://github.com/EricKOR1/dashboard/releases",
   "notes": "메모 위젯에 제목 칸 추가 (비우면 첫 줄이 제목). 동기화 창 정리·보관함 정리 포함.",
-  "ui_sha256": "48f147d3040db25b8b34ea1988bcc457c2ec6e65f0b48c5ab8fd2701e13aae93",
+  "ui_sha256": "89874e0ce5bd6f491fef531cf776f62c5657c7efffe1d31c3bd9bb7d55ccfa8a",
   "ai_relay": "https://script.google.com/macros/s/AKfycbyMowwC0FkVsS_gi2-n6tRhKQNBRfhoNrLh1ZOxPQwUWGRvtZtJ1I7S_3iDNcH5Q5Dz/exec",
-  "app_sha256": "53aee4c6a81069c3f3ea9cf91de16aad6d513a9ab7df3ac825d7a20a2946993a"
+  "app_sha256": "5977c321b495cfb1ee2999424ec4c09fdb3e02f69a4ab8c343465681033cd121"
 }
