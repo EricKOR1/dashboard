@@ -2265,13 +2265,14 @@ function openCalendar(anchor, initial, onPick){
 }
 
 /* ===== 유틸 ===== */
+const _todoLast=new Map();          /* 할 일 위젯마다 방금 고른 날짜 (연달아 넣을 때 유지) */
 const $=(s,r=document)=>r.querySelector(s);
 /* 화면에서 난 오류를 본체의 오류 기록(error_log.txt)으로 보냄 — 문제가 생겼을 때 원인을 찾으려고 */
 (function(){ const seen=new Set(), wait=[]; let n=0;
   const api=()=>window.pywebview&&window.pywebview.api&&window.pywebview.api.log_js_error;
   const send=t=>{ try{ t=String(t||"").slice(0,2000); const key=t.split("\n")[0];      /* 같은 오류 = 같은 내용·위치 */
     if(!t||/ResizeObserver loop/.test(t)||seen.has(key)||n>=30) return; seen.add(key); n++;
-    const ver=(typeof APP_VER!=="undefined")?APP_VER:"";
+    let ver=""; try{ ver=APP_VER; }catch(_){}                /* 시작 중이라 아직 준비 전이어도 오류는 보냄 */
     if(api()) window.pywebview.api.log_js_error(`[화면 ${ver}] ${t}`).catch(()=>{}); else wait.push(t); }catch(e){} };
   window.addEventListener("error",e=>send(`${e.message} @ ${String(e.filename||"").split("/").pop()}:${e.lineno}:${e.colno}\n${(e.error&&e.error.stack)||""}`));
   window.addEventListener("unhandledrejection",e=>{ const r=e.reason; send(`처리되지 않은 오류: ${(r&&r.message)||r}\n${(r&&r.stack)||""}`); });
@@ -2406,7 +2407,7 @@ const Snap={ files:{live:{},xl:{}}, sig:{live:"",xl:""}, last:{live:0,xl:0}, tim
   init(){ try{ const o=JSON.parse(localStorage.getItem("dash.snap")||"null"); if(o&&o.live&&o.xl) this.files=o; }catch(e){} },
   set(w, d){ if(!w||!isShared(w)) return; const f=SNAP_XL.has(w.type)?"xl":"live";
     this.files[f][w.id]={kind:w.type, at:Date.now(), d};
-    try{ localStorage.setItem("dash.snap", JSON.stringify(this.files)); }catch(e){}
+    if(!this._st) this._st=setTimeout(()=>{ this._st=null; try{ localStorage.setItem("dash.snap", JSON.stringify(this.files)); }catch(e){} },2000);   /* 여러 개가 한꺼번에 와도 한 번만 저장 */
     this.queue(f); },
   queue(f){ if(this.timer[f]) return;
     const wait=Math.max(5000, (f==="live"?120000:10000)-(Date.now()-this.last[f]));
@@ -2433,8 +2434,7 @@ function noteAutoTitle(n){ const t=String((n&&n.text)||"").trim().split("\n")[0]
 function noteTitle(n){ const tt=String((n&&n.title)||"").trim(); if(tt) return tt.length>40?tt.slice(0,40)+"…":tt;   /* 적은 제목이 먼저, 없으면 첫 줄 */
   return noteAutoTitle(n)||"(빈 메모)"; }
 function newNote(text){ const n={id:"n"+uid()+uid(), text:text||"", color:"", at:Date.now()}; notes().push(n);
-  const o=syncOpts(); if(o.notesAll===false){ o.notePick=o.notePick||{}; o.notePick[n.id]=true; }   /* 새로 만든 메모는 맞춤 대상 */
-  return n; }
+  return n; }                                                        /* 새 메모는 만든 PC에만 (공유 중인 메모 위젯에 띄우면 함께 공유됨) */
 /* 예전 메모 위젯(글이 위젯 안에 있던 것) → 메모 목록으로. 컴퓨터마다 같은 결과가 나오게 번호를 위젯 번호로 만듦 */
 function ensureNotes(st){ st=st||state;
   if(!Array.isArray(st.notes)) st.notes=[];
@@ -2692,7 +2692,7 @@ const WIDGETS = {
         if(kr.length){ res.innerHTML=""; kr.forEach(p=>{ const it=el("div","si",`<div class="sn">${p.n}</div><div class="sr">${p.r}</div>`); it.onclick=()=>pick(p.n,p.lat,p.lon); res.appendChild(it); }); return; }
         try{ const d=JSON.parse(await httpGet(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=10&language=ko&format=json`)); res.innerHTML="";
           if(!d.results||!d.results.length){res.innerHTML=`<div class="empty">검색 결과가 없어요. 시·군·구 이름으로 다시 시도해 보세요.</div>`; return;}
-          d.results.forEach(r=>{const it=el("div","si",`<div class="sn">${escapeHtml(r.name)}</div><div class="sr">${[r.admin2,r.admin1,r.country].filter(Boolean).join(" · ")}</div>`);
+          d.results.forEach(r=>{const it=el("div","si",`<div class="sn">${escapeHtml(r.name)}</div><div class="sr">${escapeHtml([r.admin2,r.admin1,r.country].filter(Boolean).join(" · "))}</div>`);
             it.onclick=()=>pick(r.name,r.latitude,r.longitude); res.appendChild(it);});
         }catch(e){res.innerHTML=`<div class="empty">검색 실패. 인터넷 연결을 확인하세요.</div>`;} };
       $("[data-find]",box).onclick=find;
@@ -2760,9 +2760,12 @@ const WIDGETS = {
     addRow(b,w,fixedDate){ const wrap=el("div","row t-add");
       wrap.innerHTML=`<input type="date" data-d style="flex:1"><input placeholder="할 일 입력 후 Enter" data-in style="flex:1.6">`;
       const di=$("[data-d]",wrap), inp=$("[data-in]",wrap);
-      di.value = fixedDate || isoOf(ymd(new Date()));
+      const ld=_todoLast.get(w.id);
+      di.value = fixedDate || (ld && Date.now()-ld.at<600000 ? ld.v : isoOf(ymd(new Date())));   /* 방금(10분 안) 고른 날짜는 그대로 */
       const add=()=>{ const t=inp.value.trim(); if(!t) return; if(!di.value){ toast("날짜를 선택하세요"); di.focus(); return; }
-        w.config.items.push({id:uid(),text:t,done:false,date:di.value.replace(/-/g,"")}); inp.value=""; persist(); if(w.config.tab==="cal") this.drawCal(b,w); else this.drawList(b,w); };
+        if(!fixedDate) _todoLast.set(w.id,{v:di.value, at:Date.now()});
+        w.config.items.push({id:uid(),text:t,done:false,date:di.value.replace(/-/g,"")}); inp.value=""; persist(); if(w.config.tab==="cal") this.drawCal(b,w); else this.drawList(b,w);
+        const ni=b.querySelector(".t-add [data-in]"); if(ni) ni.focus(); };                 /* 이어서 입력 */
       inp.addEventListener("keydown",e=>{ if(e.key==="Enter") add(); });
       return wrap; },
     make(b,w,it,drag,showDate){ const row=el("div","ti"+(it.done?" done":"")); row.innerHTML=`<div class="box"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#241c05" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="tw"><div class="tx"></div></div><div class="x">✕</div>`;
@@ -2774,15 +2777,20 @@ const WIDGETS = {
           openCalendar(dt, cur, picked=>{ it.date=ymd(picked); persist(); if(w.config.tab==="cal") this.drawCal(b,w); else this.drawList(b,w); toast("날짜 변경됨"); }); };
         $(".tw",row).insertBefore(dt, $(".tx",row)); }
       const redraw=()=>{ if(w.config.tab==="cal") this.drawCal(b,w); else this.drawList(b,w); };
-      const toggle=()=>{ const a=w.config.items, i=a.indexOf(it); if(i<0) return;
-        if(!it.done){ let prev=null; for(let k=i-1;k>=0;k--){ if(!a[k].done){ prev=a[k].id; break; } } it._prevId=prev; it.done=true; w.config.showDone=false; a.splice(i,1); a.push(it); }
-        else { it.done=false; a.splice(i,1); let at; if(it._prevId){ const pi=a.findIndex(x=>x.id===it._prevId && !x.done); at = pi>=0 ? pi+1 : a.findIndex(x=>x.done); } else { at=0; } if(at<0) at=a.length; a.splice(at,0,it); it._prevId=null; }
+      const flip=(x)=>{ const a=w.config.items, i=a.indexOf(x); if(i<0) return;
+        if(!x.done){ let prev=null; for(let k=i-1;k>=0;k--){ if(!a[k].done){ prev=a[k].id; break; } } x._prevId=prev; x.done=true; w.config.showDone=false; a.splice(i,1); a.push(x); }
+        else { x.done=false; a.splice(i,1); let at; if(x._prevId){ const pi=a.findIndex(y=>y.id===x._prevId && !y.done); at = pi>=0 ? pi+1 : a.findIndex(y=>y.done); } else { at=0; } if(at<0) at=a.length; a.splice(at,0,x); x._prevId=null; }
         persist(); redraw(); };
+      const toggle=()=>flip(it);
       const startEdit=()=>{ const ed=el("input"); ed.className="tedit"; ed.value=it.text; ed.style.width="100%"; ed.style.fontWeight="400"; ed.onpointerdown=e=>e.stopPropagation(); tx.replaceWith(ed); ed.focus(); ed.select(); let fin=false; const done2=(save)=>{ if(fin)return; fin=true; if(save){ const v=ed.value.trim(); if(v) it.text=v; } persist(); redraw(); }; ed.addEventListener("keydown",e=>{ if(e.key==="Enter"){done2(true);} else if(e.key==="Escape"){done2(false);} }); ed.addEventListener("blur",()=>done2(true)); };
       $(".box",row).onclick=toggle; $(".x",row).onclick=()=>{ w.config.items=w.config.items.filter(x=>x.id!==it.id); persist(); redraw(); };
       let ctimer=null;
-      tx.addEventListener("click",()=>{ if(ctimer) return; ctimer=setTimeout(()=>{ ctimer=null; toggle(); },210); });
+      tx.addEventListener("click",()=>{
+        const lt=w._lastTog;                                   /* 방금 글자를 눌러 완료했는데 곧바로 또 누름 = 더블클릭(두 번째 클릭이 자리가 바뀐 다른 줄에 떨어짐) */
+        if(lt && Date.now()-lt.at<450){ w._lastTog=null; const o=w.config.items.find(x=>x.id===lt.id); if(o){ w._editAfter=o.id; flip(o); } return; }
+        if(ctimer) return; ctimer=setTimeout(()=>{ ctimer=null; w._lastTog={id:it.id, at:Date.now()}; toggle(); },210); });
       tx.addEventListener("dblclick",()=>{ if(ctimer){ clearTimeout(ctimer); ctimer=null; } startEdit(); });
+      if(w._editAfter===it.id){ w._editAfter=null; setTimeout(()=>{ if(tx.isConnected) startEdit(); },0); }
       return row; },
     drawList(b,w){ const body=$("[data-body]",b); body.innerHTML=""; body.appendChild(this.addRow(b,w));
       const list=el("div","list"); body.appendChild(list); const items=w.config.items;
@@ -2835,7 +2843,7 @@ const WIDGETS = {
         try{ let url=`https://open.neis.go.kr/hub/schoolInfo?Type=json&pSize=15&SCHUL_NM=${encodeURIComponent(name)}`; if(w.config.key)url+=`&KEY=${w.config.key}`;
           const data=JSON.parse(await httpGet(url)); const rows=(data.schoolInfo&&data.schoolInfo[1]&&data.schoolInfo[1].row)||[]; res.innerHTML="";
           if(!rows.length){res.innerHTML=`<div class="empty">검색 결과가 없어요. 정확한 이름으로 다시 시도하세요.</div>`; return;}
-          rows.forEach(r=>{const it=el("div","si",`<div class="sn">${r.SCHUL_NM}</div><div class="sr">${r.LCTN_SC_NM||""} · ${r.SCHUL_KND_SC_NM||""}</div>`);
+          rows.forEach(r=>{const it=el("div","si",`<div class="sn">${escapeHtml(r.SCHUL_NM)}</div><div class="sr">${escapeHtml(r.LCTN_SC_NM||"")} · ${escapeHtml(r.SCHUL_KND_SC_NM||"")}</div>`);
             it.onclick=()=>{w.config.school={name:r.SCHUL_NM,atpt:r.ATPT_OFCDC_SC_CODE,code:r.SD_SCHUL_CODE}; w.config.offset=0; persist(); this.draw(b,w); toast(`${r.SCHUL_NM} 등록 완료`);}; res.appendChild(it);});
         }catch(e){res.innerHTML=`<div class="empty">검색 실패. 인터넷 연결을 확인하세요.</div>`;} };
       $("[data-find]",b).onclick=find; q.addEventListener("keydown",e=>{if(e.key==="Enter")find();}); },
@@ -2848,7 +2856,7 @@ const WIDGETS = {
         const data=JSON.parse(await httpGet(url)); const rows=(data.mealServiceDietInfo&&data.mealServiceDietInfo[1]&&data.mealServiceDietInfo[1].row)||[];
         if(!(w.config.offset||0)) Snap.set(w,{school:sc.name, date:ymd(d), meals:rows.map(r=>({name:r.MMEAL_SC_NM||"식단", dishes:cleanDish(r.DDISH_NM), cal:r.CAL_INFO||""}))});
         if(!rows.length){out.innerHTML=`<div class="empty">${days[d.getDay()]}요일 (${d.getMonth()+1}/${d.getDate()})에는 급식 정보가 없어요.</div>`; return;}
-        out.innerHTML=""; rows.forEach(r=>{const dishes=cleanDish(r.DDISH_NM); const blk=el("div","block"); blk.innerHTML=`<div class="bt">${escapeHtml(r.MMEAL_SC_NM||"식단")}</div>`; const wr=el("div","dishes"); dishes.forEach(n=>wr.appendChild(el("span",null,n))); blk.appendChild(wr); out.appendChild(blk);});
+        out.innerHTML=""; rows.forEach(r=>{const dishes=cleanDish(r.DDISH_NM); const blk=el("div","block"); blk.innerHTML=`<div class="bt">${escapeHtml(r.MMEAL_SC_NM||"식단")}</div>`; const wr=el("div","dishes"); dishes.forEach(n=>{ const sp=el("span"); sp.textContent=n; wr.appendChild(sp); }); blk.appendChild(wr); out.appendChild(blk);});
       }catch(e){ out.innerHTML=`<div class="empty">급식 정보를 불러오지 못했어요. 자주 끊기면 설정(⚙)에서 NEIS 인증키를 넣어 보세요.</div>`; } } },
 
   neis:{ title:"학사일정", icon:"📅", desc:"학교 학사일정(NEIS).", settings:true,
@@ -2859,7 +2867,7 @@ const WIDGETS = {
       b.innerHTML=`<div class="row"><input placeholder="학교 이름 검색 (예: 포항제철중학교)" data-q value="${escapeHtml(sc?sc.name:'')}"><button class="mini go" data-find>검색</button></div><div class="sresult" data-res></div>
         <div class="neis-set" data-set style="${sc?'':'display:none'}">
           <div class="setrow"><span>학교</span><b data-scn>${escapeHtml(sc?sc.name:'')}</b></div>
-          <div class="setrow"><span>인증키</span><input data-key value="${w.config.key||''}" placeholder="선택 (없어도 동작)"></div>
+          <div class="setrow"><span>인증키</span><input data-key value="${escapeHtml(w.config.key||'')}" placeholder="선택 (없어도 동작)"></div>
           <button class="mini go" data-done>완료</button>
           <div class="setnote">학교만 정하면 학사일정이 나옵니다. 자주 끊기면 NEIS 인증키를 넣어 주세요.</div>
         </div>`;
@@ -2868,7 +2876,7 @@ const WIDGETS = {
         try{ let url=`https://open.neis.go.kr/hub/schoolInfo?Type=json&pSize=15&SCHUL_NM=${encodeURIComponent(name)}`; if(w.config.key)url+=`&KEY=${w.config.key}`;
           const data=JSON.parse(await httpGet(url)); const rows=(data.schoolInfo&&data.schoolInfo[1]&&data.schoolInfo[1].row)||[]; res.innerHTML="";
           if(!rows.length){res.innerHTML=`<div class="empty">검색 결과가 없어요. 정확한 이름으로 다시 시도하세요.</div>`; return;}
-          rows.forEach(r=>{const it=el("div","si",`<div class="sn">${r.SCHUL_NM}</div><div class="sr">${r.LCTN_SC_NM||""} · ${r.SCHUL_KND_SC_NM||""}</div>`);
+          rows.forEach(r=>{const it=el("div","si",`<div class="sn">${escapeHtml(r.SCHUL_NM)}</div><div class="sr">${escapeHtml(r.LCTN_SC_NM||"")} · ${escapeHtml(r.SCHUL_KND_SC_NM||"")}</div>`);
             it.onclick=()=>{w.config.school={name:r.SCHUL_NM,atpt:r.ATPT_OFCDC_SC_CODE,code:r.SD_SCHUL_CODE,kind:r.SCHUL_KND_SC_NM}; persist(); this.setupUI(b,w); toast(`${r.SCHUL_NM} 선택됨`);}; res.appendChild(it);});
         }catch(e){res.innerHTML=`<div class="empty">검색 실패. 인터넷 연결을 확인하세요.</div>`;} };
       $("[data-find]",b).onclick=find; q.addEventListener("keydown",e=>{if(e.key==="Enter")find();});
@@ -2927,7 +2935,7 @@ const WIDGETS = {
       {t:"흐르지 않는 물은 썩는다. 끊임없이 나아가라.",a:"레오나르도 다빈치"}
     ],
     mount(b,w){ b.classList.add("quote"); b.innerHTML=`<div class="q-body" data-q></div><div class="q-foot"><button class="mini" data-new>🔄 다른 명언</button></div>`;
-      const day=Math.floor(Date.now()/86400000)%this.quotes.length; this.show(b,day);
+      const day=Math.floor((Date.now()-new Date().getTimezoneOffset()*60000)/86400000)%this.quotes.length; this.show(b,day);   /* 이 PC 시각 기준 하루 */
       $("[data-new]",b).onclick=()=>this.show(b,Math.floor(Math.random()*this.quotes.length)); },
     show(b,i){ const q=this.quotes[i]; const box=$("[data-q]",b); if(!box)return; box.innerHTML=`<div class="q-t"></div><div class="q-a"></div>`; $(".q-t",box).textContent=`“${q.t}”`; $(".q-a",box).textContent=`— ${q.a}`; } },
 
@@ -2938,7 +2946,7 @@ const WIDGETS = {
     openSettings(b,w){ const old=$(".dset",b); if(old){ old.remove(); return; }
       const box=el("div","dset");
       box.innerHTML=`<div class="setrow"><span>국어사전 키</span><input data-kk placeholder="표준국어대사전 인증키" value="${escapeHtml(w.config.krKey||'')}"></div>
-        <div class="setrow"><span>영영 키</span><input data-mk placeholder="Merriam-Webster 키 (선택)" value="${w.config.mwKey||''}"></div>
+        <div class="setrow"><span>영영 키</span><input data-mk placeholder="Merriam-Webster 키 (선택)" value="${escapeHtml(w.config.mwKey||'')}"></div>
         <div class="row"><button class="mini go" data-save>저장</button></div>
         <div class="setnote">국어사전 키는 stdict.korean.go.kr 또는 공공데이터포털에서 무료로 발급받습니다. 영영 키를 넣으면 발음·뜻이 더 자세히 나오고, 없으면 무료 사전으로 동작합니다.</div>`;
       b.insertBefore(box,b.firstChild);
@@ -3005,7 +3013,7 @@ const WIDGETS = {
           if(!pg||pg.missing!==undefined||!pg.extract){ body.innerHTML=`<div class="empty">내용을 찾지 못했어요.</div>`; return; }
           let txt=(pg.extract||"").trim(); if(txt.length>700) txt=txt.slice(0,700)+"…";
           const url=`https://ko.wikipedia.org/wiki/${encodeURIComponent(pg.title)}`;
-          body.innerHTML=`<div class="e-head">${pg.thumbnail?`<img class="e-img" src="${pg.thumbnail.source}" alt="">`:""}<div class="e-title"></div></div><div class="e-text"></div><div class="e-foot"><span class="e-src">출처: 위키백과 (CC BY-SA)</span><button class="mini" data-more>원문 보기</button></div>`;
+          body.innerHTML=`<div class="e-head">${pg.thumbnail?`<img class="e-img" src="${/^https:\/\//.test(String(pg.thumbnail.source||""))?escapeHtml(pg.thumbnail.source):""}" alt="">`:""}<div class="e-title"></div></div><div class="e-text"></div><div class="e-foot"><span class="e-src">출처: 위키백과 (CC BY-SA)</span><button class="mini" data-more>원문 보기</button></div>`;
           $(".e-title",body).textContent=pg.title; $(".e-text",body).textContent=txt;
           $("[data-more]",body).onclick=()=>openLink(url);
         }catch(e){ body.innerHTML=`<div class="empty">불러오지 못했어요. (그 PC/망에서 위키백과가 막혀 있을 수 있어요)</div>`; } };
@@ -3059,7 +3067,7 @@ const WIDGETS = {
       if(!hasApi("save_upload")){ toast("설치형(exe)에서만 동작해요"); return; }
       toast("시간표 등록 중…");
       try{ const b64=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(",")[1]); r.onerror=()=>rej(new Error("read")); r.readAsDataURL(file); });
-        const r=await window.pywebview.api.save_upload("timetable",file.name,b64);
+        const r=hasApi("save_upload_w")?await window.pywebview.api.save_upload_w("timetable",file.name,b64,w.id):await window.pywebview.api.save_upload("timetable",file.name,b64);   /* 위젯마다 따로 보관 */
         if(r&&r.ok){ w.config.file=r.path; w.config.fileName=file.name; persist(); this.mount(b,w); } else toast("파일을 저장하지 못했어요");
       }catch(e){ toast("파일을 읽지 못했어요"); } },
     hookFile(b,w,scope){ const fi=$("[data-file]",scope); if(fi) fi.onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(f) this.take(b,w,f); };
@@ -3083,7 +3091,7 @@ const WIDGETS = {
       b.innerHTML=`<div class="empty"><span class="spin"></span> 시간표 읽는 중…</div>`;
       if(!hasApi("read_timetable")){ b.innerHTML=`<div class="empty">설치형(exe)에서만 동작해요. 최신 build.bat으로 다시 만들어 주세요.</div>`; return; }
       let res=null; try{ res=await window.pywebview.api.read_timetable(w.config.file); }catch(e){}
-      if(!res||!res.ok){ const why=res&&res.error==="openpyxl_missing"?"엑셀 읽기 도구가 없어요. 최신 build.bat으로 다시 빌드해 주세요.":res&&res.error==="notfound"?"파일을 찾을 수 없어요. 다시 올려 주세요.":res&&res.error==="noformat"?"요일·교시 제목줄을 찾지 못했어요.":"시간표를 읽지 못했어요.";
+      if(!res||!res.ok){ const why=res&&res.error==="openpyxl_missing"?"엑셀 읽기 도구가 없어요. 최신 build.bat으로 다시 빌드해 주세요.":res&&res.error==="notfound"?"파일을 찾을 수 없어요. 다시 올려 주세요.":res&&res.error==="xls"?"옛 엑셀 형식(.xls)은 읽을 수 없어요. 엑셀에서 '다른 이름으로 저장 → Excel 통합 문서(.xlsx)'로 저장해 올려 주세요.":res&&res.error==="noformat"?"요일·교시 제목줄을 찾지 못했어요.":"시간표를 읽지 못했어요.";
         b.innerHTML=`<div class="empty">${escapeHtml(why)}</div><div class="rup"><label class="mini go up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div>`; this.hookFile(b,w,b); return; }
       w._tt=res;
       Snap.set(w,{file:w.config.fileName||res.file, teachers:res.teachers, classes:res.classes, lessons:res.lessons, tab:w.config.tab, sel:w.config.sel});
@@ -3125,7 +3133,7 @@ const WIDGETS = {
       if(!hasApi("save_upload")){ toast("설치형(exe)에서만 동작해요"); return; }
       toast("연락처 등록 중…");
       try{ const b64=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(",")[1]); r.onerror=()=>rej(new Error("read")); r.readAsDataURL(file); });
-        const r=await window.pywebview.api.save_upload("contacts",file.name,b64);
+        const r=hasApi("save_upload_w")?await window.pywebview.api.save_upload_w("contacts",file.name,b64,w.id):await window.pywebview.api.save_upload("contacts",file.name,b64);   /* 위젯마다 따로 보관 */
         if(r&&r.ok){ w.config.file=r.path; w.config.fileName=file.name; persist(); this.mount(b,w); } else toast("파일을 저장하지 못했어요");
       }catch(e){ toast("파일을 읽지 못했어요"); } },
     hookFile(b,w,scope){ const fi=$("[data-file]",scope); if(fi) fi.onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(f) this.take(b,w,f); };
@@ -3149,7 +3157,7 @@ const WIDGETS = {
       b.innerHTML=`<div class="empty"><span class="spin"></span> 연락처 읽는 중…</div>`;
       if(!hasApi("read_contacts")){ b.innerHTML=`<div class="empty">설치형(exe)에서만 동작해요. 최신 build.bat으로 다시 만들어 주세요.</div>`; return; }
       let res=null; try{ res=await window.pywebview.api.read_contacts(w.config.file); }catch(e){}
-      if(!res||!res.ok){ const why=res&&res.error==="openpyxl_missing"?"엑셀 읽기 도구가 없어요. 최신 build.bat으로 다시 빌드해 주세요.":res&&res.error==="notfound"?"파일을 찾을 수 없어요. 다시 올려 주세요.":res&&res.error==="noformat"?"이름·전화번호 제목줄을 찾지 못했어요.":"연락처를 읽지 못했어요.";
+      if(!res||!res.ok){ const why=res&&res.error==="openpyxl_missing"?"엑셀 읽기 도구가 없어요. 최신 build.bat으로 다시 빌드해 주세요.":res&&res.error==="notfound"?"파일을 찾을 수 없어요. 다시 올려 주세요.":res&&res.error==="xls"?"옛 엑셀 형식(.xls)은 읽을 수 없어요. 엑셀에서 '다른 이름으로 저장 → Excel 통합 문서(.xlsx)'로 저장해 올려 주세요.":res&&res.error==="noformat"?"이름·전화번호 제목줄을 찾지 못했어요.":"연락처를 읽지 못했어요.";
         b.innerHTML=`<div class="empty">${escapeHtml(why)}</div><div class="rup"><label class="mini go up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div>`; this.hookFile(b,w,b); return; }
       w._ctc=res;
       Snap.set(w,{file:w.config.fileName||res.file, people:res.people||[], rooms:res.rooms||[], others:res.others||[]});
@@ -3203,7 +3211,7 @@ const WIDGETS = {
       if(!hasApi("save_upload")){ toast("설치형(exe)에서만 동작해요"); return; }
       toast("명렬표 등록 중…");
       try{ const b64=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(",")[1]); r.onerror=()=>rej(new Error("read")); r.readAsDataURL(file); });
-        const r=await window.pywebview.api.save_upload("roster",file.name,b64);
+        const r=hasApi("save_upload_w")?await window.pywebview.api.save_upload_w("roster",file.name,b64,w.id):await window.pywebview.api.save_upload("roster",file.name,b64);   /* 위젯마다 따로 보관 */
         if(r&&r.ok){ w.config.file=r.path; w.config.fileName=file.name; persist(); this.mount(b,w); } else toast("파일을 저장하지 못했어요");
       }catch(e){ toast("파일을 읽지 못했어요"); } },
     hookFile(b,w,scope){ const fi=$("[data-file]",scope); if(fi) fi.onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(f) this.take(b,w,f); };
@@ -3229,7 +3237,7 @@ const WIDGETS = {
       b.innerHTML=`<div class="empty"><span class="spin"></span> 명렬표 읽는 중…</div>`;
       if(!hasApi("read_roster")){ b.innerHTML=`<div class="empty">설치형(exe)에서만 동작해요. build.bat으로 다시 만들어 주세요.</div>`; return; }
       let res=null; try{ res=await window.pywebview.api.read_roster(w.config.file); }catch(e){}
-      if(!res||!res.ok){ const why=res&&res.error==="openpyxl_missing"?"엑셀 읽기 도구가 없어요. 최신 build.bat으로 다시 빌드해 주세요.":res&&res.error==="notfound"?"파일을 찾을 수 없어요. 다시 올려 주세요.":res&&res.error==="noformat"?"학년·반·이름 제목줄을 찾지 못했어요.":"명렬표를 읽지 못했어요.";
+      if(!res||!res.ok){ const why=res&&res.error==="openpyxl_missing"?"엑셀 읽기 도구가 없어요. 최신 build.bat으로 다시 빌드해 주세요.":res&&res.error==="notfound"?"파일을 찾을 수 없어요. 다시 올려 주세요.":res&&res.error==="xls"?"옛 엑셀 형식(.xls)은 읽을 수 없어요. 엑셀에서 '다른 이름으로 저장 → Excel 통합 문서(.xlsx)'로 저장해 올려 주세요.":res&&res.error==="noformat"?"학년·반·이름 제목줄을 찾지 못했어요.":"명렬표를 읽지 못했어요.";
         b.innerHTML=`<div class="empty">${escapeHtml(why)}</div><div class="rup"><label class="mini go up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div>`; this.hookFile(b,w,b); return; }
       w._roster=res.students;
       Snap.set(w,{file:w.config.fileName||res.file, count:res.count, phone:!!w.config.showPhone,     /* 학생·보호자 연락처는 PC에서 보이게 한 경우에만 */
@@ -3313,7 +3321,7 @@ const WIDGETS = {
         const lost=pick && w.config.noteId && !cur();
         lv.innerHTML=`<div class="mm-lhead"><b>${lost?"이 컴퓨터에 없는 메모예요":(pick?"띄울 메모를 고르세요":"메모 목록")}</b><span>${all.length}개</span>
             <button class="mini go" data-add>＋ 새 메모</button>${pick?"":`<button class="mini" data-close>닫기</button>`}</div>
-          ${lost?`<div class="mm-hint">이 컴퓨터로 가져오지 않은 메모일 수 있어요. 다른 메모를 고르거나 ☁ 동기화 → 동기화 항목 고르기에서 가져오세요.</div>`:""}
+          ${lost?`<div class="mm-hint">이 컴퓨터로 가져오지 않은 메모일 수 있어요. 다른 메모를 고르거나 ☁ 동기화 → 클라우드에서 가져오기에서 가져오세요.</div>`:""}
           <div class="mm-items">${all.length ? all.map(n=>{ const c=noteColor(n.color), ls=String(n.text||"").trim().split("\n");
               return `<div class="mm-item${n.id===w.config.noteId?" on":""}" data-id="${escapeHtml(n.id)}" style="--mm:${c||"transparent"}">
                 <i class="mm-dot"></i><div class="mm-tx"><b>${escapeHtml(noteTitle(n))}</b><small>${escapeHtml((n.title?ls:ls.slice(1)).join(" ").trim().slice(0,80))}</small></div>
@@ -3326,8 +3334,9 @@ const WIDGETS = {
           it.onclick=e=>{ if(e.target.closest("[data-del]")) return; open(it.dataset.id); };
           const x=$("[data-del]",it);
           x.onclick=e=>{ e.stopPropagation();
-            if(!x.classList.contains("sure")){ x.classList.add("sure"); x.textContent="삭제?";      /* 한 번 더 눌러야 지움 */
+            if(!x.classList.contains("sure")){ x.classList.add("sure"); x.textContent="삭제?"; x._at=Date.now();      /* 한 번 더 눌러야 지움 */
               setTimeout(()=>{ if(x.isConnected){ x.classList.remove("sure"); x.textContent="🗑"; } },2500); return; }
+            if(Date.now()-(x._at||0)<350) return;                /* 더블클릭 한 번으로 지워지지 않게 */
             delNote(it.dataset.id); }; });
       };
       view.addEventListener("click",e=>{ if(e.target.closest("a")) return; startEdit(); });
@@ -3473,7 +3482,7 @@ const WIDGETS = {
       const fm=$$("[data-fmake]"); if(fm) fm.onclick=()=>st.run(async()=>{ const r=await api.organize_frame_create(frame);
         if(!r||!r.ok){ toast((r&&r.error)||"틀을 만들지 못했어요"); return; }
         w.config.frameMade=true; persist(); st.phase="idle";
-        toast(r.created.length?`바탕화면에 폴더 ${r.created.length}개를 만들었어요`:"틀 폴더가 이미 모두 있어요"+(r.bad.length?` · 못 만든 이름: ${r.bad.join(", ")}`:"")); });
+        toast((r.created.length?`바탕화면에 폴더 ${r.created.length}개를 만들었어요`:"틀 폴더가 이미 모두 있어요")+(r.bad.length?` · 못 만든 이름: ${r.bad.join(", ")}`:"")); });   /* 일부만 만들어도 못 만든 이름을 알림 */
       /* 고르기 */
       const addPicked=r=>{ if(!r||r.cancelled) return; if(!r.ok){ toast(r.error||"고르지 못했어요"); return; }
         r.items.forEach(it=>{ if(!st.picked.some(x=>x.name===it.name)) st.picked.push(it); });
@@ -3506,7 +3515,7 @@ const WIDGETS = {
           if(!to){ to={name:sel.value, path, isNew:false, open:true, items:[]}; st.groups.splice(st.groups.length-(st.groups[st.groups.length-1].unsure?1:0),0,to); }
           it.on=true; to.items.push(it); to.open=true; if(g.unsure&&!g.items.length) st.groups.splice(st.groups.indexOf(g),1); st.confirm=false; re(); }); });
       const fb=$$("[data-fback]"); if(fb) fb.onclick=()=>{ st.phase="idle"; st.confirm=false; re(); };
-      const frn=$$("[data-frun]"); if(frn) frn.onclick=()=>{ if(!st.confirm){ st.confirm=true; re(); setTimeout(()=>{ if(st.confirm&&st.phase==="fpreview"){ st.confirm=false; re(); } },4000); return; }
+      const frn=$$("[data-frun]"); if(frn) frn.onclick=()=>{ if(st.confirm && Date.now()-(st.confirmAt||0)<350) return; if(!st.confirm){ st.confirm=true; st.confirmAt=Date.now(); re(); setTimeout(()=>{ if(st.confirm&&st.phase==="fpreview"){ st.confirm=false; re(); } },4000); return; }
         st.run(async()=>{ const root=st.pickRoot||(st.status&&st.status.desktop)||""; if(!root){ toast("바탕화면 위치를 아직 모르겠어요. 다시 골라 주세요."); return; }
           const plan={folder:root, groups:st.groups.filter(g=>g.path).map(g=>({path:g.path, items:g.items.filter(i=>i.on).map(i=>i.name)})).filter(g=>g.items.length)};
           const r=await api.organize_execute(plan); if(!r||!r.ok){ toast((r&&r.error)||"정리하지 못했어요"); return; }
@@ -3567,7 +3576,7 @@ const WIDGETS = {
       const rl=$$("[data-rule]"); if(rl) rl.onclick=()=>{ w.config.mode="rule"; persist(); st.phase="idle"; st.analyze(); };
       b.querySelectorAll("[data-undo]").forEach(x=>x.onclick=()=>st.undo());
       const bk=$$("[data-back]"); if(bk) bk.onclick=()=>{ st.phase="idle"; st.confirm=false; st.result=null; st.picked=[]; this.draw(b,w); };
-      const run=$$("[data-run]"); if(run) run.onclick=()=>{ if(!st.confirm){ st.confirm=true; this.draw(b,w); setTimeout(()=>{ if(st.confirm&&st.phase==="preview"){ st.confirm=false; this.draw(b,w); } },4000); return; } st.execute(); };
+      const run=$$("[data-run]"); if(run) run.onclick=()=>{ if(st.confirm && Date.now()-(st.confirmAt||0)<350) return; if(!st.confirm){ st.confirm=true; st.confirmAt=Date.now(); this.draw(b,w); setTimeout(()=>{ if(st.confirm&&st.phase==="preview"){ st.confirm=false; this.draw(b,w); } },4000); return; } st.execute(); };
       b.querySelectorAll(".og-g").forEach(gel=>{ const g=st.groups[+gel.dataset.gi];
         gel.querySelector("[data-tg]").onclick=()=>{ g.open=!g.open; this.draw(b,w); };
         const gn=gel.querySelector("[data-gn]"); gn.onchange=()=>{ const v=orgSafe(gn.value); if(!v){ gn.value=g.name; toast("폴더 이름으로 쓸 수 없어요"); return; } g.name=v; this.draw(b,w); };
@@ -3639,7 +3648,7 @@ const WIDGETS = {
           if(coins&&coins.length){
             const exact=coins.find(c=>c.name===raw||c.code.split("-")[1]===raw.toUpperCase());
             if(exact){ addItem({src:"coin",code:exact.code,name:exact.name}); return; }
-            res.innerHTML=""; coins.forEach(c=>{ const e=el("div","si",`<div class="sn">${escapeHtml(c.name)}</div><div class="sr">코인 · ${c.code.split("-")[1]}</div>`); e.onclick=()=>addItem({src:"coin",code:c.code,name:c.name}); res.appendChild(e); }); return;
+            res.innerHTML=""; coins.forEach(c=>{ const e=el("div","si",`<div class="sn">${escapeHtml(c.name)}</div><div class="sr">코인 · ${escapeHtml(String(c.code).split("-")[1]||"")}</div>`); e.onclick=()=>addItem({src:"coin",code:c.code,name:c.name}); res.appendChild(e); }); return;
           }
           if(/^[\^A-Za-z][A-Za-z0-9.\-=]*$/.test(raw)){ addItem({src:"yahoo",code:raw.toUpperCase(),name:raw.toUpperCase()}); return; }
           res.innerHTML=`<div class="empty">못 찾았어요. 예) 삼성전자·005930, AAPL, 비트코인·BTC, 달러, WTI, 금</div>`;
@@ -3660,7 +3669,7 @@ const WIDGETS = {
         return ms.filter(m=>{ const sym=m.market.split("-")[1].toLowerCase(); const kn=m.korean_name||"", en=(m.english_name||"").toLowerCase(); return kn===q||kn.includes(q)||sym===ql||en===ql||en.includes(ql); }).slice(0,8).map(m=>({code:m.market,name:m.korean_name||m.market.split("-")[1]})); }catch(e){ return []; } },
     draw(b,w){ const list=$("[data-list]",b); if(!list)return; if(!w.config.items.length){ list.innerHTML=`<div class="empty">관심 종목·코인을 추가해 보세요. (국내주식: 종목명·6자리 코드 / 해외주식: 티커 / 코인: 비트코인·BTC)</div>`; return; }
       list.innerHTML=""; w.config.items.forEach((it,idx)=>{ const row=el("div","sq"); row.dataset.rid=it.id;
-        row.innerHTML=`<div class="sq-l"><div class="sq-n"></div><div class="sq-s">${it.code}</div></div><div class="sq-r"><span class="spin"></span></div><div class="sq-x">✕</div>`;
+        row.innerHTML=`<div class="sq-l"><div class="sq-n"></div><div class="sq-s">${escapeHtml(it.code)}</div></div><div class="sq-r"><span class="spin"></span></div><div class="sq-x">✕</div>`;
         $(".sq-n",row).textContent=it.name;
         $(".sq-x",row).onclick=(e)=>{ e.stopPropagation(); w.config.items=w.config.items.filter(x=>x.id!==it.id); persist(); this.draw(b,w); };
         row.onclick=()=>{ if(_cvtOpen.has(it.id)) _cvtOpen.delete(it.id); else _cvtOpen.add(it.id); this.loadQuote(row,it); };
@@ -3881,7 +3890,8 @@ function inlineRename(elm, get, set, done){
 
 function attachAutocomplete(input, opts){
   if(input._acPop){ try{input._acPop.remove();}catch(e){} }
-  const pop=el("div","ac-pop"); document.body.appendChild(pop); pop.style.display="none"; input._acPop=pop;
+  document.querySelectorAll(".ac-pop").forEach(p=>{ if(p._inp && !p._inp.isConnected) p.remove(); });   /* 입력칸이 사라진 옛 목록 */
+  const pop=el("div","ac-pop"); document.body.appendChild(pop); pop.style.display="none"; input._acPop=pop; pop._inp=input;
   let items=[], active=-1, timer=null, seq=0;
   const close=()=>{ pop.style.display="none"; active=-1; clearTimeout(timer); seq++;   /* 대기 중·진행 중 검색 무효화 */
     if(!input.isConnected){ try{ pop.remove(); }catch(e){} } };
@@ -4092,7 +4102,7 @@ function renameTitle(ttl,w,def){
   const nameEl=$(".tname",ttl); nameEl.replaceWith(inp); inp.focus(); inp.select();
   let done=false;
   const finish=(val)=>{ if(done)return; done=true; const ns=el("span","tname"); ns.textContent=val; inp.replaceWith(ns); };
-  const commit=()=>{ const v=inp.value.trim(); w.title=v||def.title; finish(w.title); persist(); };
+  const commit=()=>{ if(done) return; const v=inp.value.trim(); w.title=v||def.title; finish(w.title); persist(); };
   inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){commit();} else if(e.key==="Escape"){finish(cur);} });
   inp.addEventListener("blur",commit);
 }
@@ -4114,8 +4124,8 @@ function enableMove(card,head,w){
       if(sTop()!==before) place(lastEv.clientX, lastEv.clientY+sTop());
     },16);
     const mv=ev=>{ lastEv=ev; place(ev.clientX, ev.clientY+sTop()); };
-    const up=()=>{ if(autoT){clearInterval(autoT); autoT=null;} head.releasePointerCapture(e.pointerId); head.removeEventListener("pointermove",mv); head.removeEventListener("pointerup",up); card.classList.remove("moving"); growBoard(); persist(); };
-    head.addEventListener("pointermove",mv); head.addEventListener("pointerup",up);
+    const up=()=>{ if(autoT){clearInterval(autoT); autoT=null;} try{ head.releasePointerCapture(e.pointerId); }catch(_){} head.removeEventListener("pointermove",mv); head.removeEventListener("pointerup",up); head.removeEventListener("pointercancel",up); head.removeEventListener("lostpointercapture",up); card.classList.remove("moving"); growBoard(); persist(); };
+    head.addEventListener("pointermove",mv); head.addEventListener("pointerup",up); head.addEventListener("pointercancel",up); head.addEventListener("lostpointercapture",up);
   });
 }
 function enableResize(card,rsz,w){
@@ -4123,8 +4133,8 @@ function enableResize(card,rsz,w){
     e.preventDefault(); e.stopPropagation(); bringFront(card,w);
     const L=lay(w); const sx=e.clientX, sy=e.clientY, ow=L.w, oh=L.h; card.classList.add("sizing"); rsz.setPointerCapture(e.pointerId);
     const mv=ev=>{ let nw=snap(clamp(ow+(ev.clientX-sx),220,boardW()-L.x)); let nh=snap(Math.max(130,oh+(ev.clientY-sy))); L.w=nw; L.h=nh; card.style.width=nw+"px"; card.style.height=nh+"px"; growBoard(); };
-    const up=()=>{ rsz.releasePointerCapture(e.pointerId); rsz.removeEventListener("pointermove",mv); rsz.removeEventListener("pointerup",up); card.classList.remove("sizing"); growBoard(); persist(); };
-    rsz.addEventListener("pointermove",mv); rsz.addEventListener("pointerup",up);
+    const up=()=>{ try{ rsz.releasePointerCapture(e.pointerId); }catch(_){} rsz.removeEventListener("pointermove",mv); rsz.removeEventListener("pointerup",up); rsz.removeEventListener("pointercancel",up); card.classList.remove("sizing"); growBoard(); persist(); };
+    rsz.addEventListener("pointermove",mv); rsz.addEventListener("pointerup",up); rsz.addEventListener("pointercancel",up);
   });
 }
 
@@ -4132,7 +4142,7 @@ function addWidget(type){
   const def=WIDGETS[type]; const cfg=def.defaultCfg?def.defaultCfg():{}; const d=DEF_SIZE[type]||{w:320,h:240};
   const spot=findFreeSpot(d.w,d.h); const base={x:spot.x,y:spot.y,w:d.w,h:d.h,z:++maxZ};
   const w={id:uid(),type,config:cfg,layout:Object.assign({},base),layoutMax:Object.assign({},base)};
-  if(typeof Sync!=="undefined" && Sync.on && Sync.role()==="sub" && !SYNC_LOCAL_TYPES.has(type)) w.sync=false;   /* 추가 컴퓨터: 새 위젯은 이 PC 전용 (원하면 올리기) */
+  if(typeof Sync!=="undefined" && Sync.on && !SYNC_LOCAL_TYPES.has(type)) w.sync=false;   /* 새 위젯은 만든 PC에만 (올리기를 눌러야 보관함으로) */
   state.widgets.push(w); const card=mountCard(w); if(card) board.appendChild(card); growBoard(); persist(); closeSheet(); toast(`${def.title} 위젯을 추가했어요`);
 }
 function removeWidget(w,card,force){
@@ -4228,7 +4238,11 @@ function runMountQueue(){
   else _bootPhase=false;
 }
 function renderAll(){ board.innerHTML=""; state.widgets.forEach(w=>{ const c=mountCard(w); if(c) board.appendChild(c); }); growBoard(); }
-function clampAll(){ state.widgets.forEach(w=>{ const c=cardOf(w.id); if(c) applyPos(c,w); }); growBoard(); }
+function clampAll(){ const W=boardW(); let moved=false;
+  state.widgets.forEach(w=>{ const c=cardOf(w.id), L=lay(w);
+    if(L && W>200 && L.x>W-80){ L.x=Math.max(0, W-(L.w||300)); moved=true; }   /* 오른쪽 밖으로 나가 잡을 수 없는 위젯만 안으로 */
+    if(c) applyPos(c,w); });
+  growBoard(); if(moved) saveLocalOnly(); }
 
 /* ===== 테마 / 시계 / 상단 ===== */
 /* 폰트는 실제로 고른 것만 그때 내려받습니다 (시작 속도 개선) */
@@ -4291,7 +4305,7 @@ function sanitizeRemote(json){
   const nseen=new Set();
   rs.notes=(Array.isArray(rs.notes)?rs.notes:[]).filter(n=>n&&typeof n==="object"&&typeof n.id==="string"&&n.id.length>0&&n.id.length<80&&!nseen.has(n.id)&&nseen.add(n.id))
     .map(n=>{ const o={id:n.id, text:typeof n.text==="string"?n.text:"", color:Object.prototype.hasOwnProperty.call(NOTE_COLORS,n.color||"")?(n.color||""):"", at:+n.at||0};
-      if(typeof n.title==="string"&&n.title.trim()) o.title=n.title.trim().slice(0,60); return o; });
+      if(typeof n.title==="string"&&n.title.trim()) o.title=n.title.trim().slice(0,60); if(n.dup===true) o.dup=true; if(typeof n.dupOf==="string"&&n.dupOf.length<80) o.dupOf=n.dupOf; return o; });
   ensureNotes(rs);
   if(typeof rs.theme!=="string"||!/^[a-z0-9_-]{1,24}$/i.test(rs.theme)) delete rs.theme;
   rs.unshared=(Array.isArray(rs.unshared)?rs.unshared:[]).filter(x=>typeof x==="string"&&x.length<80).slice(-300);
@@ -4304,7 +4318,8 @@ function sanitizeRemote(json){
 const SYNC_LOCAL_TYPES=new Set(["files","netswitch","aiusage","organize"]);
 const SYNC_XL_TYPES=new Set(["timetable","roster","contacts"]);
 function isShared(w){ return !!w && (w.sync===undefined ? !SYNC_LOCAL_TYPES.has(w.type) : w.sync!==false); }
-function syncOpts(){ if(!state.syncOpts||typeof state.syncOpts!=="object") state.syncOpts={deco:true};
+function syncOpts(){ if(!state.syncOpts||typeof state.syncOpts!=="object") state.syncOpts={};
+  state.syncOpts.deco=false;                                      /* 화면 꾸미기는 PC마다 따로 (맞추지 않음) */
   if(state.syncOpts.notesAll===undefined) state.syncOpts.notesAll=true; return state.syncOpts; }
 /* 메모는 컴퓨터마다 가져올 메모를 고름: '모든 메모'가 켜져 있거나, 골라 둔 메모 */
 /* 아직 한 번도 안 쓴 빈 기본 위젯인지 (처음 설치 때 생긴 시계·할 일 등) — 가져오기 때 같은 종류가 오면 대신함 */
@@ -4326,19 +4341,6 @@ function _carryNotes(){ const c=state.syncCarry; return (c&&Array.isArray(c.note
 /* 이 컴퓨터로 가져오지 않기로 한 클라우드 위젯 (클라우드·다른 컴퓨터에는 그대로 둠) */
 function _skipW(){ const o=syncOpts(); if(!o.skipW||typeof o.skipW!=="object") o.skipW={}; return o.skipW; }
 function _carryWidgets(){ const c=state.syncCarry; return (c&&Array.isArray(c.widgets))?c.widgets:[]; }
-let _importMemo=null;       /* 가져오기 때 새로 만들 메모 위젯이 띄울 메모 */
-/* 위젯 내용 미리보기 몇 줄 (같은 종류가 여러 개일 때 내용을 보고 고르려고) */
-function wPreview(w){
-  const c=w.config||{}, it=Array.isArray(c.items)?c.items:[], cut=t=>{ t=String(t||"").trim(); return t.length>34?t.slice(0,34)+"…":t; };
-  const more=(arr,n)=>arr.length>n?[`…외 ${arr.length-n}개`]:[];
-  if(w.type==="todo"){ const left=it.filter(x=>x&&!x.done); if(!left.length) return [`남은 할 일 없음 (완료 ${it.length}개)`];
-    return left.slice(0,3).map(x=>"· "+cut(x.text)).concat(more(left,3)); }
-  if(w.type==="dday"){ const ev=Array.isArray(c.events)?c.events:[]; if(!ev.length) return ["비어 있음"];
-    return ev.slice(0,3).map(x=>"· "+cut(x.name)+(x.date?` (${x.date})`:"")).concat(more(ev,3)); }
-  if(/^(links|shortcuts|stocks|files)$/.test(w.type)){ if(!it.length) return ["비어 있음"];
-    return [it.slice(0,6).map(x=>cut(x.name||x.label||x.code||"")).filter(Boolean).join(", ")+(it.length>6?` …외 ${it.length-6}개`:"")]; }
-  const one=wSummary(w,[]); return one?[one]:[];
-}
 /* 위젯 내용 한 줄 요약 (같은 이름의 위젯을 구별하려고) */
 function wSummary(w, noteList){
   const c=w.config||{}, it=Array.isArray(c.items)?c.items:[], cut=t=>{ t=String(t||"").trim(); return t.length>24?t.slice(0,24)+"…":t; };
@@ -4381,11 +4383,11 @@ function syncPayload(){
   const un=(base.unshared||[]).filter(id=>!ids.has(id));
   Object.keys(base.w||{}).forEach(id=>{ if(ids.has(id)||un.includes(id)) return;
     const lw=(state.widgets||[]).find(x=>x.id===id); if(lw&&!isShared(lw)) un.push(id); });
-  const nl=notes().filter(n=>isNoteSynced(n.id)).map(n=>{ const o={id:n.id, text:String(n.text||""), color:n.color||"", at:+n.at||0}; if(n.title) o.title=String(n.title); return o; });
+  const nl=notes().filter(n=>isNoteSynced(n.id)).map(n=>{ const o={id:n.id, text:String(n.text||""), color:n.color||"", at:+n.at||0}; if(n.title) o.title=String(n.title); if(n.dup) o.dup=true; if(n.dupOf) o.dupOf=n.dupOf; return o; });
   const have=new Set(nl.map(n=>n.id));
-  _carryNotes().forEach(n=>{ if(!have.has(n.id)&&!isNoteSynced(n.id)) nl.push(n); });   /* 가져오지 않는 메모는 클라우드 것 그대로 */
+  const dn=syncOpts().delN||{};
+  _carryNotes().forEach(n=>{ if(!have.has(n.id)&&!isNoteSynced(n.id)&&!dn[n.id]) nl.push(n); });   /* 가져오지 않는 메모는 클라우드 것 그대로 (보관함에서 지운 것은 빼고) */
   const p={v:2, savedAt:state.savedAt||Date.now(), widgets:ws, notes:nl};
-  if(state.syncMain) p.main=state.syncMain;                    /* 기준 컴퓨터 (처음 클라우드를 채운 PC, 또는 '기준으로 정하기'를 누른 PC) */
   const th=syncOpts().deco!==false ? state.theme : base.theme;   /* 꾸미기를 안 맞추는 컴퓨터는 클라우드 값을 그대로 전달 */
   if(th) p.theme=th;
   if(un.length) p.unshared=un.slice(-300);
@@ -4402,19 +4404,37 @@ function _holdNoteBase(nb){ const ob=((state.syncBase||{}).n)||{};
   Object.keys(nb.n||{}).forEach(id=>{ if(!isNoteSynced(id) && (id in ob)) nb.n[id]=ob[id]; });
   return nb; }
 /* 지난번에 맞춘 클라우드 내용 기록 (다음에 어느 쪽이 바뀌었는지 비교용) */
+function _itSig(x){ return _h(JSON.stringify(_stable(x))); }
+function _otherSig(w){ const o=JSON.parse(JSON.stringify(w)); if(o.config&&typeof o.config==="object"){ delete o.config.items; delete o.config.events; } return _cSig(o); }   /* 목록을 뺀 나머지 설정 */
 function syncBaseFrom(p){
-  const w={}, n={}; (p.widgets||[]).forEach(x=>{ w[x.id]={c:_cSig(x)}; });
+  const w={}, n={}; (p.widgets||[]).forEach(x=>{ const e={c:_cSig(x)}, c=x.config||{};
+    ["items","events"].forEach(k=>{ if(!Array.isArray(c[k])) return; const m={}; c[k].forEach(it=>{ if(it&&it.id!=null) m[String(it.id)]=_itSig(it); }); (e.it=e.it||{})[k]=m; });   /* 목록 항목별 (합칠 때 지움·완료를 알아보려고) */
+    if(e.it) e.cs=_otherSig(x);
+    w[x.id]=e; });
   (p.notes||[]).forEach(x=>{ n[x.id]=_nSig(x); });
   return {v:2, all:payloadSig(p), w, n, theme:p.theme||"", unshared:(p.unshared||[]).slice(-300)};
 }
-/* 양쪽에서 고친 위젯 합치기: 목록(할 일·바로가기·D-Day 등)은 양쪽 항목을 모두 살리고, 그 밖의 설정은 클라우드 것 */
-function _autoMerge(l, r){
-  const m=JSON.parse(JSON.stringify(r));
-  ["items","events"].forEach(k=>{ const a=l.config&&l.config[k], b=r.config&&r.config[k];
-    if(!Array.isArray(a)||!Array.isArray(b)) return;
-    const L=new Map(a.filter(x=>x&&x.id!=null).map(x=>[String(x.id),x])), out=[], seen=new Set();
-    b.forEach(x=>{ const id=x&&x.id!=null?String(x.id):null; if(id&&L.has(id)){ out.push(JSON.parse(JSON.stringify(L.get(id)))); seen.add(id); } else out.push(x); });   /* 같은 항목은 이 PC 것 */
-    a.forEach(x=>{ const id=x&&x.id!=null?String(x.id):null; if(id&&!seen.has(id)&&!b.some(y=>y&&String(y.id)===id)) out.push(JSON.parse(JSON.stringify(x))); });   /* 이 PC에만 있는 항목 */
+/* 양쪽에서 고친 위젯 합치기 (지난번 맞춘 상태 b와 비교해 항목마다 누가 바꿨는지 봄)
+   · 한쪽만 고친 항목 → 고친 쪽 · 한쪽에서 지우고 다른 쪽은 그대로 → 지움 · 한쪽에서 지우고 다른 쪽은 고침 → 살림
+   · 새로 생긴 항목 → 모두 살림 · 양쪽에서 같은 항목을 고침 → 이 PC 것
+   · 목록이 아닌 설정: 이 PC만 바꿨으면 이 PC 것, 아니면 클라우드 것
+   (예전 기록이라 항목별 표시가 없으면: 양쪽 항목을 모두 살림) */
+function _autoMerge(l, r, b){
+  const cp=x=>JSON.parse(JSON.stringify(x));
+  const useL=!!(b&&b.cs) && _otherSig(r)===b.cs && _otherSig(l)!==b.cs;
+  const m=cp(useL?l:r); if(!m.config||typeof m.config!=="object") m.config={};
+  ["items","events"].forEach(k=>{ const a=l.config&&l.config[k], rb=r.config&&r.config[k];
+    if(!Array.isArray(a)||!Array.isArray(rb)){ if(Array.isArray(rb)) m.config[k]=cp(rb); else if(Array.isArray(a)) m.config[k]=cp(a); return; }
+    const BI=(b&&b.it&&b.it[k])||null, L=new Map(a.filter(x=>x&&x.id!=null).map(x=>[String(x.id),x])), out=[], seen=new Set();
+    const same=(x,id)=>BI&&BI[id]!==undefined&&_itSig(x)===BI[id];     /* 지난번 맞춘 뒤 안 바뀜 */
+    rb.forEach(x=>{ const id=x&&x.id!=null?String(x.id):null; if(id===null){ out.push(cp(x)); return; } seen.add(id);
+      const lx=L.get(id);
+      if(lx){ out.push(cp(same(lx,id)?x:lx)); return; }                /* 둘 다 있음: 이 PC가 안 고쳤으면 클라우드 것 */
+      if(same(x,id)) return;                                           /* 이 PC에서 지움 (클라우드는 그대로) → 지움 */
+      out.push(cp(x)); });                                             /* 클라우드에 새로 생김 / 이 PC가 지웠지만 클라우드에서 고침 */
+    a.forEach(x=>{ const id=x&&x.id!=null?String(x.id):null; if(id===null||seen.has(id)) return;
+      if(same(x,id)) return;                                           /* 다른 PC에서 지움 (이 PC는 그대로) → 지움 */
+      out.push(cp(x)); });                                             /* 이 PC에 새로 생김 / 다른 PC가 지웠지만 이 PC에서 고침 */
     m.config[k]=out; });
   return m;
 }
@@ -4428,25 +4448,6 @@ function syncMerge(remote, choice, replace){
   const deco=syncOpts().deco!==false;
   const rNotes=remote.notes||[];
   const skip=_skipW();
-  if(replace){                                            /* 가져오기: 이 컴퓨터 위젯은 그대로 두고, 클라우드에서 고른 위젯을 더함 */
-    const chosenW=remote.widgets.filter(r=>!skip[r.id]), chosen=new Set(chosenW.map(r=>r.id)), types=new Set(chosenW.map(r=>r.type));
-    if(_importMemo) types.add("memo");
-    const dropNotes=new Set();
-    (state.widgets||[]).forEach(l=>{ if(chosen.has(l.id)) return;
-      if(types.has(l.type) && _blankWidget(l)){ if(l.type==="memo"&&l.config&&l.config.noteId) dropNotes.add(l.config.noteId); return; }   /* 빈 기본 위젯은 가져온 같은 종류로 대신 */
-      if(R.has(l.id)){ plan.push({w:Object.assign({}, l, {id:uid()}), local:true}); return; }   /* 클라우드에도 같은 번호가 있는데 안 가져온 것 → 따로 떼어 이 컴퓨터 전용으로 (클라우드 것은 그대로 전달) */
-      plan.push({w:l, local:true}); });                                                          /* 원래 위젯: 그대로, 이 컴퓨터 전용 */
-    remote.widgets.forEach(r=>{ if(!skip[r.id]) plan.push({w:r}); });                          /* 고른 클라우드 위젯: 빈자리에 더함 */
-    const rid=new Set(rNotes.map(n=>n.id));
-    const outN=notes().filter(n=>!(rid.has(n.id)&&isNoteSynced(n.id)) && !(dropNotes.has(n.id)&&!String(n.text||"").trim()))
-      .concat(rNotes.filter(n=>isNoteSynced(n.id)));                                             /* 원래 메모 + 고른 클라우드 메모 */
-    if(_importMemo){                                      /* 메모 위젯이 없을 때만 하나 — 원래 컴퓨터의 메모 자리 순서에 */
-      const at=remote.widgets.findIndex(w=>w.type==="memo"), before=remote.widgets.slice(0,Math.max(0,at)).filter(w=>!skip[w.id]).length;
-      const localN=plan.length-chosenW.length;
-      plan.splice(localN+before, 0, {w:{id:uid(), type:"memo", config:{noteId:_importMemo}, sync:false}}); _importMemo=null; }
-    return {plan, conflicts, took:1, theme:(deco&&remote.theme)?remote.theme:state.theme, notes:outN, carry:rNotes, add:true};
-  }
-  const localOlder=!base && (state.savedAt||0) <= (+remote.savedAt||0);
   (state.widgets||[]).forEach(l=>{
     seen.add(l.id); const r=R.get(l.id), b=B[l.id];
     if(!isShared(l)){                                   /* 이 컴퓨터 전용 */
@@ -4464,18 +4465,22 @@ function syncMerge(remote, choice, replace){
     if(lc!==rc){
       if(b&&lc===b.c){ src=r; took++; }
       else if(b&&rc===b.c){ src=l; }
-      else if(!b&&localOlder){ src=r; took++; }          /* 처음 맞출 때: 클라우드가 올라간 뒤 이 컴퓨터는 고친 게 없음 */
       else if(choice){ src=(choice==="remote")?r:l; if(src===r) took++; }
-      else { src=_autoMerge(l, r); took++; }                /* 양쪽에서 고침: 묻지 않고 합침 */
+      else { src=_autoMerge(l, r, b); took++; }             /* 양쪽에서 고침 (또는 지난번 기록 없음): 묻지 않고 합침 */
     }
     plan.push({w:src});
   });
   remote.widgets.forEach(r=>{ if(seen.has(r.id)||skip[r.id]) return;          /* 가져오지 않기로 한 위젯 */
     const b=B[r.id];
     if(b&&_cSig(r)===b.c) return;                        /* 이 컴퓨터에서 지운 위젯 */
-    if(!b && typeof Sync!=="undefined" && Sync.role()==="sub"){ skip[r.id]=true; return; }   /* 추가 컴퓨터: 보관함에 새로 생긴 위젯은 '가져오기' 목록으로 */
+    if(!b){ skip[r.id]=true; return; }                    /* 보관함에 새로 생긴 위젯은 '가져오기' 목록으로 (저절로 안 생김) */
     plan.push({w:r}); took++;                            /* 새 위젯 (또는 지웠지만 다른 컴퓨터에서 고친 것) */
   });
+  /* 공유 중인 메모 위젯이 띄우는 메모는 받는 쪽에서도 바로 맞춤 (가져오기 목록으로 보내지 않음) */
+  const picked=new Set();                                  /* 이번에 새로 맞추기 시작한 메모 (이 PC에 없어도 '지운 것'이 아님) */
+  { const so=syncOpts(), rid=new Set(rNotes.map(n=>n.id));
+    plan.forEach(p=>{ const w=p.w; if(p.local||!w||w.type!=="memo"||w.sync===false||!w.config) return; const id=w.config.noteId;
+      if(id && rid.has(id) && !isNoteSynced(id)){ so.notePick=so.notePick||{}; so.notePick[id]=true; if(so.noteLocal) delete so.noteLocal[id]; picked.add(id); } }); }
   /* 메모: 이 컴퓨터에서 맞추는 메모만 합치고, 나머지는 건드리지 않음 */
   const Bn=(base&&base.n)||{}, Rn=new Map(rNotes.map(n=>[n.id,n])), nseen=new Set(), outN=[];
   notes().forEach(l=>{ nseen.add(l.id); const r=Rn.get(l.id), b=Bn[l.id];
@@ -4485,27 +4490,22 @@ function syncMerge(remote, choice, replace){
     if(lc===rc){ outN.push(l); return; }
     if(b&&lc===b){ outN.push(r); took++; return; }
     if(b&&rc===b){ outN.push(l); return; }
-    if(!b&&localOlder){ outN.push(r); took++; return; }
     if(choice){ outN.push(choice==="remote"?r:l); if(choice==="remote") took++; return; }
     { const newer=(+r.at||0)>(+l.at||0)?r:l, older=newer===r?l:r;     /* 양쪽에서 고친 메모: 최신 것을 쓰고, 다른 쪽은 사본으로 */
       outN.push(newer); took++;
-      const cp=older.title ? {id:"n"+uid()+uid(), title:"(사본) "+older.title, text:String(older.text||""), color:older.color||"", at:Date.now()}
-                           : {id:"n"+uid()+uid(), text:"(사본) "+String(older.text||""), color:older.color||"", at:Date.now()};
+      const cp=older.title ? {id:"n"+uid()+uid(), title:"(사본) "+older.title, text:String(older.text||""), color:older.color||"", at:Date.now(), dup:true, dupOf:l.id}
+                           : {id:"n"+uid()+uid(), text:"(사본) "+String(older.text||""), color:older.color||"", at:Date.now(), dup:true, dupOf:l.id};
       outN.push(cp); const so=syncOpts(); if(so.notesAll===false){ so.notePick=so.notePick||{}; so.notePick[cp.id]=true; }
       return; }
     conflicts.push({id:"note:"+l.id, title:"메모 '"+noteTitle(l)+"'"}); outN.push(l); });
-  rNotes.forEach(r=>{ if(nseen.has(r.id)||!isNoteSynced(r.id)) return;
-    const b=Bn[r.id]; if(b&&_nSig(r)===b) return;                           /* 이 컴퓨터에서 지운 메모 */
+  rNotes.forEach(r=>{ if(r.dup && r.dupOf && !nseen.has(r.id) && !Bn[r.id] && !isNoteSynced(r.id) && (isNoteSynced(r.dupOf)||getNote(r.dupOf))){   /* 양쪽 수정 사본은 원래 메모를 맞추는 PC들에만 바로 */
+      const so=syncOpts(); so.notePick=so.notePick||{}; so.notePick[r.id]=true; if(so.noteLocal) delete so.noteLocal[r.id]; picked.add(r.id); }
+    if(nseen.has(r.id)||!isNoteSynced(r.id)) return;
+    const b=Bn[r.id]; if(b&&_nSig(r)===b&&!picked.has(r.id)) return;        /* 이 컴퓨터에서 지운 메모 */
     outN.push(r); took++; });
   let theme=state.theme;
   if(deco&&remote.theme&&remote.theme!==state.theme&&!(base&&base.theme===remote.theme)){ theme=remote.theme; took++; }
   return {plan, conflicts, took, theme, notes:outN, carry:rNotes};
-}
-/* 이 컴퓨터의 동기화 위젯이 클라우드와 같은 위젯들인지 (같은 위젯이면 내용은 위젯마다 합치면 되고, 다른 위젯이면 합치면 겹쳐 보임) */
-function _sameAsCloud(remote){
-  const mine=(state.widgets||[]).filter(isShared), R=new Map(remote.widgets.map(w=>[w.id,w]));
-  if(mine.length!==remote.widgets.length) return false;
-  return mine.every(l=>{ const r=R.get(l.id); return !!r && r.type===l.type; });
 }
 /* 합친 결과를 화면에 반영: 내용이 그대로인 위젯은 카드를 그대로 두고, 바뀐 위젯만 새로 그림 */
 function applySynced(res, remote, baseNew, excelChanged, carryW){
@@ -4532,7 +4532,8 @@ function applySynced(res, remote, baseNew, excelChanged, carryW){
   if(Array.isArray(res.notes)) state.notes=res.notes;
   const sk=_skipW(), rids=new Set(remote.widgets.map(x=>x.id));
   Object.keys(sk).forEach(id=>{ if(!rids.has(id)) delete sk[id]; });
-  state.syncCarry={notes:(res.carry||[]).map(n=>{ const o={id:n.id, text:String(n.text||""), color:n.color||"", at:+n.at||0}; if(n.title) o.title=String(n.title); return o; }),
+  const dn=syncOpts().delN||{}, crid=new Set((res.carry||[]).map(n=>n.id)); Object.keys(dn).forEach(id=>{ if(!crid.has(id)) delete dn[id]; });   /* 보관함에서 지운 메모: 클라우드에서 빠지면 표시도 지움 */
+  state.syncCarry={notes:(res.carry||[]).filter(n=>!dn[n.id]).map(n=>{ const o={id:n.id, text:String(n.text||""), color:n.color||"", at:+n.at||0}; if(n.title) o.title=String(n.title); if(n.dup) o.dup=true; if(n.dupOf) o.dupOf=n.dupOf; return o; }),
     widgets:(carryW||[]).filter(x=>sk[x.id])};
   if(res.theme) state.theme=res.theme;
   /* 새로 온 위젯(이 컴퓨터에 자리가 없는 것)은 칸에 맞춰 빈자리에 차례로 (가져오기 때는 전부 새로 배열) */
@@ -4580,6 +4581,8 @@ const Sync={
   async init(){
     if(!hasApi("gdrive_status")){ const b=$("#syncBtn"); if(b) b.style.display="none"; return; }
     try{ const s=await this.api().gdrive_status(); this.on=!!s.connected; this.email=s.email||""; this.deviceId=s.device_id||"";
+      if(this.on && this.email && state.syncEmail && state.syncEmail!==this.email) this.resetLocal();   /* 다른 계정 → 처음부터 */
+      if(this.on) this.migrate();
       this.lastOk=(s.last_sync||0)*1000; this.revokedAt=s.revoked_at||0;
       this.needApp=(+s.format||1)<2; }catch(e){}           /* 옛 본체: 고른 항목만 동기화를 못 함 → 업데이트 전까지 멈춤 */
     this.badge();
@@ -4605,20 +4608,19 @@ const Sync={
     let txt="연결중", cls="on";
     if(!this.on){ txt="동기화"; cls=""; }
     else if(this.needApp){ txt="업데이트 필요"; cls="err"; }
-    else if(this.hold){ txt="동기화 대기"; cls=""; }
     else if(bad){ txt=(this.err==="offline"||/^http_/.test(this.err)) ? "연결 끊김" : "동기화 확인 필요"; cls="err"; }
     if(t.textContent!==txt) t.textContent=txt;
     b.classList.toggle("on", cls==="on"); b.classList.toggle("err", cls==="err"); b.classList.remove("busy");
     b.title = !this.on ? "다른 컴퓨터와 내용 맞추기"
-      : this.hold ? "클라우드 내용을 가져올지 아직 고르지 않았어요. 눌러서 고르세요"
       : (this.needApp ? "프로그램 업데이트 후 동기화됩니다" : `${this.email} 계정과 연결됨\n마지막 동기화: ${relTime(this.lastOk)}`);
   },
   /* 동기화 대상 내용이 지난번 맞춘 뒤 바뀌었는지 (이 컴퓨터 전용 위젯만 바뀌었으면 올리지 않음) */
   dirty(){ try{
+      if(this.on && (state.widgets||[]).some(w=>w.type==="memo"&&isShared(w)&&w.config&&w.config.noteId&&getNote(w.config.noteId)&&!isNoteSynced(w.config.noteId))) return true;
       if(this.on && ((state.widgets||[]).some(w=>isShared(w)&&!w.upd) || _carryWidgets().some(w=>_skipW()[w.id]&&!w.upd))) return true;   /* 고친 날이 없는 공유 위젯 → 한 번 올려 날짜를 붙임 */
       return payloadSig(syncPayload())!==((state.syncBase||{}).all||""); }catch(e){ return true; } },
   async tick(){
-    if(!this.on||this.busy||this.conflict||this.needApp||this.hold) return;      /* hold: 처음 연결 때 '나중에 고르기' */
+    if(!this.on||this.busy||this.conflict||this.needApp) return;
     this.busy=true; this.badge();
     try{
       const c=await this.api().gdrive_check();
@@ -4637,7 +4639,9 @@ const Sync={
         this.needMerge=false;                                                   /* 메모를 다시 맞추기 시작하면 한 번 합쳐 봄 */
         await this.pull(true);                                                  /* 처음 연결이면 pull 이 '추가 컴퓨터로 연결'을 함 */
       } else if(!c.exists || c.excel_dirty || this.dirty()){
-        if(!c.exists && !state.syncMain && this.deviceId){ state.syncMain=this.deviceId; state.syncMainClaim=true; saveLocalOnly(); }   /* 빈 클라우드를 처음 채우는 PC = 기준 컴퓨터 */
+        if(!c.exists && !(state.syncBase&&state.syncBase.w)){ const o=syncOpts();   /* 빈 보관함을 처음 채움: 이 PC 위젯·메모를 모두 올림 (지난번 기록이 있으면 공유 중인 것만) */
+          (state.widgets||[]).forEach(w=>{ if(!SYNC_LOCAL_TYPES.has(w.type)) w.sync=true; });
+          o.notePick=o.notePick||{}; notes().forEach(n=>{ o.notePick[n.id]=true; if(o.noteLocal) delete o.noteLocal[n.id]; }); saveLocalOnly(); }
         await this.push(false);
       } else { this.lastOk=Date.now(); }
       if(!this.conflict) this.first=false;
@@ -4646,12 +4650,14 @@ const Sync={
   },
   async push(force){
     let r=null, p=null;
+    { const o=syncOpts(); (state.widgets||[]).forEach(w=>{ const id=w.type==="memo"&&isShared(w)&&w.config&&w.config.noteId;   /* 공유 메모 위젯이 띄우는 메모는 함께 공유 */
+        if(id && getNote(id) && !isNoteSynced(id)){ o.notePick=o.notePick||{}; o.notePick[id]=true; if(o.noteLocal) delete o.noteLocal[id]; } }); }
     const Bw=(state.syncBase&&state.syncBase.w)||{}, now=Date.now();
     (state.widgets||[]).forEach(w=>{ if(isShared(w) && (!Bw[w.id] || Bw[w.id].c!==_cSig(w) || !w.upd)) w.upd=now; });   /* 내용이 바뀐 위젯에 고친 날 (보관함 정리용) */
     const sk=_skipW(); _carryWidgets().forEach(w=>{ if(sk[w.id] && !w.upd) w.upd=now; });                /* 예전부터 보관함에 있던 날짜 없는 위젯: 오늘부터 셈 */
     try{ p=syncPayload(); r=await this.api().gdrive_push(JSON.stringify(p), !!force); }
     catch(e){ r={ok:false, reason:"error", detail:(e&&e.message)||String(e)}; }
-    if(r&&r.ok){ state.syncBase=_holdNoteBase(syncBaseFrom(p)); state.syncCarry=Object.assign({}, state.syncCarry, {notes:p.notes||[]}); state.syncMainClaim=false; saveLocalOnly(); this.lastOk=Date.now(); this.err=""; this.burstUntil=Date.now()+60000; }
+    if(r&&r.ok){ state.syncBase=_holdNoteBase(syncBaseFrom(p)); state.syncCarry=Object.assign({}, state.syncCarry, {notes:p.notes||[]}); if(this.email) state.syncEmail=this.email; saveLocalOnly(); this.lastOk=Date.now(); this.err=""; this.burstUntil=Date.now()+60000; }
     else if(r&&r.reason==="conflict"){           /* 그 사이 다른 컴퓨터가 올림 → 곧 받아서 합친 뒤 다시 올림 */
       this.err=""; clearTimeout(this.pushTimer); this.pushTimer=setTimeout(()=>this.tick(),1500); }
     else this.err=(r&&r.reason)||"upload";
@@ -4660,23 +4666,31 @@ const Sync={
   /* 받아서 합치기. choice: 같은 위젯을 양쪽에서 고쳤을 때의 선택, replace: 처음 연결 때 클라우드 것으로 바꾸기 */
   /* 추가 컴퓨터로 연결: 아무것도 바꾸지 않음. 이 PC 위젯·메모는 이 PC 전용, 클라우드 것은 보관함에 (가져오기로 골라 씀) */
   async join(r, remote){
-    const o=syncOpts();
-    o.skipW={}; (remote.widgets||[]).forEach(w=>{ o.skipW[w.id]=true; });
-    o.deco=false; o.notesAll=false; o.notePick={}; o.noteLocal={}; notes().forEach(n=>{ o.noteLocal[n.id]=true; });
-    _importMemo=null; this._pend=r;
-    const ok=await this.pull(false, null, true);
+    const o=syncOpts(), R=new Map((remote.widgets||[]).map(w=>[w.id,w])), rn=new Set((remote.notes||[]).map(n=>n.id));
+    o.skipW={}; o.deco=false; o.notesAll=false; o.notePick={}; o.noteLocal={};
+    (state.widgets||[]).forEach(l=>{
+      if(!R.has(l.id)){ if(!SYNC_LOCAL_TYPES.has(l.type)) l.sync=false; return; }          /* 보관함에 없는 위젯: 이 PC 전용 */
+      if(!isShared(l)){ const c=cardOf(l.id); if(c) c.remove(); l.id=uid(); }             /* 같은 번호인데 이 PC 전용 → 번호를 바꿔 따로 둠 */
+    });                                                                                     /* 보관함에도 있는 공유 위젯은 이어서 맞춤 (지우지 않고 합침) */
+    notes().forEach(n=>{ if(rn.has(n.id)) o.notePick[n.id]=true; else o.noteLocal[n.id]=true; });
+    saveLocalOnly(); this._pend=r;
+    const ok=await this.pull(false, null, false, true);
     if(ok===true){
-      if(remote.main){ state.syncMain=remote.main; saveLocalOnly(); }
       this.first=false;
-      const n=(remote.widgets||[]).length, m=(remote.notes||[]).length;
+      const n=_carryWidgets().length, m=_carryNotes().filter(x=>!isNoteSynced(x.id)&&!getNote(x.id)).length;
       toastAction(n||m?`클라우드 보관함에 위젯 ${n}개${m?`·메모 ${m}개`:""}가 있어요`:"클라우드에 연결했어요", "가져오기", ()=>this.openPanel());
     }
     return ok;
   },
+  /* 연결을 끊거나 다른 계정으로 바꿀 때: 지난번 맞춘 기록을 지움 → 다시 연결하면 '추가 컴퓨터로 연결'부터 (아무것도 지우지 않음) */
+  resetLocal(){ delete state.syncBase; delete state.syncCarry; delete state.syncEmail;
+    const o=syncOpts(); o.skipW={}; o.notePick={}; o.noteLocal={}; o.delN={}; saveLocalOnly(); },
   deviceId:"",
-  role(){ const m=state.syncMain; return (!m || m===this.deviceId) ? "main" : "sub"; },   /* 기준이 안 정해진 예전 클라우드는 모두 기준처럼 (새 위젯 공유) */
-  async pull(auto, choice, replace){
-    let r=((choice||replace)&&this._pend)||null;
+  migrate(){ const o=syncOpts(); if(o.v3) return;
+    if(o.notesAll!==false){ o.notePick=o.notePick||{}; notes().forEach(n=>{ if(!(o.noteLocal&&o.noteLocal[n.id])) o.notePick[n.id]=true; }); }
+    o.notesAll=false; o.v3=true; saveLocalOnly(); },
+  async pull(auto, choice, replace, nojoin){
+    let r=((choice||replace||nojoin)&&this._pend)||null;
     if(!r){
       try{ if(hasApi("state_backup_save")) await this.api().state_backup_save(stateJSON(), "before_pull"); }catch(e){}
       try{ r=await this.api().gdrive_pull(); }
@@ -4686,64 +4700,17 @@ const Sync={
     const remote=sanitizeRemote(r.state);
     if(!remote){ this.err="bad_state"; return false; }
     /* 새 방식으로 처음 맞추는 때: 두 쪽 위젯이 다르면 합치지 않고(겹쳐 보임) 어느 쪽을 쓸지 물음 */
-    if(!choice && !replace && !(state.syncBase&&state.syncBase.w) && !_sameAsCloud(remote)) return await this.join(r, remote);
+    if(!choice && !replace && !nojoin && !(state.syncBase&&state.syncBase.w)) return await this.join(r, remote);   /* 지난번 맞춘 기록이 없음 → 추가 컴퓨터로 연결 */
     const baseNew=_holdNoteBase(syncBaseFrom(remote));
     const carryW=JSON.parse(JSON.stringify(remote.widgets));   /* 합치기 전 원본 (가져오지 않은 위젯 보관용) */
     const res=syncMerge(remote, choice||null, !!replace);
-    if(res.conflicts.length && !choice && !replace){ this._pend=r; this.askMerge(res.conflicts); return "ask"; }
     this._pend=null;
     applySynced(res, remote, baseNew, r.excel_changed||[], carryW);
-    if(remote.main && !state.syncMainClaim){ if(state.syncMain!==remote.main){ state.syncMain=remote.main; saveLocalOnly(); } }
+    if(this.email) state.syncEmail=this.email;
     this.lastOk=Date.now(); this.err=""; this.burstUntil=Date.now()+60000;
     if(res.took) toast(auto ? `${r.device_name||"다른 컴퓨터"}의 변경 내용을 가져왔어요` : "클라우드 내용을 가져왔어요");
     if(this.dirty()) await this.push(false);          /* 이 컴퓨터에서 고친 것도 올림 */
     return true;
-  },
-  askMerge(list){
-    this.conflict=true;
-    const sh=$("#syncSheet"), names=list.map(x=>escapeHtml(x.title)).join(", ");
-    const nn=list.filter(x=>String(x.id).startsWith("note:")).length;
-    const what=nn===list.length?"메모를":(nn?"내용을":"위젯을");
-    sh.innerHTML=`<h2>양쪽에서 같은 ${what} 고쳤어요</h2>
-      <div class="sy-box"><div><b>${names}</b>
-      <i>이 컴퓨터와 다른 컴퓨터에서 서로 다르게 고쳐졌어요. 어느 쪽 내용을 쓸지 골라 주세요.</i></div></div>
-      <div class="sy-btns"><button class="mini go" data-r>다른 컴퓨터 것 쓰기</button><button class="mini" data-l>이 컴퓨터 것 쓰기</button></div>
-      <div class="sy-note">나머지는 자동으로 합쳐집니다.<br>
-      '다른 컴퓨터 것'을 고르면 지금 이 컴퓨터 내용은 '기존 설정 이용하기'에 보관돼요.</div>`;
-    $("#syncScrim").classList.add("on");
-    const go=async(choice)=>{
-      if(this._running) return; this._running=true;
-      sh.querySelectorAll("button").forEach(b=>b.disabled=true);
-      this.busy=true; this.badge(); let ok=false;
-      try{ ok=(await this.pull(false, choice))===true; }catch(e){}
-      finally{ this._running=false; this.busy=false; }
-      this.conflict=false; this.first=false; $("#syncScrim").classList.remove("on"); this.badge();
-      if(ok) toast(choice==="remote"?"다른 컴퓨터 내용으로 맞췄어요":"이 컴퓨터 내용으로 맞췄어요");
-    };
-    $("[data-r]",sh).onclick=()=>go("remote");
-    $("[data-l]",sh).onclick=()=>go("local");
-  },
-  async runChoice(sh, kind, done, dev, at){
-    if(this._running) return;
-    this._running=true; this.busy=true; this.badge();
-    const btns=[...sh.querySelectorAll("button")]; btns.forEach(b=>b.disabled=true);
-    let msg=$(".sy-prog",sh); if(!msg){ msg=el("div","sy-prog"); sh.appendChild(msg); }
-    msg.className="sy-prog"; msg.textContent = kind==="keep"
-      ? "맞추는 중입니다… 엑셀 파일이 있으면 처음엔 1~2분 걸릴 수 있어요."
-      : "가져오는 중입니다…";
-    let ok=false, why="";
-    try{
-      if(kind==="keep"){ const r=await this.push(true); ok=!!(r&&r.ok); if(!ok) why=(r&&(r.detail||r.reason))||"알 수 없음"; }
-      else { ok=(await this.pull(false, null, true))===true; if(!ok) why=this.err||"알 수 없음"; }
-    }catch(e){ ok=false; why=(e&&e.message)||String(e); }
-    finally{ this._running=false; this.busy=false; this.badge(); }
-    if(ok){
-      if(kind==="keep") toast("이 컴퓨터 내용으로 맞췄어요");
-      done(); return;
-    }
-    btns.forEach(b=>b.disabled=false);
-    msg.className="sy-prog err";
-    msg.textContent=`${kind==="keep"?"맞추지":"가져오지"} 못했어요 (${why}). 인터넷 연결을 확인하고 다시 눌러 주세요.`;
   },
   async openBackups(){
     const sh=$("#syncSheet"); this.conflict=true;
@@ -4795,7 +4762,7 @@ const Sync={
         try{ await this.api().gdrive_disconnect(false); }catch(e){}
         this.on=false; this.hold=null; this.email=""; this.err=""; this.schedule();
       }
-      state=st; adaptLayouts(); assignLayouts();
+      state=st; if(mode==="local" && !this.on) this.resetLocal(); adaptLayouts(); assignLayouts();
       applyTheme(); updateTopbar(); renderAll();
       await persist();
       if(mode==="all"){ msg.textContent="클라우드에 올리는 중입니다…"; const r=await this.push(true);
@@ -4811,104 +4778,7 @@ const Sync={
     btns.forEach(b=>b.disabled=false);
     msg.className="sy-prog err"; msg.textContent=`되돌리지 못했어요 (${why}).`;
   },
-  askConflict(dev, at){
-    this.conflict=true;
-    const sh=$("#syncSheet"), who=escapeHtml(dev||"다른 컴퓨터");
-    const when=at?escapeHtml(new Date(at).toLocaleString("ko-KR")):"시각 모름";
-    const first=this.first;
-    sh.innerHTML = first
-      ? `<h2>클라우드에 이미 저장된 내용이 있습니다</h2>
-         <div class="sy-box"><div><b>${who} · ${when}</b>
-         <i>이 계정으로 먼저 연결한 컴퓨터의 내용입니다. 어느 쪽을 쓸지 골라 주세요.</i></div></div>`
-      : `<h2>다른 컴퓨터에서 수정된 내용이 있습니다</h2>
-         <div class="sy-box"><div><b>${who} · ${when}</b>
-         <i>이 컴퓨터에도 아직 올리지 않은 변경이 있어요. 어느 쪽을 쓸지 골라 주세요.</i></div></div>`;
-    sh.innerHTML += `<div class="sy-btns"><button class="mini go" data-pull>${who}의 내용 가져오기…</button>
-        <button class="mini" data-keep>이 컴퓨터 것 유지</button></div>
-      <div class="sy-note"><b>가져오기</b>: 이 컴퓨터 위젯·메모는 <b>그대로 두고</b>, 클라우드에서 고른 항목을 <b>더해요</b>.
-      원래 있던 것은 이 컴퓨터 전용으로 남고, 나중에 '동기화 항목 고르기'에서 함께 쓰게 바꿀 수 있어요.<br>
-      <b>이 컴퓨터 것 유지</b>: 클라우드와 ${who}의 내용이 이 컴퓨터 것으로 바뀝니다.</div>
-      <div class="sy-btns" style="margin-top:10px"><button class="mini" data-later>← 나가기 (나중에 고르기)</button></div>`;
-    $("#syncScrim").classList.add("on");
-    const done=()=>{ this.conflict=false; this.first=false; this._pend=null; $("#syncScrim").classList.remove("on"); this.badge(); };
-    $("[data-pull]",sh).onclick=()=>this.startImport(sh, done, dev, at);
-    $("[data-later]",sh).onclick=()=>{ this.conflict=false; this.hold={dev, at}; $("#syncScrim").classList.remove("on"); this.badge();
-      toast("고를 때까지 동기화를 멈췄어요. [동기화 대기]를 누르면 다시 고를 수 있어요"); };
-    $("[data-keep]",sh).onclick=()=>{
-      sh.innerHTML=`<h2>정말 이 컴퓨터 것으로 맞출까요?</h2>
-        <div class="sy-warn">⚠ <b>${who}의 내용이 사라집니다.</b><br>
-        ${who}에만 있던 할 일·메모·위젯은 다음 확인 때 이 컴퓨터 내용으로 <b>자동으로 바뀌며 되돌릴 수 없습니다.</b><br><br>
-        ${who}의 내용이 필요하면 [돌아가기]를 누르고 가져오기를 선택하세요.</div>
-        <div class="sy-btns"><button class="mini" data-back>돌아가기</button>
-        <button class="mini danger" data-yes>이 컴퓨터 것으로 맞추기</button></div>`;
-      $("[data-back]",sh).onclick=()=>{ this.conflict=false; this.askConflict(dev, at); };
-      $("[data-yes]",sh).onclick=()=>this.runChoice(sh, "keep", done, dev, at);
-    };
-  },
   /* 처음 가져오기: 클라우드 내용을 받아 와서 가져올 항목을 고르게 함 */
-  async startImport(sh, done, dev, at){
-    if(this._running) return;
-    let r=this._pend;
-    if(!r){
-      this._running=true; sh.querySelectorAll("button").forEach(b=>b.disabled=true);
-      let msg=$(".sy-prog",sh); if(!msg){ msg=el("div","sy-prog"); sh.appendChild(msg); } msg.className="sy-prog"; msg.textContent="클라우드 내용을 불러오는 중입니다…";
-      try{ if(hasApi("state_backup_save")) await this.api().state_backup_save(stateJSON(), "before_pull"); }catch(e){}
-      try{ r=await this.api().gdrive_pull(); }catch(e){ r={ok:false, reason:(e&&e.message)||"error"}; }
-      this._running=false;
-      if(!r||!r.ok){ sh.querySelectorAll("button").forEach(b=>b.disabled=false); msg.className="sy-prog err";
-        msg.textContent=`불러오지 못했어요 (${(r&&r.reason)||"알 수 없음"}). 인터넷 연결을 확인하고 다시 눌러 주세요.`; return; }
-      this._pend=r;
-    }
-    const remote=sanitizeRemote(r.state);
-    if(!remote){ toast("클라우드 내용을 읽지 못했어요"); return; }
-    this.openImport(sh, remote, done, dev, at);
-  },
-  openImport(sh, remote, done, dev, at){
-    const who=escapeHtml(dev||"다른 컴퓨터"), o=syncOpts();
-    const tn=(()=>{ const t=[...THEMES.light,...THEMES.dark].find(x=>x[0]===remote.theme); return t?t[1]:""; })();
-    const rn=(remote.notes||[]).slice().sort((x,y)=>(y.at||0)-(x.at||0)), hasMemoW=remote.widgets.some(w=>w.type==="memo");
-    /* 같은 종류끼리 묶기 (처음 나온 순서대로), 메모 위젯은 빼고 메모 목록으로 */
-    const groups=[]; remote.widgets.forEach(w=>{ if(w.type==="memo") return; let g=groups.find(x=>x.type===w.type); if(!g){ g={type:w.type, list:[]}; groups.push(g); } g.list.push(w); });
-    const wrow=(w,many)=>{ const d=WIDGETS[w.type]||{}, nm=w.title||d.title||w.type, pv=many?wPreview(w):[wSummary(w,rn)||""];
-      return `<label class="sy-chk${many?" many":""}"><input type="checkbox" data-iw="${escapeHtml(w.id)}" checked>
-        <span class="ic">${d.icon||""}</span><span class="tx"><b>${escapeHtml(nm)}</b>${pv.filter(Boolean).map(t=>`<i>${escapeHtml(t)}</i>`).join("")}</span></label>`; };
-    const nrow=n=>{ const ls=String(n.text||"").trim().split("\n").map(t=>t.trim()).filter(Boolean), cut=t=>t.length>40?t.slice(0,40)+"…":t;
-      return `<label class="sy-chk many"><input type="checkbox" data-in="${escapeHtml(n.id)}" checked>
-        <span class="ic"><i class="sy-dot" style="background:${noteColor(n.color)||"transparent"}"></i></span>
-        <span class="tx"><b>${escapeHtml(noteTitle(n))}</b>${ls.slice(1,3).map(t=>`<i>${escapeHtml(cut(t))}</i>`).join("")}</span></label>`; };
-    const gHtml=groups.map(g=>{ const d=WIDGETS[g.type]||{}, many=g.list.length>1;
-      return many ? `<div class="sy-sub">${escapeHtml(d.title||g.type)} ${g.list.length}개 · 내용을 보고 고르세요</div>${g.list.map(w=>wrow(w,true)).join("")}`
-                  : wrow(g.list[0],false); }).join("");
-    sh.innerHTML=`<h2>가져올 항목 고르기</h2>
-      <p class="s">${who}의 클라우드 내용이에요. 이 컴퓨터에 <b>더할</b> 것만 체크하세요. 이 컴퓨터에 있던 위젯은 그대로 있고, 가져온 위젯은 빈자리에 놓여요.</p>
-      <div class="sy-btns"><button class="mini" data-all>모두 체크</button><button class="mini" data-none>모두 해제</button></div>
-      <div class="sy-list">
-        ${remote.theme?`<label class="sy-chk"><input type="checkbox" data-ideco${o.deco!==false?" checked":""}><span class="ic">🎨</span>
-          <span class="tx"><b>화면 꾸미기</b><i>${escapeHtml(tn||remote.theme)}</i></span></label>`:""}
-        ${rn.length?`<div class="sy-sub">📝 메모 ${rn.length}개${hasMemoW?" · 메모 위젯 하나에 모아서 보여요":""}</div>${rn.map(nrow).join("")}`:""}
-        <div class="sy-sub">위젯</div>${gHtml||`<div class="sy-empty">위젯이 없어요</div>`}
-      </div>
-      <div class="sy-btns"><button class="mini go" data-go>가져오기</button><button class="mini" data-back>돌아가기</button></div>
-      <div class="sy-note">· 이 컴퓨터에 있던 위젯·메모는 그대로 남고, 이 컴퓨터 전용이 돼요 (다른 컴퓨터로 가지 않음). '동기화 항목 고르기'에서 함께 쓰게 바꿀 수 있어요.<br>
-      · 체크하지 않은 항목은 가져오지 않지만, 클라우드와 다른 컴퓨터에는 그대로 남아요. 나중에 '동기화 항목 고르기'에서 가져올 수 있어요.</div>`;
-    const boxes=()=>[...sh.querySelectorAll("input[data-iw],input[data-in],input[data-ideco]")];
-    $("[data-all]",sh).onclick=()=>boxes().forEach(b=>b.checked=true);
-    $("[data-none]",sh).onclick=()=>boxes().forEach(b=>b.checked=false);
-    $("[data-back]",sh).onclick=()=>{ this.conflict=false; this.askConflict(dev, at); };
-    $("[data-go]",sh).onclick=()=>{
-      const skip={}; sh.querySelectorAll("input[data-iw]").forEach(cb=>{ if(!cb.checked) skip[cb.dataset.iw]=true; });
-      remote.widgets.forEach(w=>{ if(w.type==="memo") skip[w.id]=true; });          /* 메모 위젯들은 가져오지 않고 하나로 새로 만듦 */
-      o.skipW=skip;
-      const dc=$("input[data-ideco]",sh); if(dc) o.deco=dc.checked;
-      const nb=[...sh.querySelectorAll("input[data-in]")], picked=nb.filter(cb=>cb.checked).map(cb=>cb.dataset.in);
-      if(nb.length){ const all=picked.length===nb.length; o.notesAll=all; o.notePick={}; if(!all) picked.forEach(id=>{ o.notePick[id]=true; }); }
-      const rIds=new Set((remote.notes||[]).map(n=>n.id)); o.noteLocal=Object.assign({}, o.noteLocal||{});
-      notes().forEach(n=>{ if(!rIds.has(n.id)) o.noteLocal[n.id]=true; });        /* 원래 메모는 이 컴퓨터 전용으로 (다른 컴퓨터로 안 감) */
-      const hasLocalMemo=(state.widgets||[]).some(w=>w.type==="memo" && !_blankWidget(w));          /* 빈 메모 위젯은 없는 것으로 */
-      _importMemo=(hasMemoW && picked.length && !hasLocalMemo) ? picked[0] : null;   /* 메모 위젯이 이미 있으면 그 목록에 들어감 */
-      this.runChoice(sh, "pull", done, dev, at);
-    };
-  },
   /* ===== 동기화 창 (연결됨): 맞추는 중 · 가져오기 · 올리기 · 설정 ===== */
   renderHub(sh){
     const o=syncOpts(), ws=state.widgets||[], sk=_skipW(), localIds=new Set(ws.map(w=>w.id));
@@ -4925,8 +4795,8 @@ const Sync={
     const upMemo=new Set(upW.filter(w=>w.type==="memo"&&w.config).map(w=>w.config.noteId));
     const upN=notes().filter(n=>!isNoteSynced(n.id)&&!upMemo.has(n.id));
     const onW=ws.filter(isShared), onN=notes().filter(n=>isNoteSynced(n.id));
-    const role=this.role(), R_=t=>`<span class="sy-role">${t}</span>`;
-    const roleTxt=!state.syncMain?"기준 컴퓨터가 아직 정해지지 않았어요":(role==="main"?`이 PC: ${R_("기준 컴퓨터")} · 새 위젯이 자동으로 보관함에 올라가요`:`이 PC: ${R_("추가 컴퓨터")} · 새 위젯은 이 PC 전용 (원하면 올리기)`);
+    const inShared=new Set(ws.filter(w=>w.type==="memo"&&isShared(w)&&w.config&&w.config.noteId).map(w=>w.config.noteId));
+    const roleTxt="새 위젯은 이 PC에만 있고, <span class=\"sy-role\">올리기</span>를 누르면 다른 기기와 맞춰져요";
     const row=(attr,id,icon,title,sub,del)=>`<label class="sy-chk sm"><input type="checkbox" ${attr}="${escapeHtml(id)}"><span class="ic">${icon}</span><span class="tx"><b>${escapeHtml(title)}</b>${sub?`<i>${sub}</i>`:""}</span>${del?`<button class="sy-del" ${del}="${escapeHtml(id)}" title="보관함에서 지우기">🗑</button>`:""}</label>`;
     const sub2=(a,b)=>[a,b].filter(Boolean).join(" · ");
     const cwRow=w=>row("data-inw",w.id,ic(w),nm(w),sub2(sum(w),age(w.upd)),"data-delw"), cnRow=n=>row("data-inn",n.id,dot(n),"메모 · "+noteTitle(n),sub2(nsub(n),age(n.at)),"data-deln");
@@ -4939,7 +4809,7 @@ const Sync={
         <i>마지막 동기화: ${relTime(this.lastOk)}${this.err?" · 확인 필요 ("+escapeHtml(this.err)+")":""}</i></div></div>
       <div class="sy-sec"><div class="sy-sh">✓ 맞추는 중 <span>위젯 ${onW.length}개 · 메모 ${onN.length}개</span></div>
         ${onW.length||onN.length?`<div class="sy-list">${onW.map(w=>`<div class="sy-chk sm"><span class="ic">${ic(w)}</span><span class="tx"><b>${escapeHtml(nm(w))}</b>${sum(w)?`<i>${sum(w)}</i>`:""}</span><button class="mini" data-stopw="${escapeHtml(w.id)}">이 PC에서 그만 맞추기</button></div>`).join("")}
-          ${onN.map(n=>`<div class="sy-chk sm"><span class="ic">${dot(n)}</span><span class="tx"><b>메모 · ${escapeHtml(noteTitle(n))}</b></span><button class="mini" data-stopn="${escapeHtml(n.id)}">이 PC에서 그만 맞추기</button></div>`).join("")}</div>
+          ${onN.map(n=>`<div class="sy-chk sm"><span class="ic">${dot(n)}</span><span class="tx"><b>메모 · ${escapeHtml(noteTitle(n))}</b>${inShared.has(n.id)?`<i>메모 위젯과 함께 맞춰요</i>`:""}</span>${inShared.has(n.id)?"":`<button class="mini" data-stopn="${escapeHtml(n.id)}">이 PC에서 그만 맞추기</button>`}</div>`).join("")}</div>
           <div class="sy-note">'그만 맞추기'를 해도 보관함과 다른 기기에는 그대로 남아요. 이 PC에는 따로 떼어 낸 사본이 남아요.</div>`
           :`<div class="sy-empty">아직 맞추는 위젯이 없어요. 아래에서 가져오거나 올려 보세요.</div>`}</div>
       <div class="sy-sec"><div class="sy-sh">⬇ 클라우드에서 가져오기 <span>보관함에만 있는 ${cloudW.length+cloudN.length}개</span></div>
@@ -4955,8 +4825,7 @@ const Sync={
           <div class="sy-btns"><button class="mini" data-all="up">모두 체크</button><button class="mini go" data-doup>고른 것 올리기</button></div>`
           :`<div class="sy-empty">올릴 게 없어요. 이 PC 위젯은 모두 보관함과 맞추는 중이에요.</div>`}
         ${pcOnly.length?`<div class="sy-note">PC마다 달라서 올리지 않는 위젯: ${pcOnly.map(w=>escapeHtml(nm(w))).join(", ")}</div>`:""}</div>
-      <div class="sy-sec"><label class="sy-chk sm"><input type="checkbox" data-deco ${o.deco!==false?"checked":""}><span class="ic">🎨</span><span class="tx"><b>모든 기기에 같은 화면 꾸미기</b><i>끄면 이 PC는 자기 테마를 따로 써요</i></span></label></div>
-      <div class="sy-btns"><button class="mini go" data-now>지금 동기화</button>${state.syncMain&&role==="main"?"":`<button class="mini" data-main>이 PC를 기준으로</button>`}
+      <div class="sy-btns">
         <button class="mini" data-bkopen>되돌리기</button><button class="mini" data-off>연결 해제</button></div>
       <div class="sy-mobile"><div class="qr">${mobileQr()}</div>
         <div><b>폰에서 보기</b><i>폰 카메라로 QR을 찍고 같은 구글 계정으로 로그인하면<br>보관함의 위젯을 폰에서도 볼 수 있어요.</i>
@@ -4992,15 +4861,9 @@ const Sync={
       if(!idsW.length&&!idsN.length){ toast("올릴 것을 체크해 주세요"); return; }
       idsW.forEach(id=>{ const w=ws.find(x=>x.id===id); if(!w) return; w.sync=true; if(w.type==="memo"&&w.config&&w.config.noteId) shareNote(w.config.noteId); });
       idsN.forEach(id=>shareNote(id));
-      persist(); this.queuePush(); toast(`${idsW.length+idsN.length}개를 보관함에 올려요`); re(); };
+      this.needMerge=true; persist(); this.queuePush(); toast(`${idsW.length+idsN.length}개를 보관함에 올려요`); re(); };   /* 올리기 전에 한 번 받아서 합침 (그 사이 다른 PC가 고친 것을 덮지 않게) */
     q("[data-stopw]").forEach(b=>b.onclick=()=>{ this.stopWidget(b.dataset.stopw); re(); });
     q("[data-stopn]").forEach(b=>b.onclick=()=>{ this.stopNote(b.dataset.stopn); re(); });
-    const dc=$("[data-deco]",sh); if(dc) dc.onchange=()=>{ o.deco=dc.checked; persist(); this.needMerge=true; toast(dc.checked?"모든 기기가 같은 화면 꾸미기를 써요":"이 PC는 화면 꾸미기를 따로 써요"); };
-    const mb=$("[data-main]",sh); if(mb) mb.onclick=()=>{ if(!this.deviceId){ toast("잠시 뒤 다시 눌러 주세요"); return; }
-      state.syncMain=this.deviceId; state.syncMainClaim=true; persist(); this.queuePush(); toast("이 PC가 기준 컴퓨터가 됐어요. 새로 만드는 위젯이 자동으로 보관함에 올라가요"); re(); };
-    $("[data-now]",sh).onclick=async(e)=>{ const b=e.currentTarget; b.disabled=true; b.textContent="확인 중…";
-      await this.tick(); b.disabled=false; b.textContent="지금 동기화"; if(!this.err) toast("최신 상태입니다"); re(); };
-    if(this.needApp) $("[data-now]",sh).disabled=true;
     $("[data-off]",sh).onclick=()=>this.confirmOff();
     const bo=$("[data-bkopen]",sh); if(bo){ bo.onclick=()=>this.openBackups(); if(!hasApi("state_backups")) bo.style.display="none"; }
     const cu=$("[data-copyurl]",sh); if(cu) cu.onclick=async()=>{ try{ await navigator.clipboard.writeText(MOBILE_URL); toast("주소를 복사했어요"); }catch(e){ toast(MOBILE_URL); } };
@@ -5037,6 +4900,7 @@ const Sync={
       const c=state.syncCarry=state.syncCarry||{};
       c.widgets=(Array.isArray(c.widgets)?c.widgets:[]).filter(w=>!wids.includes(w.id));
       c.notes=(Array.isArray(c.notes)?c.notes:[]).filter(n=>!nids.includes(n.id));
+      const o=syncOpts(); o.delN=o.delN||{}; nids.forEach(id=>{ o.delN[id]=Date.now(); });   /* 그 사이 받아 와도 되살아나지 않게 */
       const sk=_skipW(); wids.forEach(id=>{ delete sk[id]; });
       persist(); this.queuePush(); toast(`보관함에서 ${names.length}개를 지웠어요`); this.renderHub(sh); };
   },
@@ -5066,7 +4930,7 @@ const Sync={
       sh.innerHTML=`<h2>다른 컴퓨터와 내용 맞추기</h2>${rv}
         ${this.needApp?`<div class="sy-warn">동기화 방식이 바뀌어 <b>프로그램 업데이트</b>가 필요해요. 업데이트 알림에서 [업데이트]를 눌러 주세요.</div>`:""}
         <p class="s">구글 계정으로 연결하면 <b>클라우드 보관함</b>을 통해 여러 컴퓨터와 폰이 같은 위젯·할 일·메모를 함께 써요.</p>
-        <div class="sy-box"><div><b>처음 연결하는 컴퓨터</b><i>이 컴퓨터가 <b>기준 컴퓨터</b>가 되고, 위젯이 보관함에 올라가요.</i>
+        <div class="sy-box"><div><b>처음 연결하는 컴퓨터</b><i>보관함이 비어 있으면 이 컴퓨터의 위젯이 보관함에 올라가요.</i>
         <b style="margin-top:6px">그다음 연결하는 컴퓨터</b><i>아무것도 바뀌지 않아요. 보관함에서 필요한 위젯만 골라 <b>가져오고</b>, 이 컴퓨터 위젯은 원할 때 <b>올려요</b>.</i></div></div>
         <div class="sy-btns" style="margin-top:16px"><button class="mini go" data-conn>구글 계정으로 연결</button>
           <button class="mini" data-bkopen>기존 설정 이용하기</button></div>
@@ -5081,6 +4945,8 @@ const Sync={
         let r=null; try{ r=await this.api().gdrive_connect(); }catch(err){}
         if(r&&r.ok){
           this.on=true; this.hold=null; this.email=r.email||""; this.err=""; this.first=true; this.revokedAt=0;
+          if(this.email && state.syncEmail && state.syncEmail!==this.email) this.resetLocal();   /* 다른 계정 → 처음부터 */
+          this.migrate();
           try{ const st=await this.api().gdrive_status(); this.deviceId=(st&&st.device_id)||r.device_id||""; }catch(e){}
           toast(`${this.email||"구글 계정"}에 연결되었습니다`);
           $("#syncScrim").classList.remove("on"); this.schedule(); this.badge(); this.tick(); return;
@@ -5097,74 +4963,6 @@ const Sync={
     if(bo && !hasApi("state_backups")) bo.style.display="none";
     $("#syncScrim").classList.add("on");
   },
-  openPick(){
-    const sh=$("#syncSheet"), o=syncOpts();
-    const rows=(state.widgets||[]).map(w=>{ const d=WIDGETS[w.type]||{}, nm=w.title||d.title||w.type;
-      const hint=SYNC_LOCAL_TYPES.has(w.type)?" · 컴퓨터마다 달라 전용 추천":(SYNC_XL_TYPES.has(w.type)?" · 엑셀 파일도 함께 맞춤"
-        :(w.type==="memo"?" · 위치와 띄울 메모만 · 내용은 위 '메모'에서":""));
-      return `<label class="sy-chk"><input type="checkbox" data-w="${escapeHtml(w.id)}"${isShared(w)?" checked":""}>
-        <span class="ic">${d.icon||""}</span><span class="tx"><b>${escapeHtml(nm)}</b><i>${escapeHtml((d.title||w.type)+hint)}</i></span></label>`; }).join("");
-    const skW=_carryWidgets().filter(w=>_skipW()[w.id]&&!(state.widgets||[]).some(x=>x.id===w.id));
-    const skRows=skW.map(w=>{ const d=WIDGETS[w.type]||{}, nm=w.title||d.title||w.type;
-      return `<label class="sy-chk"><input type="checkbox" data-sw="${escapeHtml(w.id)}"><span class="ic">${d.icon||""}</span>
-        <span class="tx"><b>${escapeHtml(nm)}</b><i>클라우드에만 있음 · 체크하면 가져와요${(()=>{ const t=wSummary(w,_carryNotes()); return t?" · "+escapeHtml(t):""; })()}</i></span></label>`; }).join("");
-    const cn=_carryNotes(), ln=notes();
-    const nids=[...new Set(ln.map(n=>n.id).concat(cn.map(n=>n.id)))]
-      .map(id=>ln.find(n=>n.id===id)||cn.find(n=>n.id===id)).sort((x,y)=>(y.at||0)-(x.at||0)).map(n=>n.id);
-    const nrow=id=>{ const l=ln.find(n=>n.id===id), r=cn.find(n=>n.id===id), n=l||r, c=noteColor(n.color);
-      const where=!l?"클라우드에만 있음 · 체크하면 가져와요":(!r?"이 컴퓨터에만 있음":"");
-      return `<label class="sy-chk sm"><input type="checkbox" data-n="${escapeHtml(id)}"${isNoteSynced(id)?" checked":""}>
-        <span class="ic"><i class="sy-dot" style="background:${c||"transparent"}"></i></span><span class="tx"><b>${escapeHtml(noteTitle(n))}</b>${where?`<i>${where}</i>`:""}</span></label>`; };
-    const memoSec=`<div class="sy-sub">메모</div>
-      <label class="sy-chk"><input type="checkbox" data-nall${o.notesAll!==false?" checked":""}><span class="ic">🗂️</span>
-        <span class="tx"><b>모든 메모</b><i>새로 만든 메모도 자동으로 맞춤 · 끄면 메모를 하나씩 골라요</i></span></label>
-      ${o.notesAll===false ? (nids.length?nids.map(nrow).join(""):`<div class="sy-empty">메모가 없어요</div>`)
-        : (()=>{ const lo=ln.filter(n=>o.noteLocal&&o.noteLocal[n.id]); return lo.length?`<div class="sy-sub">이 컴퓨터에만 두는 메모 <span>· 체크하면 함께 맞춰요</span></div>${lo.map(n=>nrow(n.id)).join("")}`:""; })()}`;
-    sh.innerHTML=`<h2>동기화할 항목</h2>
-      <p class="s">체크한 항목만 다른 컴퓨터·폰과 맞춥니다.</p>
-      <div class="sy-list">
-        <label class="sy-chk"><input type="checkbox" data-deco${o.deco!==false?" checked":""}>
-          <span class="ic">🎨</span><span class="tx"><b>화면 꾸미기</b><i>테마 · 이 컴퓨터에서만 정하는 설정</i></span></label>
-        ${memoSec}
-        <div class="sy-sub">위젯</div>${rows||`<div class="sy-empty">위젯이 없어요</div>`}${skRows}
-      </div>
-      <div class="sy-note">· 체크를 풀면 그 위젯은 <b>이 컴퓨터 전용</b>이 됩니다. 다른 컴퓨터에 있던 것도 지워지지 않고 그 컴퓨터 전용으로 남아요.<br>
-      · 위젯 체크는 모든 컴퓨터에 함께 적용되고, <b>메모</b>와 <b>화면 꾸미기</b>는 컴퓨터마다 따로 정해요.<br>
-      · 고르지 않은 메모는 이 컴퓨터로 가져오지도, 올리지도 않아요. 다른 컴퓨터에는 그대로 남아요.<br>
-      · 엑셀 위젯의 체크를 풀면 클라우드에 올라간 엑셀 파일도 지워요.<br>
-      · 폰에서는 체크한 위젯만 보여요.</div>
-      <div class="sy-btns"><button class="mini" data-back>돌아가기</button></div>`;
-    $("[data-deco]",sh).onchange=e=>{
-      o.deco=e.target.checked;
-      if(o.deco){ const bt=(state.syncBase||{}).theme; if(bt&&bt!==state.theme){ state.theme=bt; applyTheme(); } }   /* 켜면 다른 컴퓨터 꾸미기를 가져옴 */
-      persist(); toast(o.deco?"화면 꾸미기도 맞춥니다":"이 컴퓨터는 자기 화면 꾸미기를 유지해요"); };
-    /* 메모 가져오기: 켜면 클라우드에만 있던 메모를 이 컴퓨터로 가져옴 */
-    const bring=id=>{ if(getNote(id)) return; const r=_carryNotes().find(n=>n.id===id); if(r) notes().push(Object.assign({},r)); };
-    $("[data-nall]",sh).onchange=e=>{
-      if(e.target.checked){ o.notesAll=true; _carryNotes().forEach(n=>bring(n.id)); this.needMerge=true; toast("모든 메모를 맞춥니다"); }
-      else { o.notesAll=false; o.notePick={}; notes().forEach(n=>{ o.notePick[n.id]=!(o.noteLocal&&o.noteLocal[n.id]); }); o.noteLocal={}; toast("맞출 메모를 하나씩 골라 주세요"); }
-      persist(); refreshMemoCards(null,null); this.openPick(); };
-    sh.querySelectorAll("[data-n]").forEach(cb=>cb.onchange=()=>{
-      const id=cb.dataset.n; o.notePick=o.notePick||{};
-      if(cb.checked){ o.notePick[id]=true; if(o.noteLocal) delete o.noteLocal[id]; bring(id); this.needMerge=true; toast("이 메모도 맞춥니다"); }
-      else { o.notePick[id]=false; toast("이 메모는 이 컴퓨터에서 맞추지 않아요"); }
-      persist(); refreshMemoCards(null,null); this.openPick(); });
-    sh.querySelectorAll("[data-sw]").forEach(cb=>cb.onchange=()=>{     /* 클라우드에만 있던 위젯 가져오기 */
-      const id=cb.dataset.sw, src=_carryWidgets().find(x=>x.id===id); if(!src||!cb.checked) return;
-      delete _skipW()[id];
-      const w=JSON.parse(JSON.stringify(src)); w.sync=true;
-      const k=screenKey(); if(w.lays&&w.lays[k]){ if(w.lays[k].layout) w.layout=Object.assign({},w.lays[k].layout); if(w.lays[k].layoutMax) w.layoutMax=Object.assign({},w.lays[k].layoutMax); }
-      state.widgets.push(w); const L=lay(w);
-      if(state.widgets.some(o2=>o2!==w&&rdLay(o2)&&overlap(L,rdLay(o2)))){ L.x=-100000; L.y=-100000; const sp=findFreeSpot(L.w||300,L.h||220); L.x=sp.x; L.y=sp.y; }   /* 겹치면 빈자리로 */
-      L.z=++maxZ; const c=mountCard(w); if(c) board.appendChild(c); growBoard();
-      this.needMerge=true; persist(); toast("클라우드에 있던 위젯을 가져왔어요"); this.openPick(); });
-    sh.querySelectorAll("[data-w]").forEach(cb=>cb.onchange=()=>{
-      const w=(state.widgets||[]).find(x=>x.id===cb.dataset.w); if(!w) return;
-      w.sync=cb.checked; persist();
-      toast(cb.checked?"이 위젯도 다른 컴퓨터와 맞춥니다":"이 위젯은 이 컴퓨터 전용이 됐어요"); });
-    $("[data-back]",sh).onclick=()=>this.openPanel();
-    $("#syncScrim").classList.add("on");
-  },
   confirmOff(){
     const sh=$("#syncSheet");
     sh.innerHTML=`<h2>연결을 해제할까요?</h2>
@@ -5172,7 +4970,7 @@ const Sync={
       이 컴퓨터의 위젯과 내용은 그대로 남습니다.</div>
       <div class="sy-btns"><button class="mini" data-o1>연결만 해제</button><button class="mini" data-o2>클라우드 내용도 삭제</button><button class="mini" data-o3>취소</button></div>`;
     const off=async(del)=>{ try{ await this.api().gdrive_disconnect(!!del); }catch(e){}
-      this.on=false; this.hold=null; this.email=""; this.err=""; this.schedule(); this.badge();
+      this.on=false; this.hold=null; this.email=""; this.err=""; this.resetLocal(); this.schedule(); this.badge();
       $("#syncScrim").classList.remove("on"); toast(del?"연결을 해제하고 클라우드 내용을 지웠어요":"연결을 해제했어요"); };
     $("[data-o1]",sh).onclick=()=>off(false);
     $("[data-o2]",sh).onclick=()=>off(true);
@@ -5490,7 +5288,7 @@ function memoDatesToday(text){
     const t=line.trim(); if(!t) return;
     const pats=[ /(\d{4})[-.\/](\d{1,2})[-.\/](\d{1,2})/, /(?:^|[^\d])(\d{1,2})[-.\/](\d{1,2})(?![\d\-.\/])/, /(\d{1,2})\s*월\s*(\d{1,2})\s*일/ ];
     for(let i=0;i<pats.length;i++){ const m=t.match(pats[i]); if(!m) continue;
-      let mo,da; if(i===0){ if(+m[1]!==Y) continue; mo=+m[2]; da=+m[3]; } else { mo=+m[1]; da=+m[2]; }
+      let mo,da; if(i===0){ if(+m[1]!==Y) break; mo=+m[2]; da=+m[3]; } else { mo=+m[1]; da=+m[2]; }   /* 연도가 적힌 날짜는 그 해만 */
       if(mo===M&&da===D){ out.push(t); break; }
     }
   });
@@ -5586,6 +5384,7 @@ async function checkUpdate(manual){
   if(!hasApi("check_update")){ if(manual) toast("설치형(exe)에서만 확인할 수 있어요"); return; }
   let r=null; try{ r=await window.pywebview.api.check_update(); }catch(e){}
   if(!r||!r.ok){ if(manual) toast(r&&r.reason==="offline"?"업데이트 서버에 연결할 수 없어요":"업데이트를 확인하지 못했어요"); return; }
+  if(r.update_failed) toast("지난번 프로그램 업데이트를 마치지 못해 예전 버전으로 켰어요. 다시 [업데이트]를 눌러 주세요");
   if(!r.ui && !r.app){ if(manual) toast("최신 버전입니다"); return; }
   showUpdateBar(r);
 }
@@ -5629,7 +5428,7 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-09-24.5";
+const APP_VER="2026-09-25.1";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`;

@@ -624,11 +624,19 @@ async function upload(id, data){                       // PC 프로그램과 같
   return r.json();
 }
 function valid(d){ return d && typeof d==="object" && Array.isArray(d.widgets); }
+/* 다른 기기에서 온 자료 정리: 망가진 위젯·항목·메모는 빼고 씀 (화면이 비거나 저장이 멈추지 않게) */
+function clean(d){ if(!valid(d)) return null;
+  d.widgets=d.widgets.filter(w=>w&&typeof w==="object"&&typeof w.id==="string"&&typeof w.type==="string");
+  d.widgets.forEach(w=>{ if(!w.config||typeof w.config!=="object"||Array.isArray(w.config)) w.config={};
+    ["items","events"].forEach(k=>{ if(k in w.config) w.config[k]=Array.isArray(w.config[k])?w.config[k].filter(x=>x&&typeof x==="object"):[]; }); });
+  d.notes=(Array.isArray(d.notes)?d.notes:[]).filter(n=>n&&typeof n==="object"&&typeof n.id==="string");
+  return d; }
 
 /* ===== 불러오기 / 저장 ===== */
 let _burstUntil=0;          // 방금 주고받았으면 1분 동안 더 자주 확인
 async function refresh(force){
-  if(!S.tok || S.pending.length || S.flushing || S.refreshing) return;
+  if(!S.tok || S.flushing || S.refreshing) return;
+  if(S.pending.length){ flush(); return; }                        /* 저장할 게 남아 있으면 먼저 저장 (저장하면 최신본으로 화면도 바뀜) */
   S.refreshing=true;
   try{ await _refresh(force); }finally{ S.refreshing=false; }
   loadSnaps(!!force);
@@ -643,9 +651,9 @@ async function _refresh(force){
     setStatus("불러오는 중…");
     const f = await findFile();
     if(!f){ S.file=null; S.data=null; renderEmpty(); setStatus(""); return; }
-    const d = await download(f.id);
-    if(!valid(d)) throw new Error("bad");
-    S.file={id:f.id, modifiedTime:f.modifiedTime}; S.data=d; render(); setStatus("최신"); _burstUntil=Date.now()+60000;
+    const d = clean(await download(f.id));
+    if(!d) throw new Error("bad");
+    S.file={id:f.id, modifiedTime:f.modifiedTime}; S.data=d; safeRender(); setStatus("최신"); _burstUntil=Date.now()+60000;
   }catch(e){
     if(e instanceof AuthError){ needLogin(); return; }
     setStatus("연결 확인 필요", true);
@@ -659,28 +667,45 @@ function commit(op, delay){
   clearTimeout(S.flushT); S.flushT=setTimeout(flush, delay==null?700:delay);
 }
 async function flush(){
-  if(S.flushing || !S.pending.length) return;
-  S.flushing=true; const ops=S.pending.splice(0);
+  if(S.flushing) return;                                          /* 저장 중이면 끝난 뒤 이어서 */
+  clearTimeout(S.flushT); S.flushT=null;
+  if(!S.pending.length) return;
+  S.flushing=true; const ops=S.pending.splice(0); let retry=0, saved=false;
   try{
     setStatus("저장 중…");
-    const f = await findFile();
-    if(!f) throw new Error("gone");
-    const latest = await download(f.id);
-    if(!valid(latest)) throw new Error("bad");
-    const wsig=w=>JSON.stringify([w.title||"", w.config||{}]), before=new Map((latest.widgets||[]).map(w=>[w.id,wsig(w)]));
-    ops.forEach(o=>o(latest));
-    (latest.widgets||[]).forEach(w=>{ if(before.get(w.id)!==wsig(w)) w.upd=Date.now(); });   /* 고친 위젯에 고친 날 (PC 보관함 정리용) */
-    latest.savedAt = Date.now();
-    const r = await upload(f.id, latest);
-    S.file={id:r.id||f.id, modifiedTime:r.modifiedTime}; S.data=latest;
+    for(let k=0;k<3;k++){                                          /* 받고 올리는 사이 다른 기기가 올렸으면 다시 받아서 적용 (최대 3번) */
+      const f = await findFile();
+      if(!f) throw new Error("gone");
+      const latest = clean(await download(f.id));
+      if(!latest) throw new Error("bad");
+      const wsig=w=>JSON.stringify([w.title||"", w.config||{}]), before=new Map((latest.widgets||[]).map(w=>[w.id,wsig(w)]));
+      ops.forEach(o=>{ try{ o(latest); }catch(e){} });             /* 한 수정이 망가져도 나머지는 저장 */
+      (latest.widgets||[]).forEach(w=>{ if(before.get(w.id)!==wsig(w)) w.upd=Date.now(); });   /* 고친 위젯에 고친 날 (PC 보관함 정리용) */
+      latest.savedAt = Date.now();
+      if(k<2){ const m=await fileMeta(f.id); if(m && m.modifiedTime && m.modifiedTime!==f.modifiedTime) continue; }
+      const r = await upload(f.id, latest);
+      S.file={id:r.id||f.id, modifiedTime:r.modifiedTime}; S.data=latest; saved=true; break;
+    }
     setStatus("저장됨"); _burstUntil=Date.now()+60000;
-    if(!(document.activeElement && document.activeElement.classList.contains("memo"))) render();
   }catch(e){
     S.pending.unshift(...ops);
-    if(e instanceof AuthError){ needLogin(); }
-    else { setStatus("저장 실패 · 다시 시도 중", true); clearTimeout(S.flushT); S.flushT=setTimeout(flush, 5000); }
-  }finally{ S.flushing=false; if(S.pending.length && !S.flushT) S.flushT=setTimeout(flush,700); }
+    if(e instanceof AuthError){ needLogin(); retry=-1; }           /* 다시 로그인하면 이어서 저장 */
+    else { setStatus("저장 실패 · 다시 시도 중", true); retry=5000; }
+  }finally{
+    S.flushing=false;
+    if(S.pending.length && retry>=0){ clearTimeout(S.flushT); S.flushT=setTimeout(flush, retry||700); }
+  }
+  if(saved) safeRender();
 }
+/* 다시 그리기: 입력 중이면 끝난 뒤에 (입력한 글자가 지워지지 않게), 그리다 오류가 나도 멈추지 않게 */
+function renderSoft(){ const a=document.activeElement;
+  if(a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && $("#app").contains(a)){ S.renderLater=true; return; }
+  safeRender(); }
+function safeRender(){ const a=document.activeElement;
+  if(a && a.tagName==="TEXTAREA" && a.classList.contains("memo") && $("#app").contains(a)){ S.renderLater=true; return; }   /* 메모를 쓰는 중 */
+  try{ render(); }catch(e){ console.error(e); } }
+document.addEventListener("focusout",()=>setTimeout(()=>{ const a=document.activeElement;
+  if(S.renderLater && !S.dragging && !(a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && $("#app").contains(a))){ S.renderLater=false; safeRender(); } },0));
 function W(d, wid){ return (d.widgets||[]).find(w=>w.id===wid); }
 function cfg(w){ if(!w.config||typeof w.config!=="object") w.config={}; return w.config; }
 
@@ -698,7 +723,11 @@ const Todo = {
 const NOTE_COLORS = {"":"", yellow:"#F2C94C", orange:"#F2994A", red:"#EB6F6F", pink:"#F29BC4",
   purple:"#A98BEA", blue:"#6FA8F0", green:"#6FC48C", gray:"#9AA3B2"};
 const Note = {                                         // PC와 같은 메모 목록(d.notes)
-  set:(id,text)=>d=>{ const n=(d.notes||[]).find(x=>x.id===id); if(n){ n.text=text; n.at=Date.now(); } },
+  set:(id,text,base)=>d=>{ const n=(d.notes||[]).find(x=>x.id===id); if(!n) return;
+    if(typeof base==="string" && n.text!==base && n.text!==text){          /* 폰이 연 뒤 다른 기기에서 고침 → 그 내용은 사본으로 */
+      const cp={id:"n"+uid()+uid(), text:(n.title?"":"(사본) ")+String(n.text||""), color:n.color||"", at:Date.now(), dup:true, dupOf:id};
+      if(n.title) cp.title="(사본) "+n.title; d.notes.push(cp); }
+    n.text=text; n.at=Date.now(); },
   title:(id,tt)=>d=>{ const n=(d.notes||[]).find(x=>x.id===id); if(n){ const v=String(tt||"").trim().slice(0,60); if(v) n.title=v; else delete n.title; n.at=Date.now(); } },
   add:(n)=>d=>{ if(!Array.isArray(d.notes)) d.notes=[]; if(!d.notes.some(x=>x.id===n.id)) d.notes.push(n); },
   del:(id)=>d=>{ if(Array.isArray(d.notes)) d.notes=d.notes.filter(x=>x.id!==id); },
@@ -921,7 +950,7 @@ async function loadSnaps(force){
   try{ const r=await api(`${API}/files?spaces=appDataFolder&pageSize=200&fields=files(id,name,modifiedTime)`); const j=await r.json(); let changed=false;
     for(const f of ["live","xl"]){ const it=(j.files||[]).find(x=>x.name===`snap_${f}.json`); if(!it || it.modifiedTime===S.snapMt[f]) continue;
       const doc=await download(it.id); if(doc && doc.widgets && typeof doc.widgets==="object"){ S.snap[f]=doc; S.snapMt[f]=it.modifiedTime; changed=true; } }
-    if(changed && S.data && !S.arrange) render();
+    if(changed && S.data && !S.arrange) renderSoft();
   }catch(e){ if(e instanceof AuthError) needLogin(); }
 }
 function snapOf(w){ const doc=S.snap[/^(timetable|contacts|roster)$/.test(w.type)?"xl":"live"]; const x=doc&&doc.widgets&&doc.widgets[w.id]; return (x&&x.d)?x:null; }
@@ -958,7 +987,7 @@ async function loadWx(key,c){ const x=WX[key]=WX[key]||{}; if(x.busy) return; x.
     let air=null; try{ const a=await (await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${c.lat}&longitude=${c.lon}&current=pm10,pm2_5&timezone=auto`)).json(); air=(a&&a.current)||null; }catch(e){}
     x.data={w:data, air}; x.err=false;
   }catch(e){ x.err=true; }
-  x.at=Date.now(); x.busy=false; if(S.data) render();
+  x.at=Date.now(); x.busy=false; if(S.data) renderSoft();
 }
 const airG=(v,[a,b,c])=>v<=a?["좋음","g1"]:v<=b?["보통","g2"]:v<=c?["나쁨","g3"]:["매우나쁨","g4"];
 DRAW.weather=(sec,w,title)=>{ const c=w.config||{}; const b=cardBody(sec,title);
@@ -1064,7 +1093,7 @@ async function loadHist(key,d){ const x=HIST[key]={busy:true}; const mm=pad2(d.g
     try{ const j=await (await fetch(u)).json(); if(j&&Array.isArray(j.events)&&j.events.length){
       x.evs=j.events.map(e=>({year:e.year, text:e.text, page:safeUrl(e.pages&&e.pages[0]&&e.pages[0].content_urls&&(e.pages[0].content_urls.mobile||e.pages[0].content_urls.desktop||{}).page)}))
         .sort((a,c)=>(+c.year||0)-(+a.year||0)); break; } }catch(e){} }
-  if(!x.evs) x.err=true; x.busy=false; if(S.data) render(); }
+  if(!x.evs) x.err=true; x.busy=false; if(S.data) renderSoft(); }
 DRAW.history=(sec,w,title)=>{ const d=new Date(), key=`${d.getMonth()+1}-${d.getDate()}`; let x=HIST[key];
   const b=cardBody(sec,`${title} · ${d.getMonth()+1}월 ${d.getDate()}일`);
   if(!x){ loadHist(key,d); x=HIST[key]; }
@@ -1253,7 +1282,8 @@ function render(){
   entries.forEach(e=>{ const sec=h("section",{class:"card sec"}); sec.dataset.lid=e.id;
     const sz=L.size[e.id]||{}; if(cols>1 && sz.s>1) sec.style.gridColumn=`span ${Math.min(sz.s,cols)}`;
     if(sz.h){ sec.style.height=sz.h+"px"; sec.classList.add("fixh"); }
-    grid.appendChild(sec); e.draw(sec); });
+    grid.appendChild(sec);
+    try{ e.draw(sec); }catch(err){ console.error(err); sec.appendChild(h("p",{class:"empty", text:"이 위젯을 표시하지 못했어요."})); } });
   if(S.arrange) decorateArrange(grid);
   layGrid(grid);
   if(skip.length) app.appendChild(h("p",{class:"pconly", text:`PC에서만 볼 수 있는 위젯: ${[...new Set(skip)].join(", ")}`}));
@@ -1317,10 +1347,11 @@ function drawNotes(sec){
       ta.value=String(n.text||"");
       const st=h("div",{class:"memo-st"});
       const grow=()=>{ ta.style.height="auto"; ta.style.height=Math.max(132,ta.scrollHeight)+"px"; };
-      let t=null;
+      let t=null, base=String(n.text||"");                              /* 폰에서 열었을 때 내용 (그 뒤 다른 기기가 고쳤는지 알아보려고) */
+      const save=()=>{ const v=ta.value; commit(Note.set(n.id, v, base), 0); base=v; };
       ta.addEventListener("input",()=>{ grow(); st.textContent="입력 중…"; clearTimeout(t);
-        t=setTimeout(()=>{ t=null; commit(Note.set(n.id, ta.value), 0); st.textContent="저장됨"; }, 1200); });
-      ta.addEventListener("blur",()=>{ if(t){ clearTimeout(t); t=null; if(ta.value!==String(n.text||"")) commit(Note.set(n.id, ta.value), 0); } });
+        t=setTimeout(()=>{ t=null; save(); st.textContent="저장됨"; }, 1200); });
+      ta.addEventListener("blur",()=>{ if(t){ clearTimeout(t); t=null; if(ta.value!==base) save(); } });
       const del=h("button",{class:"nt-x", text:"메모 지우기",
         onclick:()=>{ if(confirm(`"${noteTitle(n)}" 메모를 지울까요?`)){ openNotes.delete(n.id); commit(Note.del(n.id)); } }});
       const ti=h("input",{class:"nt-ti", placeholder:noteAutoTitle(n)||"제목 (비우면 첫 줄이 제목)", maxlength:"60", "aria-label":"메모 제목"});
@@ -1438,7 +1469,11 @@ $("#arrReset").onclick=()=>{ if(!confirm("지금 화면 모드의 배치를 처�
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden && S.tok) refresh(false); });
 (function loop(){ setTimeout(()=>{ if(!document.hidden && S.tok) refresh(false); loop(); }, Date.now()<_burstUntil ? 2000 : 5000); })();   // 5초마다 (방금 바뀌었으면 2초)
 setInterval(()=>{ if(S.tok && Date.now()>S.exp){ S.tok=null; needLogin(); } }, 30000);
-window.addEventListener("beforeunload",()=>{ if(S.pending.length) flush(); });
+const saveNow=()=>{ const a=document.activeElement; if(a && /^(INPUT|TEXTAREA)$/.test(a.tagName)) a.blur();   /* 쓰던 메모도 저장 목록에 */
+  if(S.pending.length && S.tok) flush(); };
+window.addEventListener("beforeunload",saveNow);
+window.addEventListener("pagehide",saveNow);
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) saveNow(); });
 loadAuth();
 applyTheme();
 if(S.tok) startMain(); else showHello();
