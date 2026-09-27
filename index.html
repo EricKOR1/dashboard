@@ -2401,11 +2401,12 @@ const Usage={ key:"dash.usage", lastInput:0, started:false,
  } };
 
 /* ===== 폰용 내용: PC가 가져온 급식·학사일정·뉴스·시세와 엑셀 읽은 결과를 폰이 볼 수 있게 올림 =====
+   · PC마다 자기 것만 바꾸고 다른 PC가 올린 것은 남김 (본체가 합쳐서 올림)
    · 동기화하는 위젯만 · 바뀐 게 있을 때만 · 자주 바뀌는 것(live)은 2분에 한 번까지, 큰 엑셀 자료(xl)는 따로 */
 const SNAP_XL=new Set(["timetable","contacts","roster"]);
-const Snap={ files:{live:{},xl:{}}, sig:{live:"",xl:""}, last:{live:0,xl:0}, timer:{},
+const Snap={ files:{live:{},xl:{}}, sig:{live:"",xl:""}, last:{live:0,xl:0}, okAt:{live:0,xl:0}, merges:false, timer:{},
   init(){ try{ const o=JSON.parse(localStorage.getItem("dash.snap")||"null"); if(o&&o.live&&o.xl) this.files=o; }catch(e){} },
-  set(w, d){ if(!w||!isShared(w)) return; const f=SNAP_XL.has(w.type)?"xl":"live";
+  set(w, d){ if(!w) return; const f=SNAP_XL.has(w.type)?"xl":"live";                 /* 올리기 전에 읽은 것도 적어 둠 (올릴 때는 맞추는 위젯만) */
     this.files[f][w.id]={kind:w.type, at:Date.now(), d};
     if(!this._st) this._st=setTimeout(()=>{ this._st=null; try{ localStorage.setItem("dash.snap", JSON.stringify(this.files)); }catch(e){} },2000);   /* 여러 개가 한꺼번에 와도 한 번만 저장 */
     this.queue(f); },
@@ -2416,11 +2417,13 @@ const Snap={ files:{live:{},xl:{}}, sig:{live:"",xl:""}, last:{live:0,xl:0}, tim
     if(!Sync.on||Sync.needApp||!hasApi("gdrive_put_snap")) return;
     const ids=new Set((state.widgets||[]).filter(isShared).map(w=>w.id)), src=this.files[f], out={};
     Object.keys(src).forEach(id=>{ if(ids.has(id)) out[id]=src[id]; });                  /* 지웠거나 동기화를 푼 위젯은 뺌 */
-    const sig=_h(JSON.stringify(Object.keys(out).sort().map(id=>[id,out[id].d])));
-    if(sig===this.sig[f]) return;
-    let r=null; try{ r=await Sync.api().gdrive_put_snap(`snap_${f}.json`, JSON.stringify({v:1, at:Date.now(), widgets:out})); }catch(e){}
+    const sk=_skipW(), keep=[...new Set([...ids, ..._carryWidgets().filter(w=>w&&sk[w.id]).map(w=>w.id)])].sort();   /* 보관함에 있는 위젯 (다른 PC가 올린 내용도 남길 것) */
+    const sig=_h(JSON.stringify([Object.keys(out).sort().map(id=>[id,out[id].d]), keep]));
+    if(sig===this.sig[f] && Date.now()-(this.okAt[f]||0)<3600000) return;                /* 같아도 1시간마다 한 번은 다시 (다른 PC가 덮었을 수 있음) */
+    if(!Object.keys(out).length && !this.merges) return;                                /* 옛 본체: 올릴 게 없으면 올리지 않음 (다른 PC 것을 지우지 않게) */
+    let r=null; try{ r=await Sync.api().gdrive_put_snap(`snap_${f}.json`, JSON.stringify({v:1, at:Date.now(), widgets:out, keep})); }catch(e){}
     this.last[f]=Date.now();
-    if(r&&r.ok) this.sig[f]=sig; else this.queue(f);                                     /* 실패하면 나중에 다시 */
+    if(r&&r.ok){ this.sig[f]=sig; this.okAt[f]=Date.now(); if(r.merged) this.merges=true; } else this.queue(f);   /* 실패하면 나중에 다시 */
   } };
 setInterval(()=>{ Snap.queue("live"); Snap.queue("xl"); }, 300000);                     /* 연결 뒤·위젯 정리 뒤에도 맞춰지게 */
 
@@ -4657,7 +4660,7 @@ const Sync={
     const sk=_skipW(); _carryWidgets().forEach(w=>{ if(sk[w.id] && !w.upd) w.upd=now; });                /* 예전부터 보관함에 있던 날짜 없는 위젯: 오늘부터 셈 */
     try{ p=syncPayload(); r=await this.api().gdrive_push(JSON.stringify(p), !!force); }
     catch(e){ r={ok:false, reason:"error", detail:(e&&e.message)||String(e)}; }
-    if(r&&r.ok){ state.syncBase=_holdNoteBase(syncBaseFrom(p)); state.syncCarry=Object.assign({}, state.syncCarry, {notes:p.notes||[]}); if(this.email) state.syncEmail=this.email; saveLocalOnly(); this.lastOk=Date.now(); this.err=""; this.burstUntil=Date.now()+60000; }
+    if(r&&r.ok){ state.syncBase=_holdNoteBase(syncBaseFrom(p)); state.syncCarry=Object.assign({}, state.syncCarry, {notes:p.notes||[]}); if(this.email) state.syncEmail=this.email; saveLocalOnly(); this.lastOk=Date.now(); this.err=""; this.burstUntil=Date.now()+60000; Snap.queue("live"); Snap.queue("xl"); }
     else if(r&&r.reason==="conflict"){           /* 그 사이 다른 컴퓨터가 올림 → 곧 받아서 합친 뒤 다시 올림 */
       this.err=""; clearTimeout(this.pushTimer); this.pushTimer=setTimeout(()=>this.tick(),1500); }
     else this.err=(r&&r.reason)||"upload";
@@ -5428,7 +5431,7 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-09-25.1";
+const APP_VER="2026-09-27.1";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`;

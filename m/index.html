@@ -957,7 +957,7 @@ function snapOf(w){ const doc=S.snap[/^(timetable|contacts|roster)$/.test(w.type
 function stampEl(at){ if(!at) return null; const d=new Date(at), same=new Date().toDateString()===d.toDateString();
   return h("span",{class:"stamp", text:`PC ${same?"":(d.getMonth()+1)+"/"+d.getDate()+" "}${pad2(d.getHours())}:${pad2(d.getMinutes())}`}); }
 function cardBody(sec, title, right){ sec.appendChild(h("div",{class:"head"}, h("h2",{class:"ttl",text:title}), right||null)); const b=h("div",{class:"body"}); sec.appendChild(b); return b; }
-function noSnap(b){ b.appendChild(h("div",{class:"empty",text:"아직 PC에서 받은 내용이 없어요. PC 프로그램(1.5.5 이상)에서 이 위젯이 한 번 열리면 여기에 보여요."})); }
+function noSnap(b){ b.appendChild(h("div",{class:"empty",text:"아직 PC에서 받은 내용이 없어요. 이 위젯이 있는 PC에서 프로그램을 켜 두면 몇 분 안에 여기에 보여요."})); }
 function empty(b,t){ b.appendChild(h("div",{class:"empty",text:t})); }
 function searchRow(b, u, ph, go, extra){
   const inp=h("input",{type:"search", placeholder:ph, enterkeyhint:"search"}); inp.value=u.q||"";
