@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; connect-src https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com https://api.open-meteo.com https://air-quality-api.open-meteo.com https://ko.wikipedia.org https://api.wikimedia.org https://api.dictionaryapi.dev https://api.mymemory.translated.net https://stdict.korean.go.kr; style-src 'self' 'unsafe-inline' https://accounts.google.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https://upload.wikimedia.org; frame-src https://accounts.google.com">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com https://api.open-meteo.com https://air-quality-api.open-meteo.com https://ko.wikipedia.org https://api.wikimedia.org https://api.dictionaryapi.dev https://api.mymemory.translated.net https://stdict.korean.go.kr; style-src 'self' 'unsafe-inline' https://accounts.google.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https://upload.wikimedia.org; frame-src https://accounts.google.com">
 <meta name="theme-color" id="themeColor" content="#F3EFE6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="대시보드">
@@ -567,44 +567,89 @@ function setStatus(msg, err){ const s=$("#st");
   const bad=!!err && Date.now()-_errSince>=60000, txt=bad?msg:"연결중";
   if(s.textContent!==txt) s.textContent=txt; s.classList.toggle("err", bad); }
 
-/* ===== 로그인 (구글 공식 방식: 토큰은 1시간짜리, 이 기기에만 보관) ===== */
-const S = { tok:null, exp:0, email:"", file:null, data:null, pending:[], flushing:false, flushT:null };
+/* ===== 로그인 =====
+   · 중계소가 준비돼 있으면 '로그인 유지': 갱신 토큰을 이 폰에만 보관하고, 1시간짜리 출입증이 끝나면 중계소를 거쳐 조용히 새로 받음
+     → 로그아웃하기 전까지 다시 로그인하지 않음
+   · 중계소가 없거나 안 되면 예전처럼 (1시간마다 '계속' 누르기) */
+const S = { tok:null, exp:0, rt:"", email:"", file:null, data:null, pending:[], flushing:false, flushT:null };
 const dev = (()=>{ try{ let d=localStorage.getItem("m.dev"); if(!d){ d="m-"+uid()+uid(); localStorage.setItem("m.dev",d); } return d; }catch(e){ return "m-"+uid(); } })();
-function saveAuth(){ try{ localStorage.setItem("m.auth", JSON.stringify({tok:S.tok, exp:S.exp, email:S.email})); }catch(e){} }
-function loadAuth(){ try{ const a=JSON.parse(localStorage.getItem("m.auth")||"null"); if(a){ S.email=a.email||""; if(a.tok && a.exp>Date.now()+60000){ S.tok=a.tok; S.exp=a.exp; } } }catch(e){} }
-let tokenClient=null;
+function saveAuth(){ try{ localStorage.setItem("m.auth", JSON.stringify({tok:S.tok, exp:S.exp, email:S.email, rt:S.rt||""})); }catch(e){} }
+function loadAuth(){ try{ const a=JSON.parse(localStorage.getItem("m.auth")||"null"); if(a){ S.email=a.email||""; S.rt=typeof a.rt==="string"?a.rt:""; if(a.tok && a.exp>Date.now()+60000){ S.tok=a.tok; S.exp=a.exp; } } }catch(e){} }
+function signedIn(){ return !!(S.tok || S.rt); }
+/* 중계소 주소: 같은 사이트의 version.json(ai_relay)에서, 못 읽으면 아래 기본값 */
+const RELAY_DEFAULT = "https://script.google.com/macros/s/AKfycbyMowwC0FkVsS_gi2-n6tRhKQNBRfhoNrLh1ZOxPQwUWGRvtZtJ1I7S_3iDNcH5Q5Dz/exec";
+let _relayP=null;
+function relayUrl(){ if(!_relayP) _relayP=(async()=>{ try{ const r=await fetch("../version.json",{cache:"no-store"}); const j=await r.json();
+    if(j && /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(j.ai_relay||"")) return j.ai_relay; }catch(e){} return RELAY_DEFAULT; })();
+  return _relayP; }
+async function relay(body, ms){ const url=await relayUrl(); const ctl=typeof AbortController!=="undefined"?new AbortController():null; const t=ctl?setTimeout(()=>ctl.abort(), ms||20000):null;
+  try{ const r=await fetch(url,{method:"POST", body:JSON.stringify(body), redirect:"follow", signal:ctl?ctl.signal:undefined}); return await r.json(); }
+  finally{ if(t) clearTimeout(t); } }
+S.relayOk=null;                                                    // null=아직 모름, true=로그인 유지 가능, false=예전 방식
+function checkRelay(){ if(S.relayOk!==null || S._relayChk) return S._relayChk;
+  S._relayChk=relay({type:"oping"},8000).then(j=>{ S.relayOk=!!(j&&j.ok&&j.ready); }).catch(()=>{ S.relayOk=false; }).finally(()=>{ S._relayChk=null; });
+  return S._relayChk; }
+/* 출입증 새로 받기 (동시에 여러 번 부르면 한 번만) — false: 다시 로그인해야 함, 예외: 인터넷 문제(로그인은 유지) */
+let _refP=null;
+function ensureTok(){
+  if(S.tok && Date.now()<S.exp) return Promise.resolve(true);
+  if(!S.rt) return Promise.resolve(false);
+  if(!_refP) _refP=(async()=>{ try{
+      const j=await relay({type:"oref", rt:S.rt});
+      if(j && j.ok && j.access_token){ S.refFail=0; S.tok=j.access_token; S.exp=Date.now()+(Number(j.expires_in||3600)-120)*1000; if(j.refresh_token) S.rt=j.refresh_token; saveAuth(); return true; }
+      if(j && j.error==="invalid_grant"){ S.rt=""; S.tok=null; saveAuth(); return false; }   // 로그아웃·권한 취소됨
+      throw new Error("relay "+(j&&j.error||"?"));
+    } catch(e){                                                    // 중계소·인터넷 문제: 로그인은 유지. 인터넷은 되는데 계속 안 되면 다시 로그인 안내
+      S.refFail=(S.refFail||0)+1; if(S.refFail>=3 && navigator.onLine!==false){ S.refFail=0; return false; } throw e;
+    } finally { _refP=null; } })();
+  return _refP; }
+async function afterLogin(tok, expiresIn, rt){
+  const prev=S.email;
+  S.tok=tok; S.exp=Date.now()+(Number(expiresIn||3600)-120)*1000; if(rt!==undefined) S.rt=rt||"";
+  try{ const u=await (await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+S.tok}})).json(); S.email=u.email||S.email; }catch(e){}
+  if(prev && prev!==S.email){ S.snap={live:null, xl:null}; S.snapMt={live:"", xl:""}; S.snapReady={live:false, xl:false}; S.data=null; S.file=null; }   // 다른 계정
+  saveAuth(); startMain(); }
+let tokenClient=null, codeClient=null;
 function initGis(){
-  if(tokenClient || !window.google || !google.accounts || !google.accounts.oauth2) return !!tokenClient;
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: WEB_CLIENT_ID, scope: SCOPE,
-    callback: async (r)=>{
-      if(r.error){ showHello(r.error==="access_denied" ? "허용하지 않아 연결되지 않았어요." : "로그인하지 못했어요. 다시 시도해 주세요."); return; }
-      if(!google.accounts.oauth2.hasGrantedAllScopes(r, DRIVE_SCOPE)){ showHello("드라이브 권한에 체크한 뒤 다시 로그인해 주세요."); return; }
-      S.tok=r.access_token; S.exp=Date.now()+(Number(r.expires_in||3600)-60)*1000;
-      try{ const u=await (await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+S.tok}})).json(); S.email=u.email||S.email; }catch(e){}
-      saveAuth(); startMain();
-    },
-    error_callback: (e)=>{ showHello(e && e.type==="popup_closed" ? "로그인 창이 닫혔어요. 다시 시도해 주세요." : "로그인 창을 열지 못했어요. 팝업 차단을 확인해 주세요."); }
-  });
+  if(!window.google || !google.accounts || !google.accounts.oauth2) return false;
+  const bad=r=>{ if(r.error){ showHello(r.error==="access_denied" ? "허용하지 않아 연결되지 않았어요." : "로그인하지 못했어요. 다시 시도해 주세요."); return true; }
+    if(!google.accounts.oauth2.hasGrantedAllScopes(r, DRIVE_SCOPE)){ showHello("드라이브 권한에 체크한 뒤 다시 로그인해 주세요."); return true; } return false; };
+  const errCb=(e)=>{ showHello(e && e.type==="popup_closed" ? "로그인 창이 닫혔어요. 다시 시도해 주세요." : "로그인 창을 열지 못했어요. 팝업 차단을 확인해 주세요."); };
+  if(!tokenClient) tokenClient = google.accounts.oauth2.initTokenClient({ client_id: WEB_CLIENT_ID, scope: SCOPE,
+    callback: async (r)=>{ if(bad(r)) return; await afterLogin(r.access_token, r.expires_in, ""); }, error_callback: errCb });
+  if(!codeClient && google.accounts.oauth2.initCodeClient) codeClient = google.accounts.oauth2.initCodeClient({ client_id: WEB_CLIENT_ID, scope: SCOPE, ux_mode:"popup",
+    callback: async (r)=>{ if(bad(r)) return;
+      showHello(null, "로그인하는 중…");
+      let j=null; try{ j=await relay({type:"otok", code:r.code}); }catch(e){}
+      if(!j || !j.ok || !j.access_token){ S.relayOk=false; showHello("로그인 유지 연결에 실패했어요. 한 번 더 눌러 주세요 (이번에는 1시간 로그인)."); return; }
+      if(!j.refresh_token){                                           // 예전에 1시간 방식으로 허용한 계정: 권한을 한 번 새로 받아야 유지됨
+        if(S.noRtOnce){ S.relayOk=false; await afterLogin(j.access_token, j.expires_in, ""); return; }   // 두 번째도 안 오면 이번엔 1시간 로그인
+        S.noRtOnce=true;
+        try{ google.accounts.oauth2.revoke(j.access_token, ()=>{}); }catch(e){}
+        showHello("로그인 유지를 켜려면 한 번 더 눌러 구글 권한을 다시 허용해 주세요."); return; }
+      await afterLogin(j.access_token, j.expires_in, j.refresh_token); },
+    error_callback: errCb });
   return true;
 }
 function login(){
   if(!initGis()){ toast("잠시 후 다시 눌러 주세요"); return; }
+  if(S.relayOk && codeClient){ codeClient.requestCode(); return; }                                 // 로그인 유지 (계정 고르기 창)
   tokenClient.requestAccessToken(S.email ? {prompt:"", login_hint:S.email} : {prompt:"select_account"});
 }
 function logout(){
-  try{ if(S.tok && window.google) google.accounts.oauth2.revoke(S.tok, ()=>{}); }catch(e){}
-  S.tok=null; S.exp=0; S.email=""; S.data=null; S.file=null;
+  try{ if(window.google && google.accounts && google.accounts.oauth2){ if(S.rt) google.accounts.oauth2.revoke(S.rt, ()=>{}); else if(S.tok) google.accounts.oauth2.revoke(S.tok, ()=>{}); } }catch(e){}
+  S.tok=null; S.exp=0; S.rt=""; S.email=""; S.data=null; S.file=null;
   try{ localStorage.removeItem("m.auth"); }catch(e){}
+  S.snap={live:null, xl:null}; S.snapMt={live:"", xl:""}; S.snapReady={live:false, xl:false}; SnapDB.clear();   /* 이 폰에 기억한 PC 내용도 지움 */
   $("#menu").classList.remove("on"); showHello();
 }
 
 /* ===== 구글 드라이브 ===== */
 class AuthError extends Error{}
-async function api(url, opts={}){
-  if(!S.tok || Date.now()>S.exp) throw new AuthError("expired");
+async function api(url, opts={}, again){
+  if(!S.tok || Date.now()>S.exp){ S.tok=null; if(!(await ensureTok())) throw new AuthError("expired"); }   // 인터넷 문제면 여기서 일반 오류 (로그인 유지)
   const r = await fetch(url, Object.assign({}, opts, {headers:Object.assign({Authorization:"Bearer "+S.tok}, opts.headers||{})}));
-  if(r.status===401){ S.tok=null; throw new AuthError("expired"); }
+  if(r.status===401){ S.tok=null; if(!again && S.rt) return api(url, opts, true); throw new AuthError("expired"); }
   if(!r.ok) throw new Error("HTTP "+r.status);
   return r;
 }
@@ -635,7 +680,7 @@ function clean(d){ if(!valid(d)) return null;
 /* ===== 불러오기 / 저장 ===== */
 let _burstUntil=0;          // 방금 주고받았으면 1분 동안 더 자주 확인
 async function refresh(force){
-  if(!S.tok || S.flushing || S.refreshing) return;
+  if(!signedIn() || S.flushing || S.refreshing) return;
   if(S.pending.length){ flush(); return; }                        /* 저장할 게 남아 있으면 먼저 저장 (저장하면 최신본으로 화면도 바뀜) */
   S.refreshing=true;
   try{ await _refresh(force); }finally{ S.refreshing=false; }
@@ -653,7 +698,7 @@ async function _refresh(force){
     if(!f){ S.file=null; S.data=null; renderEmpty(); setStatus(""); return; }
     const d = clean(await download(f.id));
     if(!d) throw new Error("bad");
-    S.file={id:f.id, modifiedTime:f.modifiedTime}; S.data=d; safeRender(); setStatus("최신"); _burstUntil=Date.now()+60000;
+    S.file={id:f.id, modifiedTime:f.modifiedTime}; S.data=d; $("#bar").hidden=false; safeRender(); setStatus("최신"); _burstUntil=Date.now()+60000;
   }catch(e){
     if(e instanceof AuthError){ needLogin(); return; }
     setStatus("연결 확인 필요", true);
@@ -941,24 +986,83 @@ function openPick(first){
   $("#pickMenu").onclick=e=>{ if(e.target.id==="pickMenu"){ pickSave(p); $("#pickMenu").classList.remove("on"); render(); } };
 }
 
-/* ---- PC가 올려 준 내용 (자주 바뀌는 것 / 엑셀) — 1분에 한 번 확인 ---- */
-S.snap={live:null, xl:null}; S.snapMt={live:"", xl:""}; S.snapAt=0;
+/* ---- PC가 올려 준 내용 (자주 바뀌는 것 / 엑셀) — 1분에 한 번 확인 ----
+   · 지난번 받은 내용을 이 폰에 기억해 두었다가 켜자마자 보여 줌 (로그아웃하면 지움)
+   · 드라이브를 확인하기 전에는 '없어요' 대신 '불러오는 중' */
+S.snap={live:null, xl:null}; S.snapMt={live:"", xl:""}; S.snapAt=0; S.snapReady={live:false, xl:false}; S.snapErr=false;
+const SnapDB={
+  open(){ if(this.p) return this.p;
+    this.p=new Promise(res=>{ try{ const r=indexedDB.open("mdash",1); r.onupgradeneeded=()=>r.result.createObjectStore("kv");
+      r.onsuccess=()=>res(r.result); r.onerror=()=>res(null); r.onblocked=()=>res(null); }catch(e){ res(null); } }); return this.p; },
+  async run(mode, fn){ const db=await this.open(); if(!db) return null;
+    return new Promise(res=>{ try{ const tx=db.transaction("kv",mode), q=fn(tx.objectStore("kv"));
+      tx.oncomplete=()=>res(q&&q.result!==undefined?q.result:true); tx.onerror=tx.onabort=()=>res(null); }catch(e){ res(null); } }); },
+  get(k){ return this.run("readonly", st=>st.get(k)); },
+  set(k,v){ return this.run("readwrite", st=>st.put(v,k)); },
+  clear(){ return this.run("readwrite", st=>st.clear()); } };
+const snapKey=f=>"snap:"+(S.email||"")+":"+f;
+async function loadSnapCache(){
+  let changed=false;
+  for(const f of ["live","xl"]){ if(S.snap[f]) continue;
+    const c=await SnapDB.get(snapKey(f));
+    if(c && c.doc && c.doc.widgets && typeof c.doc.widgets==="object" && !S.snap[f]){ S.snap[f]=c.doc; S.snapMt[f]=c.mt||""; changed=true; } }
+  if(changed && S.data && !S.arrange) renderSoft();
+}
 async function loadSnaps(force){
-  if(!S.tok || (!force && Date.now()-S.snapAt<60000)) return;
-  const a=document.activeElement; if(a && /^(INPUT|TEXTAREA)$/.test(a.tagName)) return;      /* 입력 중이면 다음에 */
-  S.snapAt=Date.now();
+  if(!signedIn() || (!force && Date.now()-S.snapAt<60000)) return;
+  if(S.snapBusy) return; S.snapBusy=true;
+  S.snapAt=Date.now(); const was=JSON.stringify([S.snapReady, S.snapErr]);
   try{ const r=await api(`${API}/files?spaces=appDataFolder&pageSize=200&fields=files(id,name,modifiedTime)`); const j=await r.json(); let changed=false;
-    for(const f of ["live","xl"]){ const it=(j.files||[]).find(x=>x.name===`snap_${f}.json`); if(!it || it.modifiedTime===S.snapMt[f]) continue;
-      const doc=await download(it.id); if(doc && doc.widgets && typeof doc.widgets==="object"){ S.snap[f]=doc; S.snapMt[f]=it.modifiedTime; changed=true; } }
-    if(changed && S.data && !S.arrange) renderSoft();
-  }catch(e){ if(e instanceof AuthError) needLogin(); }
+    for(const f of ["live","xl"]){ const it=(j.files||[]).find(x=>x.name===`snap_${f}.json`);
+      if(!it){ if(S.snap[f]){ S.snap[f]=null; S.snapMt[f]=""; SnapDB.set(snapKey(f), null); changed=true; } S.snapReady[f]=true; continue; }   /* 드라이브에 정말 없음 */
+      if(it.modifiedTime===S.snapMt[f] && S.snap[f]){ S.snapReady[f]=true; continue; }
+      const doc=await download(it.id);
+      if(doc && doc.widgets && typeof doc.widgets==="object"){ S.snap[f]=doc; S.snapMt[f]=it.modifiedTime; changed=true; SnapDB.set(snapKey(f), {mt:it.modifiedTime, doc}); }
+      S.snapReady[f]=true; }
+    S.snapErr=false;
+    if((changed || was!==JSON.stringify([S.snapReady, S.snapErr])) && S.data && !S.arrange) renderSoft();
+  }catch(e){ if(e instanceof AuthError) needLogin(); else { S.snapErr=true; S.snapAt=0; if(was!==JSON.stringify([S.snapReady, S.snapErr]) && S.data && !S.arrange) renderSoft(); } }
+  finally{ S.snapBusy=false; }
 }
 function snapOf(w){ const doc=S.snap[/^(timetable|contacts|roster)$/.test(w.type)?"xl":"live"]; const x=doc&&doc.widgets&&doc.widgets[w.id]; return (x&&x.d)?x:null; }
 function stampEl(at){ if(!at) return null; const d=new Date(at), same=new Date().toDateString()===d.toDateString();
   return h("span",{class:"stamp", text:`PC ${same?"":(d.getMonth()+1)+"/"+d.getDate()+" "}${pad2(d.getHours())}:${pad2(d.getMinutes())}`}); }
 function cardBody(sec, title, right){ sec.appendChild(h("div",{class:"head"}, h("h2",{class:"ttl",text:title}), right||null)); const b=h("div",{class:"body"}); sec.appendChild(b); return b; }
-function noSnap(b){ b.appendChild(h("div",{class:"empty",text:"아직 PC에서 받은 내용이 없어요. 이 위젯이 있는 PC에서 프로그램을 켜 두면 몇 분 안에 여기에 보여요."})); }
+function noSnap(b, w){ const f=w&&/^(timetable|contacts|roster)$/.test(w.type)?"xl":"live";
+  const t=S.snapReady[f] ? "아직 PC에서 받은 내용이 없어요. 이 위젯이 있는 PC에서 프로그램을 켜 두면 몇 분 안에 여기에 보여요."
+        : S.snapErr ? "PC에서 받은 내용을 불러오지 못했어요. 인터넷 연결을 확인하고 ↻를 눌러 주세요." : "PC에서 받은 내용을 불러오는 중…";
+  b.appendChild(h("div",{class:"empty",text:t})); }
 function empty(b,t){ b.appendChild(h("div",{class:"empty",text:t})); }
+/* ===== 연락처·명렬표 찾기 (PC·폰 같은 규칙) =====
+   · 연락처: 이름·전화번호(- 없이 일부만 써도)·건물·부서·구역·업무·자리·장소 어느 것으로나. 띄어 쓰면 모두 맞는 것만
+   · 학생: 이름, 또는 학년·반·번호 (1-3-15 / 1 3 15 / 1학년 3반 15번 / 10315 / 1315 / 3반 15번 / 1-3 / 1학년) */
+function ctcToks(s){ return String(s||"").trim().toLowerCase().split(/\s+/).filter(Boolean); }
+function ctcHit(vals, phones, toks){
+  const text=vals.filter(Boolean).map(String).join(" ").toLowerCase(), flat=text.replace(/\s+/g,""),
+        digs=phones.filter(Boolean).map(p=>String(p).replace(/\D/g,"")).filter(Boolean);
+  return toks.length>0 && toks.every(t=>{ const td=t.replace(/\D/g,"");
+    if(/^[\d\-.()]+$/.test(t) && td.length>=2 && digs.some(p=>p.includes(td))) return true;
+    return flat.includes(t) || text.includes(t); }); }
+function ctcSearch(d, s){ const toks=ctcToks(s), q=String(s||"").trim().toLowerCase();
+  const rank=n=>{ n=String(n||"").toLowerCase(); return n===q?0:n.startsWith(q)?1:n.includes(q)?2:3; }, by=f=>(a,b)=>rank(f(a))-rank(f(b));
+  return { people:(d.people||[]).filter(p=>ctcHit([p.name,p.phone,p.bldg,p.office,p.zone,p.duty,p.seat],[p.phone],toks)).sort(by(p=>p.name)),
+           rooms:(d.rooms||[]).filter(x=>ctcHit([x.room,x.person,x.phone,x.bldg],[x.phone],toks)).sort(by(x=>x.room)),
+           others:(d.others||[]).filter(x=>ctcHit([x.cat,x.place,x.person,x.phone],[x.phone],toks)).sort(by(x=>x.place)) }; }
+function rosterQ(s){ s=String(s||"").trim(); let m; const S="(?:\\s*[-./]\\s*|\\s+)";
+  if((m=s.match(new RegExp("^(\\d)\\s*(?:학년\\s*|"+S+")(\\d{1,2})\\s*(?:반\\s*|"+S+")(\\d{1,2})\\s*번?$")))) return [{g:+m[1],c:+m[2],n:+m[3]}];
+  if((m=s.match(/^(\d)(\d{2})(\d{2})$/))) return [{g:+m[1],c:+m[2],n:+m[3]}];                                  // 10315 (학번)
+  if((m=s.match(/^(\d)(\d)(\d{2})$/))) return [{g:+m[1],c:+m[2],n:+m[3]},{g:+m[1],c:+(m[2]+m[3][0]),n:+m[3][1]}];  // 1315
+  if((m=s.match(/^(\d)(\d)(\d)$/))) return [{g:+m[1],c:+m[2],n:+m[3]},{g:+m[1],c:+(m[2]+m[3])}];               // 135 (없으면 1학년 35반… 대신 1-35 학급)
+  if((m=s.match(new RegExp("^(\\d)\\s*(?:학년\\s*|"+S+")?(\\d{1,2})\\s*반?$")))) return [{g:+m[1],c:+m[2]}];     // 1-3, 1학년 3반, 13
+  if((m=s.match(/^(\d{1,2})\s*반\s*(\d{1,2})\s*번?$/))) return [{c:+m[1],n:+m[2]}];                              // 3반 15번 (모든 학년)
+  if((m=s.match(/^(\d)\s*학년$/))) return [{g:+m[1]}];
+  return null; }
+function rosterFind(list, s){ const N=v=>parseInt(String(v==null?"":v).replace(/\D/g,""),10), q=rosterQ(s);
+  if(q){ for(const c of q){ const h=(list||[]).filter(x=>(c.g==null||N(x.grade)===c.g)&&(c.c==null||N(x.cls)===c.c)&&(c.n==null||N(x.no)===c.n));
+      if(h.length) return {hits:h.sort((a,b)=>N(a.grade)-N(b.grade)||N(a.cls)-N(b.cls)||N(a.no)-N(b.no)), num:c.n!=null}; }
+    return {hits:[], num:true}; }
+  const t=String(s||"").replace(/\s+/g,""); if(!t) return {hits:[], num:false};
+  return {hits:(list||[]).filter(x=>String(x.name||"").replace(/\s+/g,"").includes(t)), num:false}; }
 function searchRow(b, u, ph, go, extra){
   const inp=h("input",{type:"search", placeholder:ph, enterkeyhint:"search"}); inp.value=u.q||"";
   if(extra) Object.keys(extra).forEach(k=>inp.setAttribute(k, extra[k]));
@@ -1103,28 +1207,28 @@ DRAW.history=(sec,w,title)=>{ const d=new Date(), key=`${d.getMonth()+1}-${d.get
 
 /* ---- PC가 올려 준 내용으로 보여 주는 위젯 ---- */
 const md8=s=>`${+String(s).slice(4,6)}/${+String(s).slice(6,8)}`;
-DRAW.meal=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b); return; }
+DRAW.meal=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b,w); return; }
   const d=sn.d, isToday=d.date===ymdNow();
   b.appendChild(h("div",{class:"sub",text:`${d.school||""} · ${isToday?"오늘":md8(d.date)}`}));
   if(!(d.meals||[]).length) empty(b, isToday?"오늘은 급식 정보가 없어요.":"급식 정보가 없어요.");
   (d.meals||[]).forEach(m=>b.appendChild(h("div",{class:"meal"}, h("b",{text:m.name||"식단"}), h("p",{text:(m.dishes||[]).join(" · ")}), m.cal?h("small",{text:m.cal}):null)));
   if(!isToday) b.appendChild(h("div",{class:"note",text:"PC가 아직 오늘 급식을 불러오지 않았어요."}));
 };
-DRAW.neis=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b); return; }
+DRAW.neis=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b,w); return; }
   const d=sn.d, today=ymdNow(); b.appendChild(h("div",{class:"sub",text:`${d.school||""} · ${d.y}년 ${d.m}월`}));
   if(!(d.events||[]).length){ empty(b,`${d.m}월 학사일정이 없어요.`); return; }
   d.events.forEach(e=>{ const dt=new Date(+e.d.slice(0,4),+e.d.slice(4,6)-1,+e.d.slice(6,8));
     b.appendChild(h("div",{class:"ev"+(e.d===today?" now":e.d<today?" past":"")}, h("span",{class:"evd",text:`${dt.getMonth()+1}/${dt.getDate()} ${DOW[dt.getDay()]}`}), h("span",{text:e.n}))); });
 };
-DRAW.news=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b); return; }
+DRAW.news=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b,w); return; }
   b.appendChild(h("div",{class:"sub",text:sn.d.feed||""}));
   (sn.d.items||[]).forEach(n=>{ const u=safeUrl(n.link); b.appendChild(h(u?"a":"div",Object.assign({class:"nw"}, u?{href:u,target:"_blank",rel:"noopener"}:{}), n.t||"")); });
 };
-DRAW.stocks=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b); return; }
+DRAW.stocks=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b,w); return; }
   if(!(sn.d.items||[]).length){ empty(b,"관심 종목이 없어요."); return; }
   sn.d.items.forEach(x=>b.appendChild(h("div",{class:"sq"}, h("b",{text:x.name||""}), h("span",{class:"sqp",text:x.p||"-"}), h("span",{class:"sqc "+(x.up?"up":"down"),text:x.c||""}))));
 };
-DRAW.timetable=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b); return; }
+DRAW.timetable=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b,w); return; }
   const d=sn.d, u=UI(w); if(u.tab==null){ u.tab=d.tab==="class"?"class":"teacher"; u.q=d.sel||""; }
   const isT=u.tab!=="class";
   b.appendChild(h("div",{class:"seg"}, h("button",{class:isT?"on":"",text:"교사별",onclick:()=>{ u.tab="teacher"; u.q=""; render(); }}), h("button",{class:isT?"":"on",text:"학반별",onclick:()=>{ u.tab="class"; u.q=""; render(); }})));
@@ -1140,23 +1244,20 @@ DRAW.timetable=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,s
     return h("td",{class:i===ti?"now":""}, c?h("b",{text:c.subject||""}):null, c?h("small",{text:isT?(c.cls||""):(c.teacher||"")}):null); }))); }
   b.appendChild(h("div",{class:"ttw"}, tb)); b.appendChild(h("div",{class:"sub",text:`주당 ${rows.length}시간`}));
 };
-DRAW.contacts=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b); return; }
-  const d=sn.d, u=UI(w); searchRow(b,u,"이름 또는 장소 (예: 홍길동, 보건실)",()=>render());
+DRAW.contacts=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b,w); return; }
+  const d=sn.d, u=UI(w); searchRow(b,u,"이름·번호·부서·장소 (예: 홍길동, 1234)",()=>render());
   const s2=(u.q||"").trim(); if(!s2){ b.appendChild(h("div",{class:"sub",text:`교사 ${(d.people||[]).length}명 · 특별실 ${(d.rooms||[]).length}곳`})); return; }
-  const ppl=(d.people||[]).filter(p=>(p.name||"").includes(s2)||(p.duty||"").includes(s2)||(p.office||"").includes(s2));
-  const rms=(d.rooms||[]).filter(x=>(x.room||"").includes(s2)||(x.person||"").includes(s2));
-  const oth=(d.others||[]).filter(x=>(x.place||"").includes(s2)||(x.person||"").includes(s2));
+  const R=ctcSearch(d,s2), ppl=R.people, rms=R.rooms, oth=R.others;
   if(!ppl.length&&!rms.length&&!oth.length){ empty(b,`‘${s2}’ 결과가 없어요.`); return; }
   const card=(name,phone,lines)=>h("div",{class:"res"}, h("b",{text:name||""}), phone?h("a",{class:"tel",href:telOf(phone),text:"☎ "+phone}):null, ...lines.filter(x=>x[1]).map(([k,v])=>kv(k,v)));
   ppl.slice(0,30).forEach(p=>b.appendChild(card(p.name,p.phone,[["소속",[p.bldg,p.office,p.zone].filter(Boolean).join(" · ")],["업무",p.duty],["자리",p.seat?`${p.seat} (행,열)`:""]])));
   rms.slice(0,20).forEach(x=>b.appendChild(card(x.room||x.place,x.phone,[["담당",x.person],["건물",x.bldg]])));
   oth.slice(0,20).forEach(x=>b.appendChild(card(x.place,x.phone,[["담당",x.person],["구분",x.cat]])));
 };
-DRAW.roster=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b); return; }
-  const d=sn.d, u=UI(w), list=d.students||[]; searchRow(b,u,"이름 또는 학급 (예: 홍길동, 1-3)",()=>render());
+DRAW.roster=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b,w); return; }
+  const d=sn.d, u=UI(w), list=d.students||[]; searchRow(b,u,"이름 또는 학년·반·번호 (예: 1-3-15)",()=>render());
   const s2=(u.q||"").trim(); if(!s2){ b.appendChild(h("div",{class:"sub",text:`${(d.count||list.length).toLocaleString()}명`})); return; }
-  const cm=s2.match(/^(\d)\s*[-학년]*\s*(\d{1,2})\s*반?$/), ck=x=>`${+x.grade}-${+x.cls}`;
-  const hits=cm?list.filter(x=>ck(x)===`${+cm[1]}-${+cm[2]}`).sort((a,c)=>(+a.no)-(+c.no)):list.filter(x=>(x.name||"").includes(s2));
+  const hits=rosterFind(list,s2).hits;
   if(!hits.length){ empty(b,`‘${s2}’ 결과가 없어요.`); return; }
   if(hits.length>1) b.appendChild(h("div",{class:"sub",text:`${hits.length}명`}));
   hits.slice(0,60).forEach(x=>b.appendChild(h("div",{class:"res"}, h("b",{text:x.name||""}), h("span",{class:"rc",text:`${+x.grade}학년 ${+x.cls}반 ${+x.no}번`+(x.teacher?` · 담임 ${x.teacher}`:"")}),
@@ -1429,9 +1530,10 @@ function renderEmpty(){
     h("button",{class:"big", style:"margin-top:24px", text:"새로고침", onclick:()=>refresh(true)}),
     h("button",{class:"big sub", text:"다른 계정으로 로그인", onclick:logout})));
 }
-function showHello(err){
-  applyTheme();
+function showHello(err, busy){
+  applyTheme(); checkRelay();                                       // 로그인 유지가 되는지 미리 확인 (누를 때 바로 창이 뜨게)
   $("#bar").hidden=true; const app=$("#app"); app.innerHTML="";
+  if(busy){ app.appendChild(h("section",{class:"hello"}, h("p",{class:"empty",text:busy}))); return; }
   if(WEB_CLIENT_ID.indexOf("WEB_CLIENT_ID")===0){
     app.appendChild(h("section",{class:"hello"}, h("h1",{text:"설정이 필요해요"}),
       h("p",{text:"배포자가 index.html 위쪽의 WEB_CLIENT_ID를 아직 넣지 않았어요."}))); return;
@@ -1450,6 +1552,7 @@ function needLogin(){ setStatus(""); showHello("로그인 시간이 지났어요
 function startMain(){
   $("#bar").hidden=false;
   $("#app").innerHTML=""; $("#app").appendChild(h("p",{class:"empty", text:"불러오는 중…"}));
+  loadSnapCache().then(()=>loadSnaps(true));          /* 기억해 둔 PC 내용 먼저 → 새 내용 확인 (위젯 목록과 함께) */
   refresh(true);
 }
 
@@ -1466,17 +1569,17 @@ $("#arrBtn").onclick=()=>{ $("#menu").classList.remove("on"); arrangeOn(true); t
 $("#arrDone").onclick=()=>{ arrangeOn(false); toast("배치를 저장했어요 (이 기기에만)"); };
 $("#arrReset").onclick=()=>{ if(!confirm("지금 화면 모드의 배치를 처음(PC 순서)으로 되돌릴까요?")) return;
   const all=layAll(); delete all["c"+layCols()]; try{ localStorage.setItem("m.layout", JSON.stringify(all)); }catch(e){} render(); };
-document.addEventListener("visibilitychange",()=>{ if(!document.hidden && S.tok) refresh(false); });
-(function loop(){ setTimeout(()=>{ if(!document.hidden && S.tok) refresh(false); loop(); }, Date.now()<_burstUntil ? 2000 : 5000); })();   // 5초마다 (방금 바뀌었으면 2초)
-setInterval(()=>{ if(S.tok && Date.now()>S.exp){ S.tok=null; needLogin(); } }, 30000);
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden && signedIn()) refresh(false); });
+(function loop(){ setTimeout(()=>{ if(!document.hidden && signedIn()) refresh(false); loop(); }, Date.now()<_burstUntil ? 2000 : 5000); })();   // 5초마다 (방금 바뀌었으면 2초)
+setInterval(()=>{ if(S.tok && Date.now()>S.exp){ S.tok=null; if(S.rt) ensureTok().then(ok=>{ if(!ok) needLogin(); }).catch(()=>{}); else needLogin(); } }, 30000);   // 로그인 유지면 조용히 새로 받음
 const saveNow=()=>{ const a=document.activeElement; if(a && /^(INPUT|TEXTAREA)$/.test(a.tagName)) a.blur();   /* 쓰던 메모도 저장 목록에 */
-  if(S.pending.length && S.tok) flush(); };
+  if(S.pending.length && signedIn()) flush(); };
 window.addEventListener("beforeunload",saveNow);
 window.addEventListener("pagehide",saveNow);
 document.addEventListener("visibilitychange",()=>{ if(document.hidden) saveNow(); });
 loadAuth();
 applyTheme();
-if(S.tok) startMain(); else showHello();
+if(signedIn()) startMain(); else showHello();
 (function loadGis(){
   const s=document.createElement("script"); s.src="https://accounts.google.com/gsi/client"; s.async=true; s.defer=true;
   s.onload=initGis; document.head.appendChild(s);

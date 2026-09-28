@@ -3129,7 +3129,7 @@ const WIDGETS = {
         onPick:(v)=>{ q.value=v; w.config.sel=v; persist(); draw(v); }, onEnter:find });
       if(w.config.sel){ q.value=w.config.sel; draw(w.config.sel); } else draw(""); } },
 
-  contacts:{ title:"교사 연락처", icon:"📞", desc:"이름으로 내선번호·자리·특별실을 찾습니다.", settings:true,
+  contacts:{ title:"교사 연락처", icon:"📞", desc:"이름·전화번호·부서·장소로 내선번호·자리·특별실을 찾습니다.", settings:true,
     defaultCfg:()=>({file:"",fileName:""}),
     async take(b,w,file){ if(!file) return;
       if(!/\.(xlsx|xlsm|xls)$/i.test(file.name)){ toast("엑셀 파일만 올릴 수 있어요"); return; }
@@ -3164,7 +3164,7 @@ const WIDGETS = {
         b.innerHTML=`<div class="empty">${escapeHtml(why)}</div><div class="rup"><label class="mini go up">📤 파일 올리기<input type="file" data-file accept=".xlsx,.xlsm,.xls"></label><button class="mini" data-pick>📂 찾아보기</button></div>`; this.hookFile(b,w,b); return; }
       w._ctc=res;
       Snap.set(w,{file:w.config.fileName||res.file, people:res.people||[], rooms:res.rooms||[], others:res.others||[]});
-      b.innerHTML=`<div class="row"><input placeholder="이름 또는 장소 (예: 홍길동, 보건실)" data-q><button class="mini go" data-find>찾기</button></div><div class="rcount"></div><div class="rbody" data-body></div>`;
+      b.innerHTML=`<div class="row"><input placeholder="이름·번호·부서·장소 (예: 홍길동, 1234, 보건실)" data-q><button class="mini go" data-find>찾기</button></div><div class="rcount"></div><div class="rbody" data-body></div>`;
       $(".rcount",b).textContent=`${w.config.fileName||res.file} · 교사 ${res.people.length} · 특별실 ${res.rooms.length}`;
       this.dropZone(b,w,b);
       const q=$("[data-q]",b), body=$("[data-body]",b);
@@ -3186,28 +3186,26 @@ const WIDGETS = {
           line("담당",x.person)+ line("구분",x.cat);
         $(".rn",card).textContent=x.place; return card; };
       const find=()=>{ const s2=q.value.trim(); if(!s2){ body.innerHTML=""; return; }
-        const ppl=(res.people||[]).filter(p=>p.name.includes(s2)||(p.duty||"").includes(s2)||(p.office||"").includes(s2));
-        const rms=(res.rooms||[]).filter(x=>(x.room||"").includes(s2)||(x.person||"").includes(s2));
-        const oth=(res.others||[]).filter(x=>(x.place||"").includes(s2)||(x.person||"").includes(s2));
+        const R=ctcSearch(res,s2), ppl=R.people, rms=R.rooms, oth=R.others;
         body.innerHTML="";
         if(!ppl.length&&!rms.length&&!oth.length){ body.innerHTML=`<div class="empty">‘${escapeHtml(s2)}’ 결과가 없어요.</div>`; return; }
         if(ppl.length){ body.appendChild(el("div","rhead",`교사 ${ppl.length}명`)); ppl.slice(0,30).forEach(p=>body.appendChild(showPerson(p))); }
         if(rms.length){ body.appendChild(el("div","rhead",`특별실 ${rms.length}곳`)); rms.slice(0,20).forEach(x=>body.appendChild(showRoom(x))); }
         if(oth.length){ body.appendChild(el("div","rhead",`기타 ${oth.length}곳`)); oth.slice(0,20).forEach(x=>body.appendChild(showOther(x))); } };
       $("[data-find]",b).onclick=find;
-      attachAutocomplete(q,{ min:1, source:(qv)=>{ const out=[], seen={};
-          (res.people||[]).forEach(p=>{ if(out.length>=8)return; if(!p.name.includes(qv))return; if(seen[p.name])return; seen[p.name]=1;
-            out.push({label:p.name, sub:[p.office,p.phone].filter(Boolean).join(" · "), value:{t:"p",v:p}}); });
-          (res.rooms||[]).forEach(x=>{ if(out.length>=8)return; if(!(x.room||"").includes(qv))return;
-            out.push({label:x.room, sub:"특별실"+(x.person?" · "+x.person:""), value:{t:"r",v:x}}); });
-          (res.others||[]).forEach(x=>{ if(out.length>=8)return; if(!(x.place||"").includes(qv))return;
-            out.push({label:x.place, sub:"기타"+(x.person?" · "+x.person:""), value:{t:"o",v:x}}); });
+      attachAutocomplete(q,{ min:1, source:(qv)=>{ const out=[], seen={}, R=ctcSearch(res,qv);
+          R.people.forEach(p=>{ if(out.length>=8)return; const k=p.name+"|"+p.phone; if(seen[k])return; seen[k]=1;
+            out.push({label:p.name, sub:[p.office||p.duty,p.phone].filter(Boolean).join(" · "), value:{t:"p",v:p}}); });
+          R.rooms.forEach(x=>{ if(out.length>=8)return;
+            out.push({label:x.room, sub:"특별실"+(x.person?" · "+x.person:"")+(x.phone?" · "+x.phone:""), value:{t:"r",v:x}}); });
+          R.others.forEach(x=>{ if(out.length>=8)return;
+            out.push({label:x.place, sub:"기타"+(x.person?" · "+x.person:"")+(x.phone?" · "+x.phone:""), value:{t:"o",v:x}}); });
           return out; },
         onPick:(o)=>{ q.value=(o.t==="p"?o.v.name:(o.t==="r"?o.v.room:o.v.place)); body.innerHTML="";
           body.appendChild(o.t==="p"?showPerson(o.v):(o.t==="r"?showRoom(o.v):showOther(o.v))); },
         onEnter:find }); } },
 
-  roster:{ title:"학생 찾기", icon:"🎓", desc:"명렬표 엑셀에서 학년·반·번호를 찾습니다.", settings:true,
+  roster:{ title:"학생 찾기", icon:"🎓", desc:"이름으로 학년·반·번호를, 학년·반·번호로 이름을 찾습니다.", settings:true,
     defaultCfg:()=>({file:"",fileName:"",showPhone:false}),
     async take(b,w,file){ if(!file) return;
       if(!/\.(xlsx|xlsm|xls)$/i.test(file.name)){ toast("엑셀 파일만 올릴 수 있어요"); return; }
@@ -3245,26 +3243,23 @@ const WIDGETS = {
       w._roster=res.students;
       Snap.set(w,{file:w.config.fileName||res.file, count:res.count, phone:!!w.config.showPhone,     /* 학생·보호자 연락처는 PC에서 보이게 한 경우에만 */
         students:(res.students||[]).map(x=>{ const o=Object.assign({},x); if(!w.config.showPhone){ delete o.sphone; delete o.pphone; } return o; })});
-      b.innerHTML=`<div class="row"><input placeholder="이름 또는 학급 (예: 홍길동, 1-3)" data-q><button class="mini go" data-find>찾기</button></div><div class="rcount"></div><div class="rbody" data-body></div>`;
+      b.innerHTML=`<div class="row"><input placeholder="이름 또는 학년·반·번호 (예: 홍길동, 1-3, 1-3-15)" data-q><button class="mini go" data-find>찾기</button></div><div class="rcount"></div><div class="rbody" data-body></div>`;
       $(".rcount",b).textContent=`${w.config.fileName||res.file} · ${res.count.toLocaleString()}명`;
       this.dropZone(b,w,b);
       const q=$("[data-q]",b), body=$("[data-body]",b);
-      const clsKey=s2=>`${+s2.grade}-${+s2.cls}`;
       const card=(s2)=>{ const it=el("div","rrow");
         it.innerHTML=`<div class="rn"></div><div class="rc"></div>`;
         $(".rn",it).textContent=s2.name; $(".rc",it).textContent=`${+s2.grade}학년 ${+s2.cls}반 ${+s2.no}번`+(s2.teacher?` · 담임 ${s2.teacher}`:"");
         if(w.config.showPhone&&(s2.sphone||s2.pphone)){ const pz=el("div","rp"); pz.textContent=[s2.sphone?`학생 ${s2.sphone}`:"",s2.pphone?`보호자 ${s2.pphone}`:""].filter(Boolean).join("  ·  "); it.appendChild(pz); }
         return it; };
       const find=()=>{ const s2=q.value.trim(); if(!s2){ body.innerHTML=""; return; }
-        const cm=s2.match(/^(\d)\s*[-학년]*\s*(\d{1,2})\s*반?$/);
-        let hits;
-        if(cm){ const key=`${+cm[1]}-${+cm[2]}`; hits=w._roster.filter(x=>clsKey(x)===key).sort((a,c)=>(+a.no)-(+c.no)); }
-        else { hits=w._roster.filter(x=>x.name.includes(s2)); }
+        const hits=rosterFind(w._roster,s2).hits;
         if(!hits.length){ body.innerHTML=`<div class="empty">‘${escapeHtml(s2)}’ 결과가 없어요.</div>`; return; }
         body.innerHTML=""; if(hits.length>1){ const h=el("div","rhead",`${hits.length}명`); body.appendChild(h); }
         hits.slice(0,60).forEach(x=>body.appendChild(card(x))); };
       $("[data-find]",b).onclick=find;
-      attachAutocomplete(q,{ min:1, source:(qv)=>{ if(/^\d/.test(qv)) return [];
+      attachAutocomplete(q,{ min:1, source:(qv)=>{ if(/^\d/.test(qv)){ const f=rosterFind(w._roster,qv); if(!f.num) return [];     /* 학년·반·번호 → 이름 */
+            return f.hits.slice(0,8).map(x=>({label:x.name, sub:`${+x.grade}-${+x.cls}-${+x.no}`, value:x})); }
           const seen={},out=[]; w._roster.forEach(x=>{ if(out.length>=8)return; if(!x.name.includes(qv))return; const k=x.name+x.grade+x.cls+x.no; if(seen[k])return; seen[k]=1; out.push({label:x.name, sub:`${+x.grade}-${+x.cls}-${+x.no}`, value:x}); }); return out; },
         onPick:(s2)=>{ q.value=s2.name; find(); }, onEnter:find }); } },
 
@@ -3891,6 +3886,36 @@ function inlineRename(elm, get, set, done){
   });
 }
 
+/* ===== 연락처·명렬표 찾기 (PC·폰 같은 규칙) =====
+   · 연락처: 이름·전화번호(- 없이 일부만 써도)·건물·부서·구역·업무·자리·장소 어느 것으로나. 띄어 쓰면 모두 맞는 것만
+   · 학생: 이름, 또는 학년·반·번호 (1-3-15 / 1 3 15 / 1학년 3반 15번 / 10315 / 1315 / 3반 15번 / 1-3 / 1학년) */
+function ctcToks(s){ return String(s||"").trim().toLowerCase().split(/\s+/).filter(Boolean); }
+function ctcHit(vals, phones, toks){
+  const text=vals.filter(Boolean).map(String).join(" ").toLowerCase(), flat=text.replace(/\s+/g,""),
+        digs=phones.filter(Boolean).map(p=>String(p).replace(/\D/g,"")).filter(Boolean);
+  return toks.length>0 && toks.every(t=>{ const td=t.replace(/\D/g,"");
+    if(/^[\d\-.()]+$/.test(t) && td.length>=2 && digs.some(p=>p.includes(td))) return true;
+    return flat.includes(t) || text.includes(t); }); }
+function ctcSearch(d, s){ const toks=ctcToks(s), q=String(s||"").trim().toLowerCase();
+  const rank=n=>{ n=String(n||"").toLowerCase(); return n===q?0:n.startsWith(q)?1:n.includes(q)?2:3; }, by=f=>(a,b)=>rank(f(a))-rank(f(b));
+  return { people:(d.people||[]).filter(p=>ctcHit([p.name,p.phone,p.bldg,p.office,p.zone,p.duty,p.seat],[p.phone],toks)).sort(by(p=>p.name)),
+           rooms:(d.rooms||[]).filter(x=>ctcHit([x.room,x.person,x.phone,x.bldg],[x.phone],toks)).sort(by(x=>x.room)),
+           others:(d.others||[]).filter(x=>ctcHit([x.cat,x.place,x.person,x.phone],[x.phone],toks)).sort(by(x=>x.place)) }; }
+function rosterQ(s){ s=String(s||"").trim(); let m; const S="(?:\\s*[-./]\\s*|\\s+)";
+  if((m=s.match(new RegExp("^(\\d)\\s*(?:학년\\s*|"+S+")(\\d{1,2})\\s*(?:반\\s*|"+S+")(\\d{1,2})\\s*번?$")))) return [{g:+m[1],c:+m[2],n:+m[3]}];
+  if((m=s.match(/^(\d)(\d{2})(\d{2})$/))) return [{g:+m[1],c:+m[2],n:+m[3]}];                                  // 10315 (학번)
+  if((m=s.match(/^(\d)(\d)(\d{2})$/))) return [{g:+m[1],c:+m[2],n:+m[3]},{g:+m[1],c:+(m[2]+m[3][0]),n:+m[3][1]}];  // 1315
+  if((m=s.match(/^(\d)(\d)(\d)$/))) return [{g:+m[1],c:+m[2],n:+m[3]},{g:+m[1],c:+(m[2]+m[3])}];               // 135 (없으면 1학년 35반… 대신 1-35 학급)
+  if((m=s.match(new RegExp("^(\\d)\\s*(?:학년\\s*|"+S+")?(\\d{1,2})\\s*반?$")))) return [{g:+m[1],c:+m[2]}];     // 1-3, 1학년 3반, 13
+  if((m=s.match(/^(\d{1,2})\s*반\s*(\d{1,2})\s*번?$/))) return [{c:+m[1],n:+m[2]}];                              // 3반 15번 (모든 학년)
+  if((m=s.match(/^(\d)\s*학년$/))) return [{g:+m[1]}];
+  return null; }
+function rosterFind(list, s){ const N=v=>parseInt(String(v==null?"":v).replace(/\D/g,""),10), q=rosterQ(s);
+  if(q){ for(const c of q){ const h=(list||[]).filter(x=>(c.g==null||N(x.grade)===c.g)&&(c.c==null||N(x.cls)===c.c)&&(c.n==null||N(x.no)===c.n));
+      if(h.length) return {hits:h.sort((a,b)=>N(a.grade)-N(b.grade)||N(a.cls)-N(b.cls)||N(a.no)-N(b.no)), num:c.n!=null}; }
+    return {hits:[], num:true}; }
+  const t=String(s||"").replace(/\s+/g,""); if(!t) return {hits:[], num:false};
+  return {hits:(list||[]).filter(x=>String(x.name||"").replace(/\s+/g,"").includes(t)), num:false}; }
 function attachAutocomplete(input, opts){
   if(input._acPop){ try{input._acPop.remove();}catch(e){} }
   document.querySelectorAll(".ac-pop").forEach(p=>{ if(p._inp && !p._inp.isConnected) p.remove(); });   /* 입력칸이 사라진 옛 목록 */
@@ -5431,7 +5456,7 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-09-27.1";
+const APP_VER="2026-09-28.1";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`;
