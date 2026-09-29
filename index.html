@@ -5027,7 +5027,7 @@ const Sync={
 /* ===== 파일 주고받기 (PC ↔ PC·폰): 내 구글 드라이브의 앱 전용 폴더를 거쳐 감. 7일 뒤 자동으로 지움 =====
    동기화 창처럼: ⬆ 보내기(올리기) / ⬇ 받기(내리기) — 고른 것 받기·지우기 */
 const Xfer={ files:null, seen:null, fresh:new Set(), busy:false, got:{}, err:"",
-  ok(){ return hasApi("xfer_list"); },
+  ok(){ return ["xfer_list","xfer_pick","xfer_send_files","xfer_progress","xfer_get","xfer_delete"].every(hasApi); },   /* 1.5.13부터 (중간 빌드에는 일부만 있음) */
   size(n){ n=+n||0; return n<1024?n+"B":n<1048576?(n/1024).toFixed(0)+"KB":n<1073741824?(n/1048576).toFixed(n<10485760?1:0)+"MB":(n/1073741824).toFixed(1)+"GB"; },
   ficon(n){ const x=((String(n).match(/\.([a-z0-9]{1,5})$/i)||[])[1]||"").toLowerCase();
     return /^(jpe?g|png|gif|webp|heic|bmp)$/.test(x)?"🖼️":/^(mp4|mov|avi|mkv|wmv)$/.test(x)?"🎬":/^(mp3|m4a|wav)$/.test(x)?"🎵":x==="pdf"?"📕":/^(hwpx?)$/.test(x)?"📘":/^(xlsx?|xlsm|csv)$/.test(x)?"📗":/^(pptx?)$/.test(x)?"📙":/^(zip|7z|rar)$/.test(x)?"🗜️":"📄"; },
@@ -5597,10 +5597,10 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-09-28.5";
+const APP_VER="2026-09-29.1";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
-  if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`;
+  if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`; vt.title="눌러서 새 버전 확인"; vt.style.cursor="pointer"; vt.onclick=()=>checkUpdate(true);
     if(hasApi("get_versions")){ window.pywebview.api.get_versions().then(v=>{ if(v&&v.app&&vt.isConnected) vt.textContent=`화면 ${APP_VER} · 프로그램 ${v.app} · 위젯 ${Object.keys(WIDGETS).length}개`; }).catch(()=>{}); } }
   [...document.querySelectorAll("[data-pt]")].forEach(btn=>{
     btn.className=(btn.dataset.pt===_palTab)?"on":"";
@@ -5634,7 +5634,8 @@ async function boot(){
   if(hasApi("is_maximized")){ try{ if(await window.pywebview.api.is_maximized()){ isMax=true; mode="max"; } }catch(e){} }
   const _mb=$("#winMax"); if(_mb){ _mb.textContent=isMax?"❐":"▢"; _mb.title=isMax?"이전 크기로":"최대화"; }
   applyTheme(); updateTopbar(); _bootPhase=true; renderAll(); requestAnimationFrame(()=>runMountQueue());
-  _ready=true; Usage.start(); setTimeout(runNotices,1500); setTimeout(()=>Sync.init(),1800); setTimeout(()=>Xfer.init(),2000); setTimeout(()=>checkUpdate(false),2500); }
+  _ready=true; Usage.start(); setTimeout(runNotices,1500); setTimeout(()=>Sync.init(),1800); setTimeout(()=>Xfer.init(),2000); setTimeout(()=>checkUpdate(false),2500);
+  if(!window._updT) window._updT=setInterval(()=>{ if(!document.getElementById("updBar")) checkUpdate(false); }, 2*3600e3); }   /* 켜 둔 채로 지내도 2시간마다 새 버전 확인 */
 window.addEventListener("pywebviewready",()=>{ document.body.classList.add("app"); boot(); });
 window.addEventListener("DOMContentLoaded",()=>{ updateTopbar(); setTimeout(()=>{ if(!window.pywebview) boot(); },1500); });
 </script>
