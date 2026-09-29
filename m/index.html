@@ -1590,7 +1590,7 @@ async function xfList(){
   const out=[];
   for(const f of (j.files||[])){ const ap=f.appProperties||{}, at=+ap.at||0;
     if(at && Date.now()-at>XF.days*86400000){ api(`${API}/files/${encodeURIComponent(f.id)}`,{method:"DELETE"}).catch(()=>{}); continue; }   // 7일 지난 것
-    out.push({id:f.id, name:f.name||"파일", size:+f.size||0, at, from:ap.from||"", mine:ap.dev===dev}); }
+    out.push({id:f.id, name:f.name||"파일", size:+f.size||0, at, from:ap.from||"", mine:ap.dev===dev, kind:ap.kind||""}); }
   return out.sort((a,b)=>b.at-a.at); }
 /* 이어 올리기: 세션을 열고 8MB씩. 끊기면 어디까지 갔는지 물어보고 이어서 */
 async function xfUp(file, prog){
@@ -1666,7 +1666,7 @@ function drawXfer(){
   const pick=h("input",{type:"file", multiple:true});
   pick.addEventListener("change", ()=>{ const list=[...pick.files]; pick.value=""; if(list.length && !XF.busy) xfSend(list); });
   sh.append(h("h2",{text:"파일 주고받기"}),
-    h("p",{class:"pk-note", text:`PC와 이 폰 사이에 파일을 주고받아요. 내 구글 드라이브를 거쳐 가고, ${XF.days}일 뒤 자동으로 지워져요. PC에서는 위쪽 📨 파일 버튼을 쓰세요.`}));
+    h("p",{class:"pk-note", text:`PC와 이 폰 사이에 파일을 주고받아요. 여러 개를 한꺼번에 골라도 되고, zip 파일도 보낼 수 있어요. 내 구글 드라이브를 거쳐 가고, ${XF.days}일 뒤 자동으로 지워져요. PC에서는 위쪽 📨 파일 버튼을 쓰세요.`}));
   if(XF.err) sh.appendChild(h("div",{class:"alert", text:XF.err}));
   sh.appendChild(h("div",{class:"xf-sec", text:"⬆ 보내기"}, h("span",{text:"1GB까지"})));
   sh.appendChild(h("div",{class:"xf-tools"}, h("label",{class:"mini go up"+(busy?" off":""), text:"📤 보낼 파일 고르기"}, busy?null:pick)));
@@ -1681,15 +1681,13 @@ function drawXfer(){
       try{ await api(`${API}/files/${encodeURIComponent(f.id)}`,{method:"DELETE"}); toast("지웠어요"); }catch(e){ if(!/HTTP 404/.test(String(e&&e.message))) toast(xfErr(e)); }
       XF.files=(XF.files||[]).filter(x=>x.id!==f.id); drawXfer(); xfCheck(true); }});
     const isNew=XF.fresh.has(f.id);
-    return h("div",{class:"xf"+(isNew?" new":"")}, h("span",{class:"xf-i", text:xfIcon(f.name)}),
-      h("div",{class:"xf-t"}, h("b",{text:f.name}, isNew?h("i",{class:"xf-new", text:"새 파일"}):null), h("i",{text:`${f.mine?"이 폰에서 보냄":(f.from||"PC")} · ${xfAgo(f.at)} · ${xfSize(f.size)} · ${left}일 남음`})),
-      h("div",{class:"xf-b"}, f.mine?null:get, f.mine?null:share, del)); };
-  const others=fs.filter(f=>!f.mine), mine=fs.filter(f=>f.mine);
-  sh.appendChild(h("div",{class:"xf-sec", text:"⬇ 받기"}, h("span",{text:`다른 기기에서 온 ${others.length}개`})));
+    return h("div",{class:"xf"+(isNew?" new":"")}, h("span",{class:"xf-i", text:f.kind==="folder"?"📁":xfIcon(f.name)}),
+      h("div",{class:"xf-t"}, h("b",{text:f.kind==="folder"?`${f.name.replace(/\.zip$/i,"")} (폴더 · zip으로 받아요)`:f.name}, isNew?h("i",{class:"xf-new", text:"새 파일"}):null), h("i",{text:`${f.mine?"이 폰에서 보냄":(f.from||"PC")} · ${xfAgo(f.at)} · ${xfSize(f.size)} · ${left}일 남음`})),
+      h("div",{class:"xf-b"}, get, share, del)); };
+  sh.appendChild(h("div",{class:"xf-sec", text:"⬇ 받기"}, h("span",{text:`드라이브에 있는 ${fs.length}개`})));
   if(XF.files===null && !XF.err) sh.appendChild(h("p",{class:"empty", text:"불러오는 중…"}));
-  else if(!others.length) sh.appendChild(h("p",{class:"empty", text:"받을 파일이 없어요."}));
-  else others.forEach(f=>sh.appendChild(row(f)));
-  if(mine.length){ sh.appendChild(h("div",{class:"xf-sec", text:"📤 이 폰에서 보낸 것"}, h("span",{text:`${mine.length}개`}))); mine.forEach(f=>sh.appendChild(row(f))); }
+  else if(!fs.length) sh.appendChild(h("p",{class:"empty", text:"받을 파일이 없어요."}));
+  else fs.forEach(f=>sh.appendChild(row(f)));
   sh.appendChild(h("button",{class:"big sub", text:"닫기", onclick:closeXfer}));
   xfProg();
 }
