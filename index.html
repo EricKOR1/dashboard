@@ -2049,6 +2049,20 @@
   .btn.sync.on .sy-i{color:var(--good);}
   .btn.sync.busy .sy-i{opacity:.55;}
   .btn.sync.err .sy-i{color:var(--danger);}
+  .btn.xferb{position:relative;}
+  .btn.xferb .xf-badge{position:absolute; top:-5px; right:-5px; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:var(--danger,#d64545); color:#fff;
+    font-size:11px; font-style:normal; font-weight:800; line-height:18px; text-align:center;}
+  .xfer-sheet .xf-drop{border:2px dashed var(--border-strong); border-radius:14px; padding:16px 12px; text-align:center; font-size:12.5px; color:var(--muted); transition:border-color .14s, background .14s;}
+  .xfer-sheet .xf-drop.over{border-color:var(--accent); background:var(--accent-soft); color:var(--text);}
+  .xfer-sheet .xf-drop .mini{margin-top:8px;}
+  .xfer-sheet .xf-prog{margin-top:10px; padding:10px 12px; border-radius:12px; background:var(--card-2); border:1px solid var(--border); font-size:12.5px;}
+  .xfer-sheet .xf-prog .bar{height:8px; border-radius:4px; background:var(--border); overflow:hidden; margin:7px 0 6px;}
+  .xfer-sheet .xf-prog .bar i{display:block; height:100%; width:0; background:var(--accent); transition:width .3s;}
+  .xfer-sheet .xf-prog .row2{display:flex; align-items:center; gap:8px; color:var(--muted);} .xfer-sheet .xf-prog .row2 span{flex:1;}
+  .xfer-sheet .sy-chk .tx{flex:1;} .xfer-sheet .sy-chk b{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .xfer-sheet .sy-chk.new{border-color:var(--accent);}
+  .xfer-sheet .sy-chk .xf-new{display:inline-block; margin-left:6px; padding:0 6px; border-radius:8px; background:var(--accent); color:var(--accent-ink,#fff); font-size:10.5px; font-weight:800; vertical-align:1px;}
+  .xfer-sheet .xf-got{display:flex; gap:6px; align-items:center; margin-left:auto; flex:none;}
   .sync-sheet{width:min(460px,100%);}
   .sync-sheet .sy-box{display:flex; align-items:center; gap:11px; padding:12px 14px; border-radius:14px;
     background:var(--accent-soft); border:1px solid var(--border); margin:14px 0 12px;}
@@ -2139,6 +2153,7 @@
       </div>
       <div class="actions">
         <button class="btn sync" id="syncBtn" title="다른 컴퓨터와 내용 맞추기"><span class="sy-i">☁</span><span id="syncTxt">동기화</span></button>
+        <button class="btn sync xferb" id="xferBtn" title="PC·폰끼리 파일 주고받기" hidden><span class="sy-i">📨</span><span>파일</span><i class="xf-badge" id="xferBadge" hidden></i></button>
         <button class="btn icon" id="arrangeBtn" title="위젯 자동 정렬 (이 화면 폭에 맞춰 왼쪽 위부터 빈틈없이)">▦</button>
         <button class="btn icon" id="themeBtn" title="화면 꾸미기">🎨</button>
         <button class="btn primary" id="addBtn">＋ 위젯 추가</button>
@@ -2148,6 +2163,9 @@
   </div>
 
 
+  <div class="scrim" id="xferScrim">
+    <div class="sheet sync-sheet xfer-sheet" id="xferSheet"></div>
+  </div>
   <div class="scrim" id="syncScrim">
     <div class="sheet sync-sheet" id="syncSheet"></div>
   </div>
@@ -5005,6 +5023,133 @@ const Sync={
     $("[data-o3]",sh).onclick=()=>this.openPanel();
   }
 };
+
+/* ===== 파일 주고받기 (PC ↔ PC·폰): 내 구글 드라이브의 앱 전용 폴더를 거쳐 감. 7일 뒤 자동으로 지움 =====
+   동기화 창처럼: ⬆ 보내기(올리기) / ⬇ 받기(내리기) — 고른 것 받기·지우기 */
+const Xfer={ files:null, seen:null, fresh:new Set(), busy:false, got:{}, err:"",
+  ok(){ return hasApi("xfer_list"); },
+  size(n){ n=+n||0; return n<1024?n+"B":n<1048576?(n/1024).toFixed(0)+"KB":n<1073741824?(n/1048576).toFixed(n<10485760?1:0)+"MB":(n/1073741824).toFixed(1)+"GB"; },
+  ficon(n){ const x=((String(n).match(/\.([a-z0-9]{1,5})$/i)||[])[1]||"").toLowerCase();
+    return /^(jpe?g|png|gif|webp|heic|bmp)$/.test(x)?"🖼️":/^(mp4|mov|avi|mkv|wmv)$/.test(x)?"🎬":/^(mp3|m4a|wav)$/.test(x)?"🎵":x==="pdf"?"📕":/^(hwpx?)$/.test(x)?"📘":/^(xlsx?|xlsm|csv)$/.test(x)?"📗":/^(pptx?)$/.test(x)?"📙":/^(zip|7z|rar)$/.test(x)?"🗜️":"📄"; },
+  why(r){ const k=typeof r==="string"?r:(r&&(r.reason||r.why)); return k==="not_connected"?"구글 드라이브가 연결돼 있지 않아요. ☁ 동기화에서 먼저 연결해 주세요.":k==="offline"?"인터넷 연결을 확인하고 다시 해 주세요.":
+    k==="full"?`보관할 수 있는 파일은 ${(r&&r.count)||30}개까지예요. 다 받은 파일은 지워 주세요.`:k==="big"?"2GB가 넘는 파일은 보낼 수 없어요.":k==="quota"?"구글 드라이브 저장 공간이 부족해요.":k==="gone"?"이미 지워진 파일이에요.":k==="cancel"?"취소했어요.":"잠시 뒤 다시 해 보세요."; },
+  loadSeen(){ if(this.seen) return this.seen; try{ const a=JSON.parse(localStorage.getItem("dash.xseen")||"null"); if(Array.isArray(a)) this.seen=new Set(a); }catch(e){} return this.seen; },
+  markSeen(){ this.seen=new Set((this.files||[]).map(f=>f.id)); this.fresh=new Set(); try{ localStorage.setItem("dash.xseen", JSON.stringify([...this.seen])); }catch(e){} this.badge(); },
+  badge(){ const b=$("#xferBadge"), n=this.fresh.size; if(!b) return; b.hidden=!n; b.textContent=n>9?"9+":String(n); },
+  async refresh(quiet){ if(!this.ok()) return;
+    let r=null; try{ r=await window.pywebview.api.xfer_list(); }catch(e){}
+    if(!r||!r.ok){ this.err=this.why(r); if(!quiet) this.render(); return; }
+    this.err=""; this.files=r.files; this.days=r.days||7;
+    const seen=this.loadSeen(), first=!seen, nf=r.files.filter(f=>!f.mine && seen && !seen.has(f.id));
+    if(first){ this.markSeen(); }
+    else { nf.forEach(f=>this.fresh.add(f.id)); [...this.fresh].forEach(id=>{ if(!r.files.some(f=>f.id===id)) this.fresh.delete(id); }); this.badge();
+      if(nf.length && !this.isOpen()) toast(`📨 ${nf[0].from||"다른 기기"}에서 파일이 왔어요: ${nf[0].name}${nf.length>1?` 외 ${nf.length-1}개`:""}`);
+      const s=new Set(seen); nf.forEach(f=>s.add(f.id)); this.seen=s; try{ localStorage.setItem("dash.xseen", JSON.stringify([...s].filter(id=>r.files.some(f=>f.id===id)))); }catch(e){} }
+    if(this.isOpen()) this.render(); },
+  isOpen(){ return $("#xferScrim").classList.contains("on"); },
+  open(){ $("#xferScrim").classList.add("on"); this.render(); this.refresh(); },
+  close(){ $("#xferScrim").classList.remove("on"); if(!this.busy) this.markSeen(); },
+  async watch(job){                                  /* 보내기·받기가 끝날 때까지 진행률 보여 주기 */
+    this.busy=true; this.prog={}; this.render();
+    const t=setInterval(async()=>{ try{ this.prog=await window.pywebview.api.xfer_progress()||{}; this.drawProg(); }catch(e){} }, 400);
+    let r=null; try{ r=await job(); }catch(e){} clearInterval(t); this.busy=false; this.prog=null; return r; },
+  drawProg(){ const box=$("#xferSheet [data-prog]"); if(!box) return; const p=this.prog||{};
+    if(!this.busy){ box.hidden=true; return; } box.hidden=false;
+    const pct=p.total?Math.min(100,Math.round(100*(p.done||0)/p.total)):0;
+    $(".t",box).textContent=`${p.kind==="down"?"받는 중":"보내는 중"}${p.n>1?` (${p.i}/${p.n})`:""} · ${p.name||"준비 중…"}`;
+    $(".bar i",box).style.width=pct+"%"; $(".row2 span",box).textContent=p.total?`${this.size(p.done)} / ${this.size(p.total)} (${pct}%)`:""; },
+  async send(files){                                 /* files: [{path,name,size}] */
+    const big=files.filter(f=>f.size>2*1024*1024*1024);
+    if(big.length) toast(`2GB가 넘는 파일은 보낼 수 없어요: ${big.map(f=>f.name).join(", ")}`);
+    const ok=files.filter(f=>f.size>=0 && f.size<=2*1024*1024*1024); if(!ok.length) return;
+    const r=await this.watch(()=>window.pywebview.api.xfer_send_files(ok.map(f=>f.path)));
+    this.done(r); },
+  done(r){
+    if(r&&r.sent&&r.sent.length) toast(r.sent.length===1?`보냈어요: ${r.sent[0]}`:`${r.sent.length}개 파일을 보냈어요`);
+    const bad=(r&&r.skipped||[]).filter(x=>x.why!=="cancel");
+    if(r && r.skipped && r.skipped.some(x=>x.why==="cancel")) toast("취소했어요");
+    else if(!r || (!r.ok && !(r.sent&&r.sent.length))) toast(this.why(r&&r.reason?r:(bad[0]||r)));
+    else if(bad.length) toast(`못 보낸 파일: ${bad.map(x=>x.name).join(", ")} — ${this.why(bad[0])}`);
+    this.refresh(); },
+  async dropped(list){                               /* 끌어다 놓기: 실제 경로를 받으면 크기 제한 없이, 못 받으면 30MB까지 화면에서 읽어서 */
+    const names=list.map(f=>f.name); await new Promise(r=>setTimeout(r,250));
+    let d=null; try{ d=await window.pywebview.api.xfer_take_drop(names); }catch(e){}
+    if(d&&d.ok&&d.files&&d.files.length){ await this.send(d.files); return; }
+    const small=list.filter(f=>f.size<=30*1024*1024), big=list.filter(f=>f.size>30*1024*1024);
+    if(big.length) toast(`큰 파일은 ‘파일 고르기’로 보내 주세요: ${big.map(f=>f.name).join(", ")}`);
+    if(!small.length) return;
+    const res={ok:false, sent:[], skipped:[]};
+    await this.watch(async()=>{ for(const f of small){
+      try{ const b64=await new Promise((ok,no)=>{ const r=new FileReader(); r.onload=()=>ok(String(r.result).split(",")[1]||""); r.onerror=()=>no(new Error("read")); r.readAsDataURL(f); });
+        const r=await window.pywebview.api.xfer_send_b64(f.name,b64);
+        if(r&&r.ok){ res.ok=true; res.sent.push(...(r.sent||[])); } else { res.skipped.push({name:f.name, why:(r&&r.reason)||"fail", count:r&&r.count}); if(r&&/not_connected|offline|full|quota|cancel/.test(r.reason||"")) break; }
+      }catch(e){ res.skipped.push({name:f.name, why:"fail"}); } } });
+    this.done(res); },
+  async receive(ids){
+    const r=await this.watch(()=>window.pywebview.api.xfer_get(ids));
+    (r&&r.got||[]).forEach(g=>{ this.got[g.id]=g; });
+    if(r&&r.got&&r.got.length) toast(r.got.length===1?`다운로드 폴더에 저장했어요: ${r.got[0].name}`:`${r.got.length}개를 다운로드 폴더에 저장했어요`);
+    const f=(r&&r.failed||[]).filter(x=>x.why!=="cancel");
+    if(r&&r.failed&&r.failed.some(x=>x.why==="cancel")) toast("취소했어요");
+    else if(!r) toast(this.why("fail")); else if(f.length) toast(this.why(f[0]));
+    this.refresh(); },
+  async remove(ids, names){
+    if(!confirm(`${names.length===1?`‘${names[0]}’을(를)`:`${names.length}개 파일을`} 지울까요?\n보낸 곳·받는 곳 모든 기기에서 사라져요.`)) return;
+    let r=null; try{ r=await window.pywebview.api.xfer_delete(ids); }catch(e){}
+    if(r&&r.ok) toast(`${r.deleted||ids.length}개를 지웠어요`); else toast(this.why(r)); ids.forEach(id=>{ delete this.got[id]; }); this.refresh(); },
+  render(){ const sh=$("#xferSheet"); if(!sh) return;
+    const fs=this.files||[], days=this.days||7, esc=escapeHtml;
+    const left=f=>Math.max(0, Math.ceil((f.at+days*86400000-Date.now())/86400000));
+    const row=f=>{ const g=this.got[f.id];
+      return `<label class="sy-chk sm${this.fresh.has(f.id)?" new":""}"><input type="checkbox" data-xid="${esc(f.id)}"><span class="ic">${this.ficon(f.name)}</span>
+        <span class="tx"><b title="${esc(f.name)}">${esc(f.name)}${this.fresh.has(f.id)?`<span class="xf-new">새 파일</span>`:""}</b><i>${esc(f.mine?"이 PC에서 보냄":(f.from||"다른 기기"))} · ${relTime(f.at)} · ${this.size(f.size)} · ${left(f)}일 남음</i></span>
+        ${g?`<span class="xf-got"><button class="mini" data-open="${esc(f.id)}">열기</button><button class="mini" data-reveal="${esc(f.id)}">폴더</button></span>`:""}
+        <button class="sy-del" data-xdel="${esc(f.id)}" title="지우기 (모든 기기에서)">🗑</button></label>`; };
+    const others=fs.filter(f=>!f.mine), mine=fs.filter(f=>f.mine);
+    sh.innerHTML=`<h2>📨 파일 주고받기</h2>
+      <div class="sy-box"><div><b>PC·폰끼리 파일 주고받기</b><i>내 구글 드라이브를 거쳐 가요 · 받은 파일은 이 PC의 ‘다운로드’ 폴더에 저장 · ${days}일 뒤 자동으로 지워져요</i></div></div>
+      ${this.err?`<div class="sy-warn">${esc(this.err)}</div>`:""}
+      <div class="sy-sec"><div class="sy-sh">⬆ 보내기 <span>한 파일 2GB까지 · 한 번에 30개까지 보관</span></div>
+        <div class="xf-drop" data-zone>📥 여기에 파일을 끌어다 놓거나<br><button class="mini go" data-pick ${this.busy?"disabled":""}>파일 고르기</button></div>
+        <div class="xf-prog" data-prog hidden><div class="t"></div><div class="bar"><i></i></div><div class="row2"><span></span><button class="mini" data-cancel>취소</button></div></div></div>
+      <div class="sy-sec" data-sec="o"><div class="sy-sh">⬇ 받기 <span>다른 기기에서 온 ${others.length}개</span></div>
+        ${this.files===null&&!this.err?`<div class="sy-empty"><span class="spin"></span> 불러오는 중…</div>`:
+          others.length?`<div class="sy-list">${others.map(row).join("")}</div>
+          <div class="sy-btns"><button class="mini" data-all="o">모두 체크</button><button class="mini go" data-doget ${this.busy?"disabled":""}>고른 것 받기</button><button class="mini danger" data-dodel>🗑 고른 것 지우기</button></div>`
+          :`<div class="sy-empty">받을 파일이 없어요. 폰에서는 ⋯ 메뉴(또는 📨)에서 보내요.</div>`}</div>
+      ${mine.length?`<div class="sy-sec" data-sec="m"><div class="sy-sh">📤 이 PC에서 보낸 것 <span>${mine.length}개 · 다른 기기에서 받을 수 있어요</span></div>
+        <div class="sy-list">${mine.map(row).join("")}</div>
+        <div class="sy-btns"><button class="mini" data-all="m">모두 체크</button><button class="mini danger" data-dodelm>🗑 고른 것 지우기</button></div></div>`:""}
+      <div class="sy-btns"><button class="mini" data-folder>다운로드 폴더 열기</button><button class="mini" data-re>↻ 새로 보기</button><button class="mini" data-close>닫기</button></div>
+      <div class="sy-note">🗑 는 드라이브에서 지워요 (보낸 곳·받는 곳 모두). 받은 파일은 이 PC에 그대로 남아요.</div>`;
+    const q=a=>[...sh.querySelectorAll(a)], api=window.pywebview&&window.pywebview.api;
+    const zone=$("[data-zone]",sh);
+    ["dragenter","dragover"].forEach(ev=>zone.addEventListener(ev,e=>{ e.preventDefault(); zone.classList.add("over"); }));
+    zone.addEventListener("dragleave",()=>zone.classList.remove("over"));
+    zone.addEventListener("drop",e=>{ e.preventDefault(); zone.classList.remove("over"); if(this.busy) return;   /* 멈추지 않고 창까지 올라가게 (본체가 실제 경로를 받음) */
+      const list=[...((e.dataTransfer&&e.dataTransfer.files)||[])]; if(list.length) this.dropped(list); });
+    $("[data-pick]",sh).onclick=async()=>{ let r=null; try{ r=await api.xfer_pick(); }catch(e){} if(r&&r.ok&&r.files&&r.files.length) this.send(r.files); };
+    $("[data-cancel]",sh).onclick=()=>{ api.xfer_cancel(); toast("취소하는 중…"); };
+    const sel=w=>q(`[data-sec="${w}"] [data-xid]`);
+    q("[data-all]").forEach(b=>b.onclick=()=>{ const bx=sel(b.dataset.all), v=!bx.every(x=>x.checked); bx.forEach(x=>x.checked=v); });
+    const picked=w=>sel(w).filter(x=>x.checked).map(x=>x.dataset.xid);
+    const nameOf=id=>(fs.find(f=>f.id===id)||{}).name||"파일";
+    const dg=$("[data-doget]",sh); if(dg) dg.onclick=()=>{ const ids=picked("o"); if(!ids.length){ toast("받을 파일을 체크해 주세요"); return; } this.receive(ids); };
+    [["[data-dodel]","o"],["[data-dodelm]","m"]].forEach(([s2,w])=>{ const b=$(s2,sh); if(b) b.onclick=()=>{ const ids=picked(w); if(!ids.length){ toast("지울 파일을 체크해 주세요"); return; } this.remove(ids, ids.map(nameOf)); }; });
+    q("[data-xdel]").forEach(b=>b.onclick=e=>{ e.preventDefault(); e.stopPropagation(); this.remove([b.dataset.xdel],[nameOf(b.dataset.xdel)]); });
+    q("[data-open]").forEach(b=>b.onclick=e=>{ e.preventDefault(); e.stopPropagation(); const g=this.got[b.dataset.open]; if(g) api.open_path(g.path); });
+    q("[data-reveal]").forEach(b=>b.onclick=e=>{ e.preventDefault(); e.stopPropagation(); const g=this.got[b.dataset.reveal]; if(g) api.xfer_reveal(g.path); });
+    $("[data-folder]",sh).onclick=()=>api.xfer_reveal(null);
+    $("[data-re]",sh).onclick=()=>{ this.files=null; this.render(); this.refresh(); };
+    $("[data-close]",sh).onclick=()=>this.close();
+    this.drawProg(); },
+  init(){ if(!this.ok() || this._init) return; this._init=true; const b=$("#xferBtn"); b.hidden=false; b.onclick=()=>this.open();
+    $("#xferScrim").addEventListener("click",e=>{ if(e.target.id==="xferScrim" && !this.busy) this.close(); });
+    setTimeout(()=>this.refresh(true), 15000);
+    setInterval(()=>{ if(!document.hidden && !this.busy) this.refresh(true); }, 120000); } };
+/* 창 아무 곳에나 파일을 떨어뜨려도 브라우저가 그 파일로 넘어가지 않게 */
+document.addEventListener("dragover",e=>{ if(e.dataTransfer && [...(e.dataTransfer.types||[])].includes("Files")) e.preventDefault(); });
+document.addEventListener("drop",e=>{ if(e.dataTransfer && [...(e.dataTransfer.types||[])].includes("Files")) e.preventDefault(); });
 $("#syncBtn").onclick=()=>Sync.openPanel();
 $("#arrangeBtn").onclick=()=>autoArrange();
 $("#syncScrim").onclick=(e)=>{ if(e.target.id==="syncScrim" && !Sync.conflict) $("#syncScrim").classList.remove("on"); };
@@ -5456,7 +5601,7 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-09-28.1";
+const APP_VER="2026-09-28.3";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`;
@@ -5493,7 +5638,7 @@ async function boot(){
   if(hasApi("is_maximized")){ try{ if(await window.pywebview.api.is_maximized()){ isMax=true; mode="max"; } }catch(e){} }
   const _mb=$("#winMax"); if(_mb){ _mb.textContent=isMax?"❐":"▢"; _mb.title=isMax?"이전 크기로":"최대화"; }
   applyTheme(); updateTopbar(); _bootPhase=true; renderAll(); requestAnimationFrame(()=>runMountQueue());
-  _ready=true; Usage.start(); setTimeout(runNotices,1500); setTimeout(()=>Sync.init(),1800); setTimeout(()=>checkUpdate(false),2500); }
+  _ready=true; Usage.start(); setTimeout(runNotices,1500); setTimeout(()=>Sync.init(),1800); setTimeout(()=>Xfer.init(),2000); setTimeout(()=>checkUpdate(false),2500); }
 window.addEventListener("pywebviewready",()=>{ document.body.classList.add("app"); boot(); });
 window.addEventListener("DOMContentLoaded",()=>{ updateTopbar(); setTimeout(()=>{ if(!window.pywebview) boot(); },1500); });
 </script>
