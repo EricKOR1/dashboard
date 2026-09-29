@@ -1,11 +1,11 @@
 {
-  "ui_version": "2026-09-28.5",
+  "ui_version": "2026-09-29.1",
   "ui_url": "https://raw.githubusercontent.com/EricKOR1/dashboard/main/index.html",
-  "app_version": "1.5.12",
+  "app_version": "1.5.13",
   "app_url": "https://github.com/EricKOR1/dashboard/releases/latest/download/MyDashboard.zip",
   "page_url": "https://github.com/EricKOR1/dashboard/releases",
   "notes": "새 기능 📨 파일 주고받기: 위쪽 ‘파일’ 버튼으로 PC·폰끼리 파일을 보내고 받아요 (PC 2GB·폰 1GB까지, 7일 뒤 자동 삭제). 여러 PC가 폰 내용을 서로 지우던 문제 수정.",
-  "ui_sha256": "60e6db03c01cacd258a8fe50e5c3483222ce5664d64a49ed38697c428049e571",
+  "ui_sha256": "c5ba2894d01cf26ee6e69a3246a92d95bb761cd96f536940b6c3a600bc9345e6",
   "ai_relay": "https://script.google.com/macros/s/AKfycbyMowwC0FkVsS_gi2-n6tRhKQNBRfhoNrLh1ZOxPQwUWGRvtZtJ1I7S_3iDNcH5Q5Dz/exec",
-  "app_sha256": "89e4fa066429d79d66dc77e274573c38a97ebd85789559ad77ff3a0d46d69c41"
+  "app_sha256": "6a5842f4b8b93f22ffb036609a28adde0e07c76ebfc140c171184e75d6a5d62a"
 }
