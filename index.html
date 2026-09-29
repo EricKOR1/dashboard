@@ -2049,7 +2049,7 @@
   .btn.sync.on .sy-i{color:var(--good);}
   .btn.sync.busy .sy-i{opacity:.55;}
   .btn.sync.err .sy-i{color:var(--danger);}
-  .btn.xferb{position:relative;}
+  .btn.xferb{position:relative;} .btn[hidden], .xfer-sheet [hidden], .xf-badge[hidden]{display:none !important;}
   .btn.xferb .xf-badge{position:absolute; top:-5px; right:-5px; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:var(--danger,#d64545); color:#fff;
     font-size:11px; font-style:normal; font-weight:800; line-height:18px; text-align:center;}
   .xfer-sheet .xf-drop{border:2px dashed var(--border-strong); border-radius:14px; padding:16px 12px; text-align:center; font-size:12.5px; color:var(--muted); transition:border-color .14s, background .14s;}
@@ -5105,21 +5105,17 @@ const Xfer={ files:null, seen:null, fresh:new Set(), busy:false, got:{}, err:"",
         <span class="tx"><b title="${esc(f.name)}">${esc(f.name)}${this.fresh.has(f.id)?`<span class="xf-new">새 파일</span>`:""}</b><i>${esc(f.mine?"이 PC에서 보냄":(f.from||"다른 기기"))} · ${relTime(f.at)} · ${this.size(f.size)} · ${left(f)}일 남음</i></span>
         ${g?`<span class="xf-got"><button class="mini" data-open="${esc(f.id)}">열기</button><button class="mini" data-reveal="${esc(f.id)}">폴더</button></span>`:""}
         <button class="sy-del" data-xdel="${esc(f.id)}" title="지우기 (모든 기기에서)">🗑</button></label>`; };
-    const others=fs.filter(f=>!f.mine), mine=fs.filter(f=>f.mine);
     sh.innerHTML=`<h2>📨 파일 주고받기</h2>
       <div class="sy-box"><div><b>PC·폰끼리 파일 주고받기</b><i>내 구글 드라이브를 거쳐 가요 · 받은 파일은 이 PC의 ‘다운로드’ 폴더에 저장 · ${days}일 뒤 자동으로 지워져요</i></div></div>
       ${this.err?`<div class="sy-warn">${esc(this.err)}</div>`:""}
       <div class="sy-sec"><div class="sy-sh">⬆ 보내기 <span>한 파일 2GB까지 · 한 번에 30개까지 보관</span></div>
         <div class="xf-drop" data-zone>📥 여기에 파일을 끌어다 놓거나<br><button class="mini go" data-pick ${this.busy?"disabled":""}>파일 고르기</button></div>
         <div class="xf-prog" data-prog hidden><div class="t"></div><div class="bar"><i></i></div><div class="row2"><span></span><button class="mini" data-cancel>취소</button></div></div></div>
-      <div class="sy-sec" data-sec="o"><div class="sy-sh">⬇ 받기 <span>다른 기기에서 온 ${others.length}개</span></div>
+      <div class="sy-sec" data-sec="o"><div class="sy-sh">⬇ 받기 <span>드라이브에 있는 ${fs.length}개 (이 PC에서 보낸 것도 받을 수 있어요)</span></div>
         ${this.files===null&&!this.err?`<div class="sy-empty"><span class="spin"></span> 불러오는 중…</div>`:
-          others.length?`<div class="sy-list">${others.map(row).join("")}</div>
+          fs.length?`<div class="sy-list">${fs.map(row).join("")}</div>
           <div class="sy-btns"><button class="mini" data-all="o">모두 체크</button><button class="mini go" data-doget ${this.busy?"disabled":""}>고른 것 받기</button><button class="mini danger" data-dodel>🗑 고른 것 지우기</button></div>`
-          :`<div class="sy-empty">받을 파일이 없어요. 폰에서는 ⋯ 메뉴(또는 📨)에서 보내요.</div>`}</div>
-      ${mine.length?`<div class="sy-sec" data-sec="m"><div class="sy-sh">📤 이 PC에서 보낸 것 <span>${mine.length}개 · 다른 기기에서 받을 수 있어요</span></div>
-        <div class="sy-list">${mine.map(row).join("")}</div>
-        <div class="sy-btns"><button class="mini" data-all="m">모두 체크</button><button class="mini danger" data-dodelm>🗑 고른 것 지우기</button></div></div>`:""}
+          :`<div class="sy-empty">드라이브에 파일이 없어요. 위에서 보내거나, 폰에서는 📨(⋯ 메뉴)에서 보내요.</div>`}</div>
       <div class="sy-btns"><button class="mini" data-folder>다운로드 폴더 열기</button><button class="mini" data-re>↻ 새로 보기</button><button class="mini" data-close>닫기</button></div>
       <div class="sy-note">🗑 는 드라이브에서 지워요 (보낸 곳·받는 곳 모두). 받은 파일은 이 PC에 그대로 남아요.</div>`;
     const q=a=>[...sh.querySelectorAll(a)], api=window.pywebview&&window.pywebview.api;
@@ -5135,7 +5131,7 @@ const Xfer={ files:null, seen:null, fresh:new Set(), busy:false, got:{}, err:"",
     const picked=w=>sel(w).filter(x=>x.checked).map(x=>x.dataset.xid);
     const nameOf=id=>(fs.find(f=>f.id===id)||{}).name||"파일";
     const dg=$("[data-doget]",sh); if(dg) dg.onclick=()=>{ const ids=picked("o"); if(!ids.length){ toast("받을 파일을 체크해 주세요"); return; } this.receive(ids); };
-    [["[data-dodel]","o"],["[data-dodelm]","m"]].forEach(([s2,w])=>{ const b=$(s2,sh); if(b) b.onclick=()=>{ const ids=picked(w); if(!ids.length){ toast("지울 파일을 체크해 주세요"); return; } this.remove(ids, ids.map(nameOf)); }; });
+    [["[data-dodel]","o"]].forEach(([s2,w])=>{ const b=$(s2,sh); if(b) b.onclick=()=>{ const ids=picked(w); if(!ids.length){ toast("지울 파일을 체크해 주세요"); return; } this.remove(ids, ids.map(nameOf)); }; });
     q("[data-xdel]").forEach(b=>b.onclick=e=>{ e.preventDefault(); e.stopPropagation(); this.remove([b.dataset.xdel],[nameOf(b.dataset.xdel)]); });
     q("[data-open]").forEach(b=>b.onclick=e=>{ e.preventDefault(); e.stopPropagation(); const g=this.got[b.dataset.open]; if(g) api.open_path(g.path); });
     q("[data-reveal]").forEach(b=>b.onclick=e=>{ e.preventDefault(); e.stopPropagation(); const g=this.got[b.dataset.reveal]; if(g) api.xfer_reveal(g.path); });
@@ -5601,7 +5597,7 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-09-28.3";
+const APP_VER="2026-09-28.5";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`;
