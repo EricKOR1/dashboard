@@ -494,7 +494,6 @@
 <div class="menu" id="menu"><div class="sheet">
   <p id="menuWho"></p>
   <button class="big" id="pickBtn">폰에 보일 항목 고르기</button>
-  <button class="big sub" id="xferBtn">📨 파일 주고받기 (PC ↔ 폰)</button>
   <button class="big sub" id="arrBtn">위젯 배치 편집</button>
   <button class="big sub" id="logoutBtn">로그아웃</button>
   <button class="big sub" id="closeMenu">닫기</button>
@@ -1701,7 +1700,7 @@ $("#closeMenu").onclick=()=>$("#menu").classList.remove("on");
 $("#menu").addEventListener("click",e=>{ if(e.target.id==="menu") $("#menu").classList.remove("on"); });
 $("#logoutBtn").onclick=logout;
 $("#pickBtn").onclick=()=>{ $("#menu").classList.remove("on"); openPick(false); };
-$("#xferBtn").onclick=openXfer; $("#xferTop").onclick=openXfer;
+$("#xferTop").onclick=openXfer;
 $("#xferMenu").addEventListener("click",e=>{ if(e.target.id==="xferMenu" && !XF.busy) closeXfer(); });
 $("#arrBtn").onclick=()=>{ $("#menu").classList.remove("on"); arrangeOn(true); toast("⠿를 끌어 옮기고, ◢로 크기를 바꿔요"); };
 $("#arrDone").onclick=()=>{ arrangeOn(false); toast("배치를 저장했어요 (이 기기에만)"); };
