@@ -1,11 +1,11 @@
 {
-  "ui_version": "2026-09-29.2",
+  "ui_version": "2026-10-01.2",
   "ui_url": "https://raw.githubusercontent.com/EricKOR1/dashboard/main/index.html",
-  "app_version": "1.5.14",
+  "app_version": "1.5.15",
   "app_url": "https://github.com/EricKOR1/dashboard/releases/latest/download/MyDashboard.zip",
   "page_url": "https://github.com/EricKOR1/dashboard/releases",
-  "notes": "새 기능 📨 파일 주고받기: 위쪽 ‘파일’ 버튼으로 PC·폰끼리 파일을 보내고 받아요 (PC 2GB·폰 1GB까지, 7일 뒤 자동 삭제). 여러 PC가 폰 내용을 서로 지우던 문제 수정.",
-  "ui_sha256": "7240a2ccb3fad92126195503d21f5f9d153e917e33d6419035a877dadcc8af64",
+  "notes": "파일 정리가 쉬워졌어요: ‘🪄 알아서 폴더 만들기’(AI가 파일 제목·내용을 보고 폴더를 만들어 정리) 또는 ‘📂 내 폴더에 넣기’(고른 폴더 안 하위 폴더에 나눠 넣기) 중 고르면 돼요. 미리보기·되돌리기는 그대로예요.",
+  "ui_sha256": "5473fd380cf700fff4a105e1cdbefed531a05b40105f08a6e0de76dc3faf652d",
   "ai_relay": "https://script.google.com/macros/s/AKfycbyMowwC0FkVsS_gi2-n6tRhKQNBRfhoNrLh1ZOxPQwUWGRvtZtJ1I7S_3iDNcH5Q5Dz/exec",
-  "app_sha256": "fb7294989c98861ed8fec4f54448f05426ff47706cc199a06270e15cb2118cfc"
+  "app_sha256": "0dc0b91afdda080eb2d0b69f83da3a82e8762a56dfbac5a3a7d82d42f0ce4c7b"
 }
