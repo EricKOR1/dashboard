@@ -1706,6 +1706,19 @@ $("#arrBtn").onclick=()=>{ $("#menu").classList.remove("on"); arrangeOn(true); t
 $("#arrDone").onclick=()=>{ arrangeOn(false); toast("배치를 저장했어요 (이 기기에만)"); };
 $("#arrReset").onclick=()=>{ if(!confirm("지금 화면 모드의 배치를 처음(PC 순서)으로 되돌릴까요?")) return;
   const all=layAll(); delete all["c"+layCols()]; try{ localStorage.setItem("m.layout", JSON.stringify(all)); }catch(e){} render(); };
+/* 뒤로가기: 열린 창은 닫고, 첫 화면에서는 '한 번 더 누르면 종료' 안내 → 안내가 떠 있는 동안 또 누르면 종료 */
+const Back={ armed:false, waitUntil:0, timer:0,
+  arm(){ if(this.armed) return; try{ history.pushState({dashBack:1},""); this.armed=true; }catch(e){} },
+  pop(){ this.armed=false;
+    const open=["xferMenu","pickMenu","themeMenu","menu"].map(id=>$("#"+id)).find(m=>m&&m.classList.contains("on"));
+    if(open){ open.click(); this.arm(); return; }                         /* 바깥 누르기와 같음 = 닫기(저장) */
+    if(S.arrange){ $("#arrDone").click(); this.arm(); return; }
+    toast("‘뒤로’를 한 번 더 누르면 종료돼요");                              /* 이 동안은 막지 않음 → 한 번 더 누르면 앱이 닫힘 */
+    this.waitUntil=Date.now()+2200; clearTimeout(this.timer);
+    this.timer=setTimeout(()=>{ this.waitUntil=0; this.arm(); }, 2200); } };
+window.addEventListener("popstate",()=>Back.pop());
+["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev,()=>{ clearTimeout(Back.timer); Back.waitUntil=0; Back.arm(); }, {capture:true, passive:true}));   /* 계속 쓰면 다시 걸어 둠 */
+Back.arm();
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden && signedIn()) refresh(false); });
 (function loop(){ setTimeout(()=>{ if(!document.hidden && signedIn()) refresh(false); loop(); }, Date.now()<_burstUntil ? 2000 : 5000); })();   // 5초마다 (방금 바뀌었으면 2초)
 setInterval(()=>{ if(S.tok && Date.now()>S.exp){ S.tok=null; if(S.rt) ensureTok().then(ok=>{ if(!ok) needLogin(); }).catch(()=>{}); else needLogin(); } }, 30000);   // 로그인 유지면 조용히 새로 받음
