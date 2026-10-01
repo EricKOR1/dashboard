@@ -7,5 +7,5 @@
   "notes": "파일 정리가 쉬워졌어요: ‘🪄 알아서 폴더 만들기’(AI가 파일 제목·내용을 보고 폴더를 만들어 정리) 또는 ‘📂 내 폴더에 넣기’(고른 폴더 안 하위 폴더에 나눠 넣기) 중 고르면 돼요. 미리보기·되돌리기는 그대로예요.",
   "ui_sha256": "5473fd380cf700fff4a105e1cdbefed531a05b40105f08a6e0de76dc3faf652d",
   "ai_relay": "https://script.google.com/macros/s/AKfycbyMowwC0FkVsS_gi2-n6tRhKQNBRfhoNrLh1ZOxPQwUWGRvtZtJ1I7S_3iDNcH5Q5Dz/exec",
-  "app_sha256": "0dc0b91afdda080eb2d0b69f83da3a82e8762a56dfbac5a3a7d82d42f0ce4c7b"
+  "app_sha256": "81af78cbbaefb5a87043ce74f12a70c5764d0bbdfdade1e42ebb04a74ab11383"
 }
