@@ -1,11 +1,11 @@
 {
-  "ui_version": "2026-10-01.2",
+  "ui_version": "2026-10-03.1",
   "ui_url": "https://raw.githubusercontent.com/EricKOR1/dashboard/main/index.html",
-  "app_version": "1.5.15",
+  "app_version": "1.5.16",
   "app_url": "https://github.com/EricKOR1/dashboard/releases/latest/download/MyDashboard.zip",
   "page_url": "https://github.com/EricKOR1/dashboard/releases",
-  "notes": "파일 정리가 쉬워졌어요: ‘🪄 알아서 폴더 만들기’(AI가 파일 제목·내용을 보고 폴더를 만들어 정리) 또는 ‘📂 내 폴더에 넣기’(고른 폴더 안 하위 폴더에 나눠 넣기) 중 고르면 돼요. 미리보기·되돌리기는 그대로예요.",
-  "ui_sha256": "5473fd380cf700fff4a105e1cdbefed531a05b40105f08a6e0de76dc3faf652d",
+  "notes": "새 기능: 위쪽 ‘자동 시작’ 스위치로 윈도우를 켤 때 My Dashboard가 자동으로 켜져요. 🎨 화면 꾸미기에 동물 테마 6종(토끼·곰돌이·고양이·개구리·판다·코알라)을 추가했어요. 어두운 테마의 글자를 더 밝고 선명하게 고쳤어요.",
+  "ui_sha256": "8efaa7c4f1da3fb55794ec809ae7882c6d6d453a1e2303bca5bd7e09cfd0ba17",
   "ai_relay": "https://script.google.com/macros/s/AKfycbyMowwC0FkVsS_gi2-n6tRhKQNBRfhoNrLh1ZOxPQwUWGRvtZtJ1I7S_3iDNcH5Q5Dz/exec",
-  "app_sha256": "81af78cbbaefb5a87043ce74f12a70c5764d0bbdfdade1e42ebb04a74ab11383"
+  "app_sha256": "dfae2c246532d36cc887002886333f9b430a30edb001b8a78e62ea5da20e5147"
 }
