@@ -1424,11 +1424,28 @@ document.addEventListener("pointerdown",e=>{
   document.addEventListener("pointermove",mv); document.addEventListener("pointerup",done); document.addEventListener("pointercancel",done);
 });
 
+/* 다시 그릴 때 화면이 맨 위로 튀지 않게: 지금 쓰던(또는 보이는) 위젯이 화면의 같은 자리에 오도록 스크롤을 맞춤 */
+let _lastTouch=null;
+document.addEventListener("pointerdown",e=>{ _lastTouch=e.target; },true);
+document.addEventListener("focusin",e=>{ _lastTouch=e.target; },true);
+function keepScroll(app){
+  const y=window.scrollY||0, vh=window.innerHeight||0;
+  const onScreen=el=>{ const r=el.getBoundingClientRect(); return r.bottom>0 && r.top<vh; };
+  let sec=_lastTouch && _lastTouch.isConnected && _lastTouch.closest ? _lastTouch.closest("section[data-lid]") : null;
+  if(sec && !onScreen(sec)) sec=null;                                   /* 만진 뒤 다른 곳으로 스크롤했으면 그 위젯은 기준으로 안 씀 */
+  if(!sec) sec=[...app.querySelectorAll("section[data-lid]")].find(onScreen)||null;
+  const id=sec&&sec.dataset.lid, top=sec?sec.getBoundingClientRect().top:0;
+  app.style.minHeight=app.offsetHeight+"px";                            /* 비우는 순간 페이지가 짧아져 맨 위로 가는 것 막기 */
+  return ()=>{ app.style.minHeight="";
+    const n=id && [...app.querySelectorAll("section[data-lid]")].find(x=>x.dataset.lid===id);
+    if(n) window.scrollTo(0, Math.max(0, (window.scrollY||0) + n.getBoundingClientRect().top - top));
+    else if(y) window.scrollTo(0, y); };
+}
 function render(){
   if(S.dragging){ S.renderLater=true; return; }                   // 배치를 옮기는 중에는 다시 그리지 않음
   applyTheme();
-  const app=$("#app"); app.innerHTML="";
-  const d=S.data; if(!d){ renderEmpty(); return; }
+  const app=$("#app"); const back=keepScroll(app); app.innerHTML="";
+  const d=S.data; if(!d){ app.style.minHeight=""; renderEmpty(); return; }
   const now=new Date(), today=ymdNow();
   const todos=(d.widgets||[]).filter(w=>w.type==="todo"&&wShown(w)).flatMap(w=>(w.config&&w.config.items)||[]);
   const left=todos.filter(t=>!t.done && t.date===today).length, late=todos.filter(t=>!t.done && t.date && t.date<today).length;
@@ -1460,6 +1477,7 @@ function render(){
   if(S.arrange) decorateArrange(grid);
   layGrid(grid);
   if(skip.length) app.appendChild(h("p",{class:"pconly", text:`PC에서만 볼 수 있는 위젯: ${[...new Set(skip)].join(", ")}`}));
+  back();
 }
 
 function drawTodo(sec,w,title){

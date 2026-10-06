@@ -2845,6 +2845,7 @@ const WIDGETS = {
         <div class="aiu-btns">
           <button class="mini go" data-conn>연결하기</button>
           <button class="mini" data-recheck>확인</button>
+          <button class="mini" data-diag3>진단</button>
         </div>
         <button class="aiu-rf" data-help style="margin-top:10px">Claude Code 설치 방법</button></div>`;
       const cb=$("[data-conn]",out);
@@ -2859,9 +2860,17 @@ const WIDGETS = {
       const rc=$("[data-recheck]",out);
       if(rc) rc.onclick=async()=>{
         rc.disabled=true; rc.textContent="확인 중…";
-        try{ await window.pywebview.api.ai_retry_now(); }catch(e){}
+        let rr=null; try{ rr=await window.pywebview.api.ai_retry_now(); }catch(e){}
+        rc.disabled=false; rc.textContent="확인";
+        if(rr&&rr.ok){ toast("불러왔습니다"); this.draw(b,w,rr); return; }
+        const why=(rr&&rr.reason)||"offline";                               /* 그대로 같은 화면이면 눌러도 반응이 없는 것처럼 보여서, 이유를 알려 줌 */
+        if(why==="no_login"||why==="expired"||why==="blank"){
+          this.showConnect(b,w, `<b style="color:var(--danger)">${why==="expired"?"로그인 정보를 확인하지 못했어요.":"아직 로그인 정보를 찾지 못했어요."}</b><br>`+
+            (why==="expired"?"[연결하기]로 다시 로그인하거나<br>[진단]을 눌러 이유를 확인해 주세요.":"[연결하기]를 눌러 열린 창에서 로그인을 끝까지 마친 뒤<br>다시 [확인]을 눌러 주세요."));
+          toast("아직 연결되지 않았어요"); return; }
         this.load(b,w);
       };
+      const d3=$("[data-diag3]",out); if(d3) d3.onclick=()=>this.aiDiag(b,w);
       const hb=$("[data-help]",out); if(hb) hb.onclick=()=>this.showInstall(b,w);
     },
     async load(b,w){ const out=$("[data-body]",b);
@@ -2871,6 +2880,9 @@ const WIDGETS = {
         const why=(r&&r.reason)||"offline";
         if(why==="expired"){
           this.showConnect(b,w,"로그인이 만료되었습니다.<br>[연결하기]로 Claude Code를 열어 로그인한 뒤<br>[확인]을 눌러 주세요.");
+          return; }
+        if(why==="blank"){
+          this.showConnect(b,w,"<b>Claude Code 오류로 로그인 정보가 지워졌어요.</b><br>(Claude Code 쪽의 알려진 문제예요)<br>[연결하기]로 다시 로그인한 뒤 [확인]을 눌러 주세요.");
           return; }
         if(why==="no_login"){
           let has=true;
@@ -5847,7 +5859,7 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-10-03.1";
+const APP_VER="2026-10-06.4";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`; vt.title="눌러서 새 버전 확인"; vt.style.cursor="pointer"; vt.onclick=()=>checkUpdate(true);
