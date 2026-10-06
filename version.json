@@ -1,11 +1,11 @@
 {
-  "ui_version": "2026-10-03.1",
+  "ui_version": "2026-10-06.4",
   "ui_url": "https://raw.githubusercontent.com/EricKOR1/dashboard/main/index.html",
-  "app_version": "1.5.16",
+  "app_version": "1.5.20",
   "app_url": "https://github.com/EricKOR1/dashboard/releases/latest/download/MyDashboard.zip",
   "page_url": "https://github.com/EricKOR1/dashboard/releases",
-  "notes": "새 기능: 위쪽 ‘자동 시작’ 스위치로 윈도우를 켤 때 My Dashboard가 자동으로 켜져요. 🎨 화면 꾸미기에 동물 테마 6종(토끼·곰돌이·고양이·개구리·판다·코알라)을 추가했어요. 어두운 테마의 글자를 더 밝고 선명하게 고쳤어요.",
-  "ui_sha256": "8efaa7c4f1da3fb55794ec809ae7882c6d6d453a1e2303bca5bd7e09cfd0ba17",
+  "notes": "새 기능 📨 파일 주고받기: 위쪽 ‘파일’ 버튼으로 PC·폰끼리 파일을 보내고 받아요 (PC 2GB·폰 1GB까지, 7일 뒤 자동 삭제). 여러 PC가 폰 내용을 서로 지우던 문제 수정.",
+  "ui_sha256": "cb67977028ee18bda40f0eb95f4ea449ca8db891c65ad2b641cf21f7d6d48e6e",
   "ai_relay": "https://script.google.com/macros/s/AKfycbyMowwC0FkVsS_gi2-n6tRhKQNBRfhoNrLh1ZOxPQwUWGRvtZtJ1I7S_3iDNcH5Q5Dz/exec",
-  "app_sha256": "dfae2c246532d36cc887002886333f9b430a30edb001b8a78e62ea5da20e5147"
+  "app_sha256": "e124f770cdbbdb232b3f450890937efbfb7f40c26bad903903e97a22fb7e31c2"
 }
