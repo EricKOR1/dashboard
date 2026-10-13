@@ -1,11 +1,11 @@
 {
-  "ui_version": "2026-10-13.3",
+  "ui_version": "2026-10-13.5",
   "ui_url": "https://raw.githubusercontent.com/EricKOR1/dashboard/main/index.html",
-  "app_version": "1.5.21",
+  "app_version": "1.5.23",
   "app_url": "https://github.com/EricKOR1/dashboard/releases/latest/download/MyDashboard.zip",
   "page_url": "https://github.com/EricKOR1/dashboard/releases",
-  "notes": "파일 정리 위젯: 바탕화면에 파일이 생기거나 없어지면 목록에 바로 반영돼요. Claude 사용량 위젯: 로그인이 풀렸을 때 이유를 알려 주고, [연결하기]로 바로 다시 로그인할 수 있어요.",
-  "ui_sha256": "5d5d3dde757f6e305b79e951d2c038c255dd4c0b41e965117383514d41edad26",
+  "notes": "파일 정리 ‘알아서 폴더 만들기’가 훨씬 빨라졌어요: 이 PC에서 파일 이름·내용이 비슷한 것끼리 바로 묶어 보여 주고, AI는 뒤에서 폴더 이름만 다듬어요. 이미 있는 폴더가 아니라 공통 주제의 새 폴더로 정리해요.",
+  "ui_sha256": "31a0d5bdf2e6ba9b42a147b0304f95a2151b31677f061d1752b46b5ec0cb98fc",
   "ai_relay": "https://script.google.com/macros/s/AKfycbyMowwC0FkVsS_gi2-n6tRhKQNBRfhoNrLh1ZOxPQwUWGRvtZtJ1I7S_3iDNcH5Q5Dz/exec",
-  "app_sha256": "eaba440b0eb7776895bc15382037fd4d3e7e68a6558ccc427692c734b06dc19e"
+  "app_sha256": "7cb8b7b956310eeed238df98ba756e35e058fa728b49f1303e4bc11d5bd8674d"
 }
