@@ -3688,12 +3688,31 @@ const WIDGETS = {
       st.doAnalyze=(useAi)=>st.run(async()=>{
         const into=this.howOf(w)==="into", picked=st.picked();
         st.how="rule"; st.read=0; let a=null;
+        if(useAi && !into && hasApi("organize_local")){                       /* 빠르게: 이 PC에서 먼저 묶어 바로 보여 주고, AI 이름 다듬기는 뒤에서 */
+          st.aiWait=true; draw();
+          let L=null; try{ L=await api().organize_local(st.scan.folder, picked.map(f=>f.name)); }catch(e){}
+          st.aiWait=false;
+          if(L&&L.ok&&(L.groups||[]).length){
+            st.how="local"; st.read=L.read||0; st.groups=orgAiGroups(L, picked); st.phase="preview"; st.confirm=false; st.edited=false;
+            const tok=st.tok=(st.tok||0)+1; st.aiNaming=true;
+            api().organize_ai2(st.scan.folder, picked.map(f=>f.name), "auto", "").then(a2=>{
+              if(st.tok!==tok) return; st.aiNaming=false;
+              if(a2&&a2.ok&&a2.how==="ai"&&(a2.groups||[]).length){
+                if(st.phase!=="preview"||st.busy){}                                 /* 이미 정리를 실행했으면 그냥 둠 */
+                else if(!st.edited){ st.groups=orgAiGroups(a2, picked); st.how="ai"; toast("AI가 폴더 이름을 다듬었어요"); }
+                else toast("AI 결과가 왔지만, 이미 고치신 묶음을 그대로 둘게요"); }
+              draw(); }).catch(()=>{ if(st.tok===tok){ st.aiNaming=false; draw(); } });
+            return; } }
         if(useAi){ st.aiWait=true; draw();
           try{ a=hasApi("organize_ai2")
               ? await api().organize_ai2(st.scan.folder, picked.map(f=>f.name), into?"into":"auto", into?w.config.dest:"")
-              : await api().organize_ai(picked, st.scan.folders||[]); }catch(e){}
+              : await api().organize_ai(picked, []); }catch(e){}                 /* 예전 프로그램: 이미 있는 폴더 이름은 보내지 않음 → 새 폴더로 */
           st.aiWait=false;
-          if(!a||!a.ok) toast(((a&&a.error)||"AI를 쓸 수 없어요.")+(into?" 넣을 곳을 직접 골라 주세요.":" 규칙으로 묶었어요.")); }
+          if(!a||!a.ok) toast(((a&&a.error)||"AI를 쓸 수 없어요.")+(into?" 넣을 곳을 직접 골라 주세요.":" 규칙으로 묶었어요."));
+          else if(a.how==="local") toast((a.ai_error||"AI를 쓸 수 없어요.")+" 이 PC에서 비슷한 것끼리 묶었어요."); }
+        else if(!into && hasApi("organize_local")){ st.aiWait=true; draw();     /* AI 없이: 이 PC에서 이름·내용이 비슷한 것끼리 (밖으로 보내지 않음) */
+          try{ a=await api().organize_local(st.scan.folder, picked.map(f=>f.name)); }catch(e){}
+          st.aiWait=false; }
         if(into){
           if(a&&a.ok&&a.tree) st.tree=a.tree;
           const tree=st.tree||[];
@@ -3701,7 +3720,7 @@ const WIDGETS = {
           else st.groups=orgRuleToFrame(picked, tree);
           st.phase="ipreview";
         } else {
-          if(a&&a.ok&&(a.groups||[]).length){ st.how="ai"; st.read=a.read||0; st.groups=orgAiGroups(a, picked); }
+          if(a&&a.ok&&(a.groups||[]).length){ st.how=a.how==="local"?"local":"ai"; st.read=a.read||0; st.sec=a.sec; st.groups=orgAiGroups(a, picked); }
           else st.groups=orgRuleGroups(picked);
           st.phase="preview";
         }
@@ -3755,20 +3774,21 @@ const WIDGETS = {
         else if(!files.length) h+=`<div class="og-note">이 폴더에는 정리할 파일이 없어요.</div>`;
         else h+=`<label class="og-all"><input type="checkbox" data-all ${n===files.length?"checked":""}> 전체 선택 <span>${n} / ${files.length}개</span></label>
             <div class="og-files">${files.map((f,i)=>`<label class="og-fl${st.sel.has(f.name)?"":" off"}"><input type="checkbox" data-fi="${i}" ${st.sel.has(f.name)?"checked":""}><span class="og-nm" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span></label>`).join("")}</div>`;
-        h+=`<button class="mini go og-big" data-go ${st.busy||!n?"disabled":""}>${st.busy?(st.aiWait?"AI가 파일 제목·내용을 살펴보는 중… (최대 2분)":"살펴보는 중…"):how==="into"?`📂 내 폴더에 나눠 넣기 (${n}개)`:`🪄 폴더 만들어 정리하기 (${n}개)`}</button>
+        h+=`<button class="mini go og-big" data-go ${st.busy||!n?"disabled":""}>${st.busy?(st.aiWait?(hasApi("organize_local")?"파일 내용을 읽고 비슷한 것끼리 묶는 중…":"AI가 파일 제목·내용을 살펴보는 중… (최대 2분)"):"살펴보는 중…"):how==="into"?`📂 내 폴더에 나눠 넣기 (${n}개)`:`🪄 폴더 만들어 정리하기 (${n}개)`}</button>
           <div class="og-note">먼저 <b>미리보기</b>로 보여 드리고, [정리 실행]을 눌러야 실제로 옮겨요. 폴더·바로가기·숨김 파일은 건드리지 않아요.${canInto?"":"<br>[내 폴더에 넣기]는 프로그램 업데이트(1.5.15) 후 쓸 수 있어요."}</div>
           ${last&&last.can_undo?`<button class="mini og-undo" data-undo ${st.busy?"disabled":""}>↩ 지난 정리 되돌리기 (${last.count}개)</button>`:""}`;
       } else if(st.phase==="consent"){
         const withText=hasApi("organize_ai2");
         h+=`<div class="og-consent"><b>AI로 정리하기 전에 알려 드려요</b>
             <p>고른 파일의 <b>이름</b>·수정한 날짜${withText?`와 <b>내용 앞부분</b>(파일마다 최대 약 300자)`:""}이 AI 서비스로 보내져 넣을 곳을 정하는 데 쓰여요.${withText?"":" 파일 내용은 보내지 않아요."}</p>
-            <p>학생 개인정보가 담긴 파일은 체크를 풀고 정리하거나, <b>AI 없이</b>를 눌러 주세요.</p></div>
+            <p>학생 개인정보가 담긴 파일은 체크를 풀고 정리하거나, <b>AI 없이</b>를 눌러 주세요.${hasApi("organize_local")?" (AI 없이도 이 PC 안에서 이름·내용이 비슷한 것끼리 묶어요)":""}</p></div>
           <div class="og-act"><button class="mini" data-noai>AI 없이</button><button class="mini go og-run" data-agree>알겠어요, AI로 정리</button></div>`;
       } else if(st.phase==="preview"){
         const on=st.groups.reduce((a,g)=>a+g.items.filter(i=>i.on).length,0), gcount=st.groups.filter(g=>g.items.some(i=>i.on)).length;
         const exist=new Set(((st.scan&&st.scan.folders)||[]).map(x=>x.toLowerCase()));
         const opts=st.groups.map((g,gi)=>`<option value="${gi}">${escapeHtml(g.name)}</option>`).join("");
-        h+=`<div class="og-how">${st.how==="ai"?`🤖 AI가 제목${st.read?`·내용(${st.read}개)`:""}을 보고 묶었어요`:"📏 규칙으로 묶었어요"}</div>
+        h+=`<div class="og-how">${st.how==="ai"?(hasApi("organize_local")?`🤖 비슷한 파일끼리 묶고 AI가 이름을 지었어요${st.read?` (내용 읽은 파일 ${st.read}개)`:""}`:`🤖 AI가 제목${st.read?`·내용(${st.read}개)`:""}을 보고 묶었어요`)
+            :st.how==="local"?`🔎 이름·내용이 비슷한 파일끼리 묶었어요${st.read?` (내용 읽은 파일 ${st.read}개)`:""}${st.aiNaming?" · 🤖 AI가 이름 다듬는 중… (기다리지 않고 바로 실행해도 돼요)":" · 이 PC에서만"}`:"📏 규칙으로 묶었어요"}</div>
           <div class="og-sum"><b>${on}개</b>를 <b>${gcount}개 폴더</b>로 정리해요 <span>· ${escapeHtml(fname)} 안에 만들어요</span></div>
           <div class="og-groups">${st.groups.map((g,gi)=>{ const n=g.items.filter(i=>i.on).length, merge=exist.has(orgSafe(g.name).toLowerCase());
             return `<div class="og-g${n?"":" none"}" data-gi="${gi}">
@@ -3810,7 +3830,7 @@ const WIDGETS = {
       b.innerHTML=h;
       const fl1=b.querySelector(".og-files"); if(fl1) fl1.scrollTop=keep[0]; b.scrollTop=keep[1];
       const $$=q=>b.querySelector(q);
-      const idle=()=>{ st.phase="idle"; st.confirm=false; st.result=null; st.groups=[]; };
+      const idle=()=>{ st.phase="idle"; st.confirm=false; st.result=null; st.groups=[]; st.tok=(st.tok||0)+1; st.aiNaming=false; };
       b.querySelectorAll("[data-how]").forEach(x=>x.onclick=()=>{
         if(x.dataset.how==="into"&&!canInto){ toast("[내 폴더에 넣기]는 프로그램 업데이트(1.5.15) 후 쓸 수 있어요"); return; }
         w.config.how2=x.dataset.how; persist(); idle(); re(); });
@@ -3833,9 +3853,9 @@ const WIDGETS = {
         st.execute(); };
       b.querySelectorAll(".og-g").forEach(gel=>{ const g=st.groups[+gel.dataset.gi]; if(!g) return;
         gel.querySelector("[data-tg]").onclick=()=>{ g.open=!g.open; re(); };
-        const gn=gel.querySelector("[data-gn]"); if(gn) gn.onchange=()=>{ const v=orgSafe(gn.value); if(!v){ gn.value=g.name; toast("폴더 이름으로 쓸 수 없어요"); return; } g.name=v; re(); };
-        gel.querySelectorAll("[data-ii]").forEach(cb=>cb.onchange=()=>{ g.items[+cb.dataset.ii].on=cb.checked; st.confirm=false; re(); });
-        gel.querySelectorAll("[data-mv]").forEach(sel=>sel.onchange=()=>{ const it=g.items.splice(+sel.dataset.mv,1)[0], to=st.groups[+sel.value]; it.on=true; to.items.push(it); to.open=true; st.confirm=false; re(); });
+        const gn=gel.querySelector("[data-gn]"); if(gn) gn.onchange=()=>{ const v=orgSafe(gn.value); if(!v){ gn.value=g.name; toast("폴더 이름으로 쓸 수 없어요"); return; } g.name=v; st.edited=true; re(); };
+        gel.querySelectorAll("[data-ii]").forEach(cb=>cb.onchange=()=>{ g.items[+cb.dataset.ii].on=cb.checked; st.confirm=false; st.edited=true; re(); });
+        gel.querySelectorAll("[data-mv]").forEach(sel=>sel.onchange=()=>{ const it=g.items.splice(+sel.dataset.mv,1)[0], to=st.groups[+sel.value]; it.on=true; to.items.push(it); to.open=true; st.confirm=false; st.edited=true; re(); });
         gel.querySelectorAll("[data-mt]").forEach(sel=>sel.onchange=()=>{ if(!sel.value) return; const path=sel.value.split(" › ");
           const it=g.items.splice(+sel.dataset.mt,1)[0]; let to=st.groups.find(x=>x.path&&x.path.join(" › ")===sel.value);
           if(!to){ to={name:sel.value, path, isNew:false, open:true, items:[]}; st.groups.splice(st.groups.length-(st.groups[st.groups.length-1].unsure?1:0),0,to); }
@@ -5874,9 +5894,9 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-10-13.3";
+const APP_VER="2026-10-13.5";
 /* 업데이트 안내 문구: 배포할 때 release_check.py 가 이 줄을 읽어 version.json 의 notes 로 넣음 (고칠 때마다 함께 바꿀 것) */
-const RELEASE_NOTES="파일 정리 위젯: 바탕화면에 파일이 생기거나 없어지면 목록에 바로 반영돼요. Claude 사용량 위젯: 로그인이 풀렸을 때 이유를 알려 주고, [연결하기]로 바로 다시 로그인할 수 있어요.";
+const RELEASE_NOTES="파일 정리 ‘알아서 폴더 만들기’가 훨씬 빨라졌어요: 이 PC에서 파일 이름·내용이 비슷한 것끼리 바로 묶어 보여 주고, AI는 뒤에서 폴더 이름만 다듬어요. 이미 있는 폴더가 아니라 공통 주제의 새 폴더로 정리해요.";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`; vt.title="눌러서 새 버전 확인"; vt.style.cursor="pointer"; vt.onclick=()=>checkUpdate(true);
