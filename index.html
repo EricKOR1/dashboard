@@ -1701,6 +1701,56 @@
   .row{display:flex; gap:8px;}
   .mini{height:38px; padding:0 13px; border-radius:11px; font-size:13px; font-weight:600; background:var(--card); color:var(--text); border:1px solid var(--border); display:inline-flex; align-items:center; gap:6px; transition:border-color .13s var(--ease), background .13s var(--ease); white-space:nowrap;}
   .mini:hover{border-color:var(--border-strong);}
+  /* 상단 도구 (큰 창) */
+  .toolbar{display:flex; gap:9px; align-items:center;} .toolbar[hidden]{display:none;}
+  .btn.toolb{font-weight:700;}
+  .sheet.tool-sheet{width:min(1080px,100%); max-height:92vh; display:flex; flex-direction:column; overflow:hidden; padding:18px 22px 20px;}
+  .tool-h{display:flex; align-items:center; gap:8px; margin-bottom:12px;} .tool-h h2{flex:1; margin:0;}
+  .tool-h .mini{height:32px;} .tool-h .tool-x{width:32px; height:32px; font-size:13px; border:1px solid var(--border); border-radius:10px; background:var(--card); color:var(--muted); cursor:pointer;}
+  .tool-host{flex:1; min-height:0; display:flex;} .tool-b{flex:1; min-height:0; overflow:auto; padding-right:4px;} .tool-b[hidden]{display:none;}
+  .tool-b.org .og-files{max-height:min(46vh,420px);} .tool-b.org .og-picked{max-height:min(40vh,360px);}
+  .pcard .pon{font-size:11px; font-weight:700; color:var(--accent-2); background:var(--accent-soft); border-radius:999px; padding:1px 7px; margin-left:4px;}
+  .pcard > .mini{flex:none; align-self:center; height:32px;}
+  .pm .pm-cols{display:flex; flex-wrap:wrap; gap:6px 22px; align-items:flex-start;}
+  .pm .pm-l{flex:1.3 1 460px; min-width:0;} .pm .pm-r{flex:1 1 340px; min-width:0;}
+  .pm .pm-r > .pm-sec:first-child{margin-top:4px;}
+  /* 품의 기안 */
+  .pm .og-tabs{display:flex; gap:4px; margin-bottom:10px; padding:3px; border-radius:12px; background:var(--card-2); border:1px solid var(--border);}
+  .pm .og-tabs button{flex:1; height:32px; border:none; border-radius:9px; background:none; color:var(--muted); font-size:12.5px; font-weight:700; cursor:pointer;}
+  .pm .og-tabs button.on{background:var(--card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.08);}
+  .pm .og-note{margin-top:10px; font-size:12px; color:var(--muted); line-height:1.6;}
+  .pm .og-warn{color:var(--danger);}
+  .pm .og-big{width:100%; height:42px; font-size:14px; justify-content:center; margin-top:8px;}
+  .pm .og-x{flex:none; width:24px; height:24px; padding:0; border:1px solid var(--border); border-radius:8px; background:var(--card); color:var(--muted); cursor:pointer; font-size:11px;}
+  .pm .og-edit{border:none; background:none; color:var(--accent-2); font-size:12px; text-decoration:underline; cursor:pointer; padding:0;}
+  .pm .pm-drop{border:2px dashed var(--border-strong); border-radius:var(--radius-sm); padding:12px; text-align:center; font-size:12.5px; line-height:1.7; color:var(--muted); background:var(--card-2); outline:none;}
+  .pm .pm-drop:focus, .pm .pm-drop.on{border-color:var(--accent); background:var(--accent-soft); color:var(--text);}
+  .pm .pm-drop .mini{height:30px; margin-left:6px; vertical-align:middle;}
+  .pm .pm-thumbs{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+  .pm .pm-th{position:relative; width:58px; height:58px; border-radius:8px; overflow:hidden; border:1px solid var(--border); background:#fff;}
+  .pm .pm-th img{width:100%; height:100%; object-fit:cover; object-position:top;}
+  .pm .pm-th .og-x{position:absolute; top:2px; right:2px; width:20px; height:20px; font-size:10px;}
+  .pm .pm-sec{margin:14px 0 6px; font-size:13px; font-weight:800;} .pm .pm-sec small{font-weight:400; color:var(--muted); font-size:11.5px;}
+  .pm .pm-tbw{overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--card-2);}
+  .pm .pm-tb{width:100%; border-collapse:collapse; font-size:12px;}
+  .pm .pm-tb th{position:sticky; top:0; background:var(--card); color:var(--muted); font-weight:700; padding:5px 3px; text-align:left; white-space:nowrap; border-bottom:1px solid var(--border);}
+  .pm .pm-tb td{padding:3px 2px; border-bottom:1px solid var(--border); vertical-align:middle;}
+  .pm .pm-tb tr:last-child td{border-bottom:none;}
+  .pm .pm-tb input{height:28px; padding:0 6px; font-size:12px; border-radius:7px; min-width:0;}
+  .pm .pm-tb td:nth-child(1){min-width:110px;} .pm .pm-tb td:nth-child(2){min-width:70px;}
+  .pm .pm-tb input.pm-n{width:42px; text-align:center;} .pm .pm-tb input.pm-p{width:72px; text-align:right;}
+  .pm .pm-sum{text-align:right; white-space:nowrap; font-weight:700; padding-right:4px;}
+  .pm .pm-ship td{background:var(--accent-soft);}
+  .pm .pm-empty{text-align:center; color:var(--muted); padding:14px 6px !important;}
+  .pm .pm-tot{display:flex; align-items:center; gap:6px; margin-top:6px;} .pm .pm-tot .mini{height:30px;}
+  .pm .pm-tot span{margin-left:auto; font-size:13px;} .pm .pm-tot b{font-size:15px; color:var(--accent-2);}
+  .pm .pm-f{display:flex; align-items:center; gap:8px; margin-bottom:5px; font-size:12.5px;}
+  .pm .pm-f span{flex:none; width:78px; color:var(--muted); font-weight:700;}
+  .pm .pm-f input{height:32px; padding:0 9px; font-size:13px;}
+  .pm .pm-row2{display:flex; gap:8px;} .pm .pm-row2 .pm-f{flex:1; min-width:0;} .pm .pm-row2 .pm-f span{width:auto;}
+  .pm .pm-acts{display:flex; gap:6px; margin-top:12px;} .pm .pm-acts .mini{flex:1; justify-content:center; height:40px;}
+  .pm .pm-saved{padding:8px 10px; border-radius:var(--radius-sm); background:var(--accent-soft); color:var(--text);}
+  .pm .pm-doc{margin:10px 0 0; padding:10px 12px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--card-2); color:var(--text); font-family:inherit; font-size:12.5px; line-height:1.7; white-space:pre-wrap; word-break:keep-all; user-select:text;}
   /* 파일 정리 위젯 */
   .org .og-top{display:flex; align-items:center; gap:6px; margin-bottom:10px;}
   .org .og-where{flex:1; min-width:0; font-weight:700; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
@@ -2382,6 +2432,7 @@
         <div class="greet" id="greet">반가워요</div>
       </div>
       <div class="actions">
+        <span class="toolbar" id="toolBar" hidden></span>
         <button class="btn sync autob" id="autoBtn" title="윈도우를 켤 때 My Dashboard도 자동으로 켜기" aria-pressed="false" hidden><span class="as-sw" aria-hidden="true"><i></i></span><span>자동 시작</span></button>
         <button class="btn sync" id="syncBtn" title="다른 컴퓨터와 내용 맞추기"><span class="sy-i">☁</span><span id="syncTxt">동기화</span></button>
         <button class="btn sync xferb" id="xferBtn" title="PC·폰끼리 파일 주고받기" hidden><span class="sy-i">📨</span><span>파일</span><i class="xf-badge" id="xferBadge" hidden></i></button>
@@ -2394,6 +2445,14 @@
   </div>
 
 
+  <div class="scrim" id="toolScrim">
+    <div class="sheet tool-sheet" id="toolSheet">
+      <div class="tool-h"><h2 id="toolTitle"></h2>
+        <button class="mini" id="toolRemove" title="상단 버튼을 없애요. 적어 둔 내용은 남아 있어요">상단에서 빼기</button>
+        <button class="og-x tool-x" id="toolClose" title="닫기 (Esc)">✕</button></div>
+      <div class="tool-host" id="toolBody"></div>
+    </div>
+  </div>
   <div class="scrim" id="xferScrim">
     <div class="sheet sync-sheet xfer-sheet" id="xferSheet"></div>
   </div>
@@ -2417,6 +2476,7 @@
       <div class="ptabs" id="pTabs">
         <button data-pt="basic" class="on">기본 위젯</button>
         <button data-pt="special">특수 기능</button>
+        <button data-pt="tools">상단 도구</button>
       </div>
       <div class="palette" id="palette"></div>
     </div>
@@ -3643,8 +3703,10 @@ const WIDGETS = {
         list.appendChild(tile);});
       enableListDnD(list, w.config.items, persist); } },
 
-  organize:{ title:"파일 정리", icon:"🗂️", desc:"파일을 골라 한 번에 정리: AI가 제목·내용을 보고 폴더를 만들거나, 내가 고른 폴더 안에 나눠 넣어요. 미리보기·되돌리기 가능, 이 PC에만 적용.",
+  organize:{ title:"파일 정리", icon:"🗂️", desc:"파일을 골라 한 번에 정리: AI가 제목·내용을 보고 폴더를 만들거나, 내가 고른 폴더 안에 나눠 넣어요. 미리보기·되돌리기 가능, 이 PC에만 적용.", tool:true, toolW:760,
     defaultCfg:()=>({folder:"", how2:"auto", dest:"", aiOk2:false}),
+    /* 상단 도구 창을 열 때: 목록 새로 읽기 */
+    onOpen(b,w){ const st=b._og; if(st&&!st.busy&&st.phase==="idle"&&st.load) st.load(true); },
     canInto(){ return hasApi("organize_ai2") && hasApi("organize_pick_dest"); },
     howOf(w){ return w.config.how2==="into" && this.canInto() ? "into" : "auto"; },
     mount(b,w){ b.classList.add("org");
@@ -3671,9 +3733,10 @@ const WIDGETS = {
         st.loading=false;
         if(!quiet || st.phase==="idle") draw(); };
       /* 바탕화면(고른 폴더)에 파일이 생기거나 없어지면 목록에 바로 반영: 4초마다 + 창으로 돌아올 때 (정리 화면일 때만) */
+      const shown=()=>{ const tb=b.closest&&b.closest(".tool-b"); return !tb || (!tb.hidden && !!tb.closest(".scrim.on")); };   /* 상단 도구 창이 닫혀 있으면 쉼 */
       st.poll=setInterval(()=>{ if(!document.body.contains(b)){ clearInterval(st.poll); window.removeEventListener("focus",st.onFocus); return; }
-        if(document.hidden||st.busy||st.phase!=="idle") return; st.load(true); }, 4000);
-      st.onFocus=()=>{ if(document.body.contains(b) && !st.busy && st.phase==="idle"){ st.load(true); if(this.canInto()&&w.config.dest&&hasApi("organize_tree")) st.loadTree(); } };
+        if(document.hidden||st.busy||st.phase!=="idle"||!shown()) return; st.load(true); }, 4000);
+      st.onFocus=()=>{ if(document.body.contains(b) && shown() && !st.busy && st.phase==="idle"){ st.load(true); if(this.canInto()&&w.config.dest&&hasApi("organize_tree")) st.loadTree(); } };
       window.addEventListener("focus",st.onFocus);
       st.loadTree=async()=>{ const d=w.config.dest; st.tree=null; if(!d||!hasApi("organize_tree")){ draw(); return; }
         try{ const r=await api().organize_tree(d); if(r&&r.ok) st.tree=r.tree||[]; else { w.config.dest=""; persist(); } }catch(e){}   /* 못 읽으면 다시 고르게 */
@@ -3861,6 +3924,152 @@ const WIDGETS = {
           if(!to){ to={name:sel.value, path, isNew:false, open:true, items:[]}; st.groups.splice(st.groups.length-(st.groups[st.groups.length-1].unsure?1:0),0,to); }
           it.on=true; to.items.push(it); to.open=true; if(g.unsure&&!g.items.length) st.groups.splice(st.groups.indexOf(g),1); st.confirm=false; re(); }); });
     } },
+  pumui:{ title:"품의 기안", icon:"🧾", desc:"쇼핑몰 장바구니 캡처로 품의명세서 엑셀과 기안문을 한 번에. 물품 구입·업무추진(협의회).", tool:true,
+    defaultCfg:()=>({tab:"goods", g:{title:"", rel:"", detail:"", use:""}, rows:[], cartTotal:0,
+                     m:{title:"", rel:"", when:"", place:"", topic:"", people:"", count:"", per:""}}),
+    won(n){ return Math.round(Number(n)||0).toLocaleString("ko-KR"); },
+    num(v){ const x=Number(String(v==null?"":v).replace(/[^0-9.\-]/g,"")); return isFinite(x)?Math.max(0,Math.round(x)):0; },
+    total(rows){ return (rows||[]).reduce((a,r)=>a+this.num(r.qty)*this.num(r.price),0); },
+    short(s){ s=String(s||"").trim(); return s.length>30?s.slice(0,30)+"…":s; },
+    /* 물품 구입 기안문 (관련이 비면 그 줄을 빼고 번호를 당김) */
+    goodsDoc(c,rows){
+      const t=(c.title||"").trim()||"○○○", prod=rows.filter(r=>!r.ship&&String(r.name||"").trim()), all=rows.filter(r=>String(r.name||"").trim());
+      const first=this.short((prod[0]||all[0]||{}).name||"△△");
+      const L=[`${t} 물품 구입`,""]; let no=1;
+      if((c.rel||"").trim()) L.push(`${no++}. 관련: ${c.rel.trim()}`);
+      L.push(`${no}. ${t} 관련 물품을 아래와 같이 구입하고자 합니다.`);
+      L.push(`  가. 내역: ${(c.detail||"").trim()||(prod.length>1?`${first} 외 ${prod.length-1}종`:first)}`);
+      L.push(`  나. 용도: ${(c.use||"").trim()||"○○○"}`);
+      L.push(`  다. 소요예산: 금${this.won(this.total(all))}원`);
+      L.push(`  라. 산출내역: ${first}${all.length>1?` 외 ${all.length-1}건`:""}(품의명세서 참조)`);
+      L.push("","붙임  지출(지급)품의서 1부.  끝.");
+      return L.join("\n"); },
+    meetCount(m){ const n=this.num(m.count); if(n) return n; return String(m.people||"").split(/[,，、\n]/).map(x=>x.trim()).filter(Boolean).length; },
+    /* 업무추진(협의회) 기안문 */
+    meetDoc(m){
+      const t=(m.title||"").trim()||"○○○", n=this.meetCount(m), per=this.num(m.per);
+      const names=String(m.people||"").split(/[,，、\n]/).map(x=>x.trim()).filter(Boolean).join(", ")||"○○○, ○○○";
+      const L=[`${t} 협의회 실시`,""]; let no=1;
+      if((m.rel||"").trim()) L.push(`${no++}. 관련: ${m.rel.trim()}`);
+      L.push(`${no}. ${t} 관련 협의회를 아래와 같이 실시하고자 합니다.`);
+      L.push(`  가. 일시: ${(m.when||"").trim()}`);
+      L.push(`  나. 장소: ${(m.place||"").trim()}`);
+      L.push(`  다. 협의사항: ${(m.topic||"").trim()}`);
+      L.push(`  라. 참석자: ${names} 총 ${n||"○○"}명`);
+      L.push(`  마. 소요예산: 금${per&&n?this.won(per*n):"○,○○○"}원`);
+      L.push(`  바. 산출내역: ${per?this.won(per):"○,○○○"}원 * ${n||"○○"}명`);
+      L.push("","붙임  지출(지급)품의서 1부.  끝.");
+      return L.join("\n"); },
+    meetRows(m){ const n=this.meetCount(m), per=this.num(m.per); if(!n||!per) return [];
+      return [{name:`${(m.title||"").trim()||"협의회"} 협의회 식비`, spec:"", unit:"명", qty:n, price:per}]; },
+    /* 캡처 줄이기: 긴 변 2000px JPEG (글자가 읽힐 만큼만) */
+    shrink(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onerror=()=>rej(); fr.onload=()=>{ const im=new Image();
+      im.onerror=()=>rej(); im.onload=()=>{ const k=Math.min(1, 2000/Math.max(im.width,im.height)); const cv=document.createElement("canvas");
+        cv.width=Math.max(1,Math.round(im.width*k)); cv.height=Math.max(1,Math.round(im.height*k)); const g=cv.getContext("2d");
+        g.fillStyle="#fff"; g.fillRect(0,0,cv.width,cv.height); g.drawImage(im,0,0,cv.width,cv.height);
+        const url=cv.toDataURL("image/jpeg",0.9); res({b64:url.split(",")[1], mime:"image/jpeg", thumb:url}); }; im.src=fr.result; }; fr.readAsDataURL(file); }); },
+    async copy(text){ try{ await navigator.clipboard.writeText(text); return true; }catch(e){}
+      try{ const ta=document.createElement("textarea"); ta.value=text; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select();
+        const ok=document.execCommand("copy"); ta.remove(); return ok; }catch(e){ return false; } },
+    mount(b,w){ b.classList.add("pm");
+      const c=w.config; c.g=c.g||{}; c.m=c.m||{}; c.rows=Array.isArray(c.rows)?c.rows:[];
+      b._pm={imgs:[], busy:false, saved:null};
+      this.draw(b,w); },
+    draw(b,w){ const st=b._pm, c=w.config, api=window.pywebview&&window.pywebview.api; if(!st) return;
+      const can=hasApi("pumui_save_xls"), canRead=hasApi("pumui_analyze"), tab=c.tab==="meet"?"meet":"goods";
+      const inp=(k,obj,ph,lab,extra)=>`<label class="pm-f"><span>${lab}</span><input data-k="${k}" data-o="${obj}" value="${escapeHtml(c[obj][k]||"")}" placeholder="${escapeHtml(ph)}" ${extra||""}></label>`;
+      let h=`<div class="og-tabs pm-tabs"><button data-tab="goods" class="${tab==="goods"?"on":""}">🛒 물품 구입</button><button data-tab="meet" class="${tab==="meet"?"on":""}">🍽️ 업무추진(협의회)</button></div>`;
+      if(!can) h+=`<div class="og-note og-warn" style="margin:0 0 8px">캡처 읽기·엑셀 저장은 프로그램 업데이트(1.5.24) 후 쓸 수 있어요. 기안문 만들기는 지금도 돼요.</div>`;
+      let L="", Rt="";
+      if(tab==="goods"){
+        const rows=c.rows, tot=this.total(rows);
+        L+=`<div class="pm-drop" tabindex="0" data-drop>📷 장바구니 캡처를 <b>끌어다 놓거나 Ctrl+V</b>로 붙여 넣으세요
+              <button class="mini" data-pick>사진 고르기</button><input type="file" accept="image/*" multiple hidden data-file></div>`;
+        if(st.imgs.length) L+=`<div class="pm-thumbs">${st.imgs.map((x,i)=>`<span class="pm-th"><img src="${x.thumb}" alt="캡처 ${i+1}"><button class="og-x" data-rmimg="${i}" title="빼기">✕</button></span>`).join("")}</div>`;
+        L+=`<button class="mini go og-big" data-read ${st.busy||!st.imgs.length||!canRead?"disabled":""}>${st.busy?"캡처에서 품목을 읽는 중… (최대 1분)":`🔍 품목 읽기${st.imgs.length?` (캡처 ${st.imgs.length}장)`:""}`}</button>
+          <div class="og-note" style="margin-top:6px">여러 화면이면 <b>모두 넣은 뒤</b> 한 번에 읽어요. 캡처는 AI로 보내 글자만 읽고 저장하지 않아요 (주소·전화번호는 안 보이게).</div>`;
+        L+=`<div class="pm-sec">품목 내역 <small>(엑셀 '품목내역' 시트로 들어가요)</small></div>
+          <div class="pm-tbw"><table class="pm-tb"><thead><tr><th>내용</th><th>규격</th><th>단위</th><th>수량</th><th>예상단가</th><th>금액</th><th></th></tr></thead><tbody>
+          ${rows.map((r,i)=>`<tr class="${r.ship?"pm-ship":""}" data-ri="${i}">
+            <td><input data-rf="name" value="${escapeHtml(r.name||"")}" placeholder="${r.ship?"배송비":"품명"}"></td>
+            <td><input data-rf="spec" value="${escapeHtml(r.spec||"")}" placeholder="${r.ship?"판매처":"옵션·규격"}"></td>
+            <td><input data-rf="unit" value="${escapeHtml(r.unit||"")}" class="pm-n"></td>
+            <td><input data-rf="qty" value="${escapeHtml(String(r.qty??""))}" class="pm-n" inputmode="numeric"></td>
+            <td><input data-rf="price" value="${escapeHtml(this.won(r.price))}" class="pm-p" inputmode="numeric"></td>
+            <td class="pm-sum">${this.won(this.num(r.qty)*this.num(r.price))}</td>
+            <td><button class="og-x" data-rmrow="${i}" title="지우기">✕</button></td></tr>`).join("")||`<tr><td colspan="7" class="pm-empty">캡처를 읽거나 [＋ 품목]으로 직접 넣어 주세요.</td></tr>`}
+          </tbody></table></div>
+          <div class="pm-tot"><button class="mini" data-addrow>＋ 품목</button><button class="mini" data-addship>＋ 배송비</button>
+            <span>합계 <b>${this.won(tot)}원</b></span></div>
+          ${c.cartTotal&&rows.length&&c.cartTotal!==tot?`<div class="og-note og-warn" style="margin:4px 0 0">캡처 화면의 합계(${this.won(c.cartTotal)}원)와 달라요. 할인·쿠폰·배송비를 확인해 주세요.</div>`:""}
+          ${st.notes?`<div class="og-note" style="margin:4px 0 0">AI 메모: ${escapeHtml(st.notes)}</div>`:""}`;
+        Rt+=`<div class="pm-sec">기안 내용</div>
+          ${inp("title","g","예: 과학실 실험","제목(○○○)")}${inp("rel","g","없으면 비워 두세요 (줄이 빠져요)","관련")}
+          ${inp("detail","g","비우면 '첫 품목 외 ○종'","내역")}${inp("use","g","예: 2학년 과학 실험 수업용","용도")}`;
+        st.doc=this.goodsDoc(c.g, rows); st.xrows=rows;
+      } else {
+        const m=c.m, n=this.meetCount(m);
+        L+=`<div class="pm-sec">협의회 내용</div>
+          ${inp("title","m","예: 2학년 학년","제목(○○○)")}${inp("rel","m","없으면 비워 두세요 (줄이 빠져요)","관련")}
+          ${inp("when","m","예: 2026. 10. 20.(화) 16:30","일시")}${inp("place","m","예: ○○식당","장소")}
+          ${inp("topic","m","예: 2학기 학년 운영 협의","협의사항")}${inp("people","m","쉼표로 나눠 적기 (예: 홍길동, 김철수)","참석자")}
+          <div class="pm-row2">${inp("count","m",n?`${n}명 (참석자 수)`:"명","총 인원",'inputmode="numeric"')}${inp("per","m","예: 25000","1인당 금액",'inputmode="numeric"')}</div>
+          <div class="pm-tot"><span>소요예산 <b>${this.num(m.per)&&n?this.won(this.num(m.per)*n)+"원":"—"}</b></span></div>`;
+        st.doc=this.meetDoc(m); st.xrows=this.meetRows(m);
+      }
+      Rt+=`<div class="pm-acts"><button class="mini" data-xls ${can&&st.xrows.some(r=>String(r.name||"").trim())?"":"disabled"}>⬇ 품의명세서 엑셀</button>
+            <button class="mini go" data-copy>📋 기안문 복사</button></div>
+          ${st.saved?`<div class="og-note pm-saved">저장했어요: <b>${escapeHtml(st.saved.name)}</b> <button class="og-edit" data-reveal>폴더 열기</button><br>K-에듀파인 품의 화면에서 [엑셀 올리기]로 이 파일을 올리면 품목이 들어가요.</div>`:""}
+          <pre class="pm-doc" data-doc>${escapeHtml(st.doc)}</pre>`;
+      h+=`<div class="pm-cols"><div class="pm-l">${L}</div><div class="pm-r">${Rt}</div></div>`;
+      const keep=b.scrollTop; b.innerHTML=h; b.scrollTop=keep;
+      const $$=q=>b.querySelector(q), re=()=>this.draw(b,w);
+      b.querySelectorAll("[data-tab]").forEach(x=>x.onclick=()=>{ c.tab=x.dataset.tab; st.saved=null; persist(); re(); });
+      /* 입력: 바로 저장하고, 기안문 미리보기만 고침 (입력칸은 다시 그리지 않아 커서가 안 튐) */
+      const refreshDoc=()=>{ st.doc=tab==="goods"?this.goodsDoc(c.g,c.rows):this.meetDoc(c.m); if(tab==="meet") st.xrows=this.meetRows(c.m);
+        const d=$$("[data-doc]"); if(d) d.textContent=st.doc; const xb=$$("[data-xls]"); if(xb) xb.disabled=!(can&&st.xrows.some(r=>String(r.name||"").trim())); };
+      b.querySelectorAll("[data-k]").forEach(el=>{ el.oninput=()=>{ c[el.dataset.o][el.dataset.k]=el.value; persist(); refreshDoc(); };
+        if(el.dataset.k==="count"||el.dataset.k==="per"||el.dataset.k==="people") el.onchange=re; });
+      b.querySelectorAll("tr[data-ri]").forEach(tr=>{ const r=c.rows[+tr.dataset.ri];
+        tr.querySelectorAll("[data-rf]").forEach(el=>{ el.oninput=()=>{ const f=el.dataset.rf; r[f]=(f==="qty"||f==="price")?this.num(el.value):el.value; persist();
+            const sum=tr.querySelector(".pm-sum"); if(sum) sum.textContent=this.won(this.num(r.qty)*this.num(r.price)); refreshDoc(); };
+          el.onchange=re; }); });
+      b.querySelectorAll("[data-rmrow]").forEach(x=>x.onclick=()=>{ c.rows.splice(+x.dataset.rmrow,1); persist(); re(); });
+      const ar=$$("[data-addrow]"); if(ar) ar.onclick=()=>{ c.rows.push({name:"",spec:"",unit:"개",qty:1,price:0}); persist(); re(); };
+      const as=$$("[data-addship]"); if(as) as.onclick=()=>{ c.rows.push({name:"배송비",spec:"",unit:"건",qty:1,price:3000,ship:true}); persist(); re(); };
+      /* 캡처 넣기: 끌어다 놓기 · 붙여넣기 · 고르기 */
+      const addFiles=async files=>{ const list=[...(files||[])].filter(f=>/^image\//.test(f.type)); if(!list.length) return;
+        for(const f of list){ if(st.imgs.length>=12){ toast("캡처는 한 번에 12장까지예요"); break; } try{ st.imgs.push(await this.shrink(f)); }catch(e){ toast("사진을 읽지 못했어요"); } }
+        re(); };
+      const drop=$$("[data-drop]");
+      if(drop){ drop.ondragover=e=>{ e.preventDefault(); drop.classList.add("on"); }; drop.ondragleave=()=>drop.classList.remove("on");
+        drop.ondrop=e=>{ e.preventDefault(); drop.classList.remove("on"); addFiles(e.dataTransfer&&e.dataTransfer.files); };
+        drop.onpaste=e=>{ const fs=[...((e.clipboardData&&e.clipboardData.items)||[])].filter(it=>it.kind==="file").map(it=>it.getAsFile()).filter(Boolean);
+          if(fs.length){ e.preventDefault(); addFiles(fs); } }; }
+      const pk=$$("[data-pick]"), fi=$$("[data-file]");
+      if(pk&&fi){ pk.onclick=e=>{ e.stopPropagation(); fi.click(); }; fi.onchange=()=>{ addFiles(fi.files); fi.value=""; }; }
+      b.querySelectorAll("[data-rmimg]").forEach(x=>x.onclick=()=>{ st.imgs.splice(+x.dataset.rmimg,1); re(); });
+      /* 품목 읽기 */
+      const rd=$$("[data-read]");
+      if(rd) rd.onclick=async()=>{ if(st.busy||!st.imgs.length) return;
+        if(c.rows.some(r=>String(r.name||"").trim()) && !confirm("지금 품목 내역을 캡처에서 읽은 내용으로 바꿀까요?")) return;
+        st.busy=true; re(); let r=null;
+        try{ r=await api.pumui_analyze(st.imgs.map(x=>({b64:x.b64, mime:x.mime}))); }catch(e){}
+        st.busy=false;
+        if(!r||!r.ok){ toast((r&&r.error)||"캡처를 읽지 못했어요"); re(); return; }
+        const rows=(r.items||[]).map(x=>({name:x.name||"", spec:x.spec||"", unit:x.unit||"개", qty:this.num(x.qty)||1, price:this.num(x.price)}));
+        (r.shipping||[]).forEach(s=>{ if(this.num(s.fee)>0) rows.push({name:"배송비", spec:s.store||"", unit:"건", qty:1, price:this.num(s.fee), ship:true}); });
+        c.rows=rows; c.cartTotal=this.num(r.cart_total); st.notes=r.notes||""; st.saved=null; persist();
+        toast(`품목 ${rows.filter(x=>!x.ship).length}개${rows.some(x=>x.ship)?" + 배송비":""}를 읽었어요. 확인하고 고쳐 주세요.`); re(); };
+      /* 엑셀 · 복사 */
+      const xb=$$("[data-xls]");
+      if(xb) xb.onclick=async()=>{ const rows=(st.xrows||[]).filter(r=>String(r.name||"").trim()); if(!rows.length){ toast("품목이 없어요"); return; }
+        let r=null; try{ r=await api.pumui_save_xls(rows.map(x=>({name:x.name, spec:x.spec||"", unit:x.unit||"개", qty:this.num(x.qty)||1, price:this.num(x.price)})), (tab==="goods"?c.g.title:c.m.title)||""); }catch(e){}
+        if(!r||!r.ok){ toast((r&&r.error)||"엑셀을 만들지 못했어요"); return; }
+        st.saved=r; toast("다운로드 폴더에 저장했어요"); re(); };
+      const rv=$$("[data-reveal]"); if(rv) rv.onclick=()=>{ if(hasApi("xfer_reveal")) api.xfer_reveal(st.saved&&st.saved.path); };
+      const cp=$$("[data-copy]"); if(cp) cp.onclick=async()=>{ toast(await this.copy(st.doc)?"기안문을 복사했어요. 기안 본문에 붙여넣기(Ctrl+V) 하세요":"복사하지 못했어요"); };
+    } },
   files:{ title:"폴더·파일", icon:"📂", desc:"내 PC의 폴더·파일·프로그램을 아이콘으로 열기.",
     defaultCfg:()=>({items:[]}),
     kindOf(path){ const p=(path||"").trim().replace(/["']/g,""); const low=p.toLowerCase();
@@ -4017,7 +4226,7 @@ const PRESETS=[
   {a:["트론","trx"],src:"coin",code:"KRW-TRX",name:"트론"}
 ];
 
-const DEF_SIZE={ organize:{w:380,h:560}, clock:{w:300,h:150}, weather:{w:340,h:400}, todo:{w:320,h:300}, meal:{w:344,h:320}, dday:{w:308,h:236}, links:{w:344,h:180}, memo:{w:300,h:240}, shortcuts:{w:320,h:220}, stocks:{w:332,h:288}, neis:{w:344,h:360}, files:{w:320,h:240}, news:{w:340,h:340}, quote:{w:320,h:170}, dict:{w:320,h:300}, history:{w:340,h:340}, country:{w:320,h:300}, encyc:{w:340,h:340}, roster:{w:330,h:320}, timetable:{w:360,h:420}, aiusage:{w:300,h:270}, netswitch:{w:300,h:260}, contacts:{w:330,h:330} };
+const DEF_SIZE={ organize:{w:380,h:560}, pumui:{w:440,h:660}, clock:{w:300,h:150}, weather:{w:340,h:400}, todo:{w:320,h:300}, meal:{w:344,h:320}, dday:{w:308,h:236}, links:{w:344,h:180}, memo:{w:300,h:240}, shortcuts:{w:320,h:220}, stocks:{w:332,h:288}, neis:{w:344,h:360}, files:{w:320,h:240}, news:{w:340,h:340}, quote:{w:320,h:170}, dict:{w:320,h:300}, history:{w:340,h:340}, country:{w:320,h:300}, encyc:{w:340,h:340}, roster:{w:330,h:320}, timetable:{w:360,h:420}, aiusage:{w:300,h:270}, netswitch:{w:300,h:260}, contacts:{w:330,h:330} };
 
 function wcode(c, isDay){ const m={0:["☀️","맑음"],1:["🌤️","대체로 맑음"],2:["⛅","구름 많음"],3:["☁️","흐림"],45:["🌫️","안개"],48:["🌫️","짙은 안개"],51:["🌦️","약한 이슬비"],53:["🌦️","이슬비"],55:["🌧️","강한 이슬비"],56:["🌧️","약한 어는 이슬비"],57:["🌧️","어는 이슬비"],61:["🌧️","약한 비"],63:["🌧️","비"],65:["🌧️","강한 비"],66:["🌧️","약한 어는 비"],67:["🌧️","어는 비"],71:["🌨️","약한 눈"],73:["🌨️","눈"],75:["❄️","강한 눈"],77:["🌨️","싸락눈"],80:["🌦️","약한 소나기"],81:["🌧️","소나기"],82:["⛈️","강한 소나기"],85:["🌨️","약한 눈 소나기"],86:["🌨️","강한 눈 소나기"],95:["⛈️","뇌우"],96:["⛈️","뇌우·약한 우박"],99:["⛈️","뇌우·강한 우박"]};
   const v=m[c]||["🌡️","—"]; let e=v[0];
@@ -4622,7 +4831,7 @@ function sanitizeRemote(json){
 
 /* ================= 고른 항목만 동기화 ================= */
 /* 컴퓨터마다 달라야 하는 위젯은 처음엔 이 컴퓨터 전용 */
-const SYNC_LOCAL_TYPES=new Set(["files","netswitch","aiusage","organize"]);
+const SYNC_LOCAL_TYPES=new Set(["files","netswitch","aiusage","organize","pumui"]);
 const SYNC_XL_TYPES=new Set(["timetable","roster","contacts"]);
 function isShared(w){ return !!w && (w.sync===undefined ? !SYNC_LOCAL_TYPES.has(w.type) : w.sync!==false); }
 function syncOpts(){ if(!state.syncOpts||typeof state.syncOpts!=="object") state.syncOpts={};
@@ -5063,14 +5272,14 @@ const Sync={
       const known=new Set(Object.keys(WIDGETS));
       st.widgets=st.widgets.filter(w=>w&&typeof w==="object"&&known.has(w.type)&&typeof w.id==="string");
       if(typeof st.theme!=="string"||!/^[a-z0-9_-]{1,24}$/i.test(st.theme)) st.theme=state.theme;
-      st.syncBase=state.syncBase; st.syncOpts=state.syncOpts; st.syncCarry=state.syncCarry;   /* 동기화 기록·설정은 지금 것 유지 */
+      st.syncBase=state.syncBase; st.syncOpts=state.syncOpts; st.syncCarry=state.syncCarry; if(!Array.isArray(st.tools)){ st.tools=state.tools; st.toolCfg=state.toolCfg; }   /* 동기화 기록·설정은 지금 것 유지 */
       ensureNotes(st);
       if(mode==="local" && this.on){                 /* 동기화를 먼저 끊어야 되돌린 설정이 덮어써지지 않음 */
         try{ await this.api().gdrive_disconnect(false); }catch(e){}
         this.on=false; this.hold=null; this.email=""; this.err=""; this.schedule();
       }
       state=st; if(mode==="local" && !this.on) this.resetLocal(); adaptLayouts(); assignLayouts();
-      applyTheme(); updateTopbar(); renderAll();
+      applyTheme(); updateTopbar(); renderAll(); Tools.reset();
       await persist();
       if(mode==="all"){ msg.textContent="클라우드에 올리는 중입니다…"; const r=await this.push(true);
         if(!(r&&r.ok)) throw new Error((r&&(r.detail||r.reason))||"올리지 못했어요"); }
@@ -5894,9 +6103,9 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-10-13.5";
+const APP_VER="2026-10-13.6";
 /* 업데이트 안내 문구: 배포할 때 release_check.py 가 이 줄을 읽어 version.json 의 notes 로 넣음 (고칠 때마다 함께 바꿀 것) */
-const RELEASE_NOTES="파일 정리 ‘알아서 폴더 만들기’가 훨씬 빨라졌어요: 이 PC에서 파일 이름·내용이 비슷한 것끼리 바로 묶어 보여 주고, AI는 뒤에서 폴더 이름만 다듬어요. 이미 있는 폴더가 아니라 공통 주제의 새 폴더로 정리해요.";
+const RELEASE_NOTES="새 기능 ‘품의 기안’: 쇼핑몰 장바구니 캡처를 넣으면 품목·배송비를 읽어 K-에듀파인용 품의명세서 엑셀을 만들고, 물품 구입·업무추진(협의회) 기안문을 복사해 붙여넣을 수 있게 만들어 줘요. ‘품의 기안’과 ‘파일 정리’는 이제 위젯 대신 화면 위쪽 버튼으로 열어 큰 창에서 써요 ([위젯 추가 → 상단 도구]에서 넣고 빼기). 보드에 있던 파일 정리 위젯은 설정 그대로 상단 버튼으로 옮겨져요.";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`; vt.title="눌러서 새 버전 확인"; vt.style.cursor="pointer"; vt.onclick=()=>checkUpdate(true);
@@ -5904,7 +6113,8 @@ function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#ver
   [...document.querySelectorAll("[data-pt]")].forEach(btn=>{
     btn.className=(btn.dataset.pt===_palTab)?"on":"";
     btn.onclick=()=>{ _palTab=btn.dataset.pt; buildPalette(); }; });
-  const keys=Object.keys(WIDGETS).filter(t=>!!WIDGETS[t].special===(_palTab==="special"));
+  if(_palTab==="tools"){ Tools.palette(p); return; }
+  const keys=Object.keys(WIDGETS).filter(t=>!WIDGETS[t].tool && !!WIDGETS[t].special===(_palTab==="special"));
   if(_palTab==="special"){
     const note=el("div","pnote","내 컴퓨터의 다른 프로그램과 연결해 쓰는 기능입니다. 해당 프로그램이 설치·로그인되어 있어야 동작해요.");
     p.appendChild(note); }
@@ -5916,7 +6126,61 @@ function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#ver
 function openSheet(){ buildPalette(); $("#scrim").classList.add("on"); }
 function closeSheet(){ $("#scrim").classList.remove("on"); }
 $("#addBtn").onclick=openSheet; $("#scrim").onclick=e=>{ if(e.target===$("#scrim")) closeSheet(); };
-document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeSheet(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ closeSheet(); if(Tools.cur) Tools.close(); } });
+/* ===== 상단 도구: 복잡한 기능은 보드 위젯 대신 상단 버튼 + 큰 창으로 ===== */
+const Tools={ cur:null, bodies:{},
+  types(){ return Object.keys(WIDGETS).filter(t=>WIDGETS[t].tool); },
+  list(){ const ok=this.types(); return (Array.isArray(state.tools)?state.tools:[]).filter((t,i,a)=>ok.includes(t)&&a.indexOf(t)===i); },
+  has(t){ return this.list().includes(t); },
+  cfg(t){ if(!state.toolCfg||typeof state.toolCfg!=="object") state.toolCfg={};
+    if(!state.toolCfg[t]||typeof state.toolCfg[t]!=="object") state.toolCfg[t]=WIDGETS[t].defaultCfg?WIDGETS[t].defaultCfg():{};
+    return state.toolCfg[t]; },
+  /* 보드에 위젯으로 올려 둔 것 → 상단 도구로 옮김 (적어 둔 내용 그대로) */
+  migrate(){ const ok=this.types(), ws=state.widgets||[]; let moved=false;
+    for(let i=ws.length-1;i>=0;i--){ const w=ws[i]; if(!w||!ok.includes(w.type)) continue;
+      if(!state.toolCfg||typeof state.toolCfg!=="object") state.toolCfg={};
+      if(!state.toolCfg[w.type]&&w.config&&typeof w.config==="object") state.toolCfg[w.type]=w.config;
+      if(!Array.isArray(state.tools)) state.tools=[]; if(!state.tools.includes(w.type)) state.tools.push(w.type);
+      ws.splice(i,1); moved=true; }
+    return moved; },
+  reset(){ this.close(); this.bodies={}; const h=$("#toolBody"); if(h) h.innerHTML=""; this.migrate(); this.bar(); },
+  add(t){ if(!this.has(t)){ state.tools=this.list().concat(t); persist(); } this.bar(); closeSheet(); this.open(t); },
+  remove(t){ state.tools=this.list().filter(x=>x!==t); if(this.cur===t) this.close(); persist(); this.bar();
+    if($("#scrim").classList.contains("on")) buildPalette();
+    toast(`상단에서 ‘${WIDGETS[t].title}’ 버튼을 뺐어요. 적어 둔 내용은 남아 있어요`); },
+  bar(){ const box=$("#toolBar"); if(!box) return; const l=this.list(); box.innerHTML=""; box.hidden=!l.length;
+    l.forEach(t=>{ const d=WIDGETS[t], b=el("button","btn sync toolb",`<span class="sy-i">${d.icon}</span><span>${escapeHtml(d.title)}</span>`);
+      b.dataset.tool=t; b.title=d.desc; b.onclick=()=>this.open(t); box.appendChild(b); }); },
+  open(t){ const d=WIDGETS[t]; if(!d) return; this.cur=t;
+    $("#toolTitle").textContent=`${d.icon} ${d.title}`; const host=$("#toolBody");
+    let b=this.bodies[t]; if(!b||!b.isConnected){ b=document.createElement("div"); b.className="tool-b"; b.dataset.tool=t; host.appendChild(b); this.bodies[t]=b;
+      try{ d.mount(b,{id:"tool-"+t, type:t, config:this.cfg(t)}); }catch(e){ b.textContent="열지 못했어요: "+(e&&e.message||e); } }
+    else if(d.onOpen){ try{ d.onOpen(b,{id:"tool-"+t, type:t, config:this.cfg(t)}); }catch(e){} }
+    Object.keys(this.bodies).forEach(k=>{ if(this.bodies[k]) this.bodies[k].hidden=(k!==t); });
+    $("#toolSheet").style.width=`min(${d.toolW||1080}px,100%)`;
+    $("#toolScrim").classList.add("on"); },
+  close(){ const sc=$("#toolScrim"); if(sc) sc.classList.remove("on"); this.cur=null; },
+  palette(p){ p.appendChild(el("div","pnote","파일을 다루는 복잡한 기능은 보드에 두지 않고, 화면 위쪽 버튼으로 열어 큰 창에서 써요. 누르면 상단에 버튼이 생기고, 필요 없으면 뺄 수 있어요 (적어 둔 내용은 남아요)."));
+    this.types().forEach(t=>{ const d=WIDGETS[t], on=this.has(t);
+      const c=el("div","pcard"+(on?" on":""),`<div class="pi">${d.icon}</div><div style="flex:1;min-width:0"><div class="pt">${escapeHtml(d.title)}${on?' <small class="pon">상단에 있음</small>':""}</div><div class="pd">${escapeHtml(d.desc)}</div></div>`);
+      c.dataset.toolCard=t;
+      if(on){ const x=el("button","mini","상단에서 빼기"); x.dataset.toolRm=t; x.onclick=e=>{ e.stopPropagation(); this.remove(t); }; c.appendChild(x);
+        c.onclick=()=>{ closeSheet(); this.open(t); }; }
+      else c.onclick=()=>this.add(t);
+      p.appendChild(c); }); },
+  /* 창 아무 곳에서나 붙여넣기·끌어다 놓기 → 그 도구의 캡처 칸으로 */
+  _drop(){ const b=this.cur&&this.bodies[this.cur]; return b&&b.querySelector("[data-drop]"); },
+  init(){
+    $("#toolClose").onclick=()=>this.close();
+    $("#toolRemove").onclick=()=>{ if(this.cur) this.remove(this.cur); };
+    $("#toolScrim").onclick=e=>{ if(e.target.id==="toolScrim") this.close(); };
+    document.addEventListener("paste",e=>{ const dz=this._drop(); if(!dz||dz.contains(e.target)||!dz.onpaste) return;
+      const hasImg=[...((e.clipboardData&&e.clipboardData.items)||[])].some(it=>it.kind==="file"); if(hasImg) dz.onpaste(e); });
+    const sh=$("#toolSheet");
+    sh.addEventListener("dragover",e=>{ const dz=this._drop(); if(dz&&!dz.contains(e.target)){ e.preventDefault(); dz.classList.add("on"); } });
+    sh.addEventListener("drop",e=>{ const dz=this._drop(); if(dz&&!dz.contains(e.target)&&dz.ondrop) dz.ondrop(e); });
+    this.bar(); }
+};
 window.addEventListener("resize",clampAll);
 
 /* ===== 시작 ===== */
@@ -5933,7 +6197,7 @@ async function boot(){
   if(hasApi("is_maximized")){ try{ if(await window.pywebview.api.is_maximized()){ isMax=true; mode="max"; } }catch(e){} }
   const _mb=$("#winMax"); if(_mb){ _mb.textContent=isMax?"❐":"▢"; _mb.title=isMax?"이전 크기로":"최대화"; }
   applyTheme(); updateTopbar(); _bootPhase=true; renderAll(); requestAnimationFrame(()=>runMountQueue());
-  _ready=true; Usage.start(); setTimeout(runNotices,1500); setTimeout(()=>Sync.init(),1800); setTimeout(()=>Xfer.init(),2000); setTimeout(()=>AutoStart.init(),2200); setTimeout(()=>checkUpdate(false),2500);
+  _ready=true; if(Tools.migrate()){ renderAll(); persist(); } Tools.init(); Usage.start(); setTimeout(runNotices,1500); setTimeout(()=>Sync.init(),1800); setTimeout(()=>Xfer.init(),2000); setTimeout(()=>AutoStart.init(),2200); setTimeout(()=>checkUpdate(false),2500);
   if(!window._updT) window._updT=setInterval(()=>{ if(!document.getElementById("updBar")) checkUpdate(false); }, 2*3600e3); }   /* 켜 둔 채로 지내도 2시간마다 새 버전 확인 */
 window.addEventListener("pywebviewready",()=>{ document.body.classList.add("app"); boot(); });
 window.addEventListener("DOMContentLoaded",()=>{ updateTopbar(); setTimeout(()=>{ if(!window.pywebview) boot(); },1500); });
