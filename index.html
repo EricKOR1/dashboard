@@ -1710,7 +1710,10 @@
   .tool-host{flex:1; min-height:0; display:flex;} .tool-b{flex:1; min-height:0; overflow:auto; padding-right:4px;} .tool-b[hidden]{display:none;}
   .tool-b.org .og-files{max-height:min(46vh,420px);} .tool-b.org .og-picked{max-height:min(40vh,360px);}
   .pcard .pon{font-size:11px; font-weight:700; color:var(--accent-2); background:var(--accent-soft); border-radius:999px; padding:1px 7px; margin-left:4px;}
-  .pcard > .mini{flex:none; align-self:center; height:32px;}
+  .palette.tools{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));}
+  .pcard.tcard .tc-t{flex:1; min-width:0;} .pcard.tcard .pt{display:flex; align-items:center; flex-wrap:wrap; gap:4px 6px;}
+  .pcard .pon{white-space:nowrap; margin-left:0;} .pcard .pon.off{color:var(--muted); background:var(--card-2);}
+  .pcard.tcard .mini{margin-top:9px; height:32px;}
   .pm .pm-cols{display:flex; flex-wrap:wrap; gap:6px 22px; align-items:flex-start;}
   .pm .pm-l{flex:1.3 1 460px; min-width:0;} .pm .pm-r{flex:1 1 340px; min-width:0;}
   .pm .pm-r > .pm-sec:first-child{margin-top:4px;}
@@ -6103,9 +6106,9 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-10-13.6";
+const APP_VER="2026-10-13.7";
 /* 업데이트 안내 문구: 배포할 때 release_check.py 가 이 줄을 읽어 version.json 의 notes 로 넣음 (고칠 때마다 함께 바꿀 것) */
-const RELEASE_NOTES="새 기능 ‘품의 기안’: 쇼핑몰 장바구니 캡처를 넣으면 품목·배송비를 읽어 K-에듀파인용 품의명세서 엑셀을 만들고, 물품 구입·업무추진(협의회) 기안문을 복사해 붙여넣을 수 있게 만들어 줘요. ‘품의 기안’과 ‘파일 정리’는 이제 위젯 대신 화면 위쪽 버튼으로 열어 큰 창에서 써요 ([위젯 추가 → 상단 도구]에서 넣고 빼기). 보드에 있던 파일 정리 위젯은 설정 그대로 상단 버튼으로 옮겨져요.";
+const RELEASE_NOTES="‘품의 기안’과 ‘파일 정리’를 화면 위쪽 버튼으로 열어 큰 창에서 써요 ([위젯 추가 → 상단 도구]에서 넣고 빼기). 상단 도구 목록의 설명 글자가 세로로 깨져 보이던 문제를 고쳤어요.";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`; vt.title="눌러서 새 버전 확인"; vt.style.cursor="pointer"; vt.onclick=()=>checkUpdate(true);
@@ -6113,6 +6116,7 @@ function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#ver
   [...document.querySelectorAll("[data-pt]")].forEach(btn=>{
     btn.className=(btn.dataset.pt===_palTab)?"on":"";
     btn.onclick=()=>{ _palTab=btn.dataset.pt; buildPalette(); }; });
+  p.classList.toggle("tools",_palTab==="tools");
   if(_palTab==="tools"){ Tools.palette(p); return; }
   const keys=Object.keys(WIDGETS).filter(t=>!WIDGETS[t].tool && !!WIDGETS[t].special===(_palTab==="special"));
   if(_palTab==="special"){
@@ -6162,9 +6166,9 @@ const Tools={ cur:null, bodies:{},
   close(){ const sc=$("#toolScrim"); if(sc) sc.classList.remove("on"); this.cur=null; },
   palette(p){ p.appendChild(el("div","pnote","파일을 다루는 복잡한 기능은 보드에 두지 않고, 화면 위쪽 버튼으로 열어 큰 창에서 써요. 누르면 상단에 버튼이 생기고, 필요 없으면 뺄 수 있어요 (적어 둔 내용은 남아요)."));
     this.types().forEach(t=>{ const d=WIDGETS[t], on=this.has(t);
-      const c=el("div","pcard"+(on?" on":""),`<div class="pi">${d.icon}</div><div style="flex:1;min-width:0"><div class="pt">${escapeHtml(d.title)}${on?' <small class="pon">상단에 있음</small>':""}</div><div class="pd">${escapeHtml(d.desc)}</div></div>`);
+      const c=el("div","pcard tcard"+(on?" on":""),`<div class="pi">${d.icon}</div><div class="tc-t"><div class="pt">${escapeHtml(d.title)}${on?' <small class="pon">상단에 있음</small>':' <small class="pon off">누르면 상단에 추가</small>'}</div><div class="pd">${escapeHtml(d.desc)}</div></div>`);
       c.dataset.toolCard=t;
-      if(on){ const x=el("button","mini","상단에서 빼기"); x.dataset.toolRm=t; x.onclick=e=>{ e.stopPropagation(); this.remove(t); }; c.appendChild(x);
+      if(on){ const x=el("button","mini","상단에서 빼기"); x.dataset.toolRm=t; x.onclick=e=>{ e.stopPropagation(); this.remove(t); }; c.querySelector(".tc-t").appendChild(x);
         c.onclick=()=>{ closeSheet(); this.open(t); }; }
       else c.onclick=()=>this.add(t);
       p.appendChild(c); }); },
