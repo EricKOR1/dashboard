@@ -3655,11 +3655,26 @@ const WIDGETS = {
       st.picked=()=>st.files().filter(f=>st.sel.has(f.name));
       st.run=async(fn)=>{ if(st.busy) return; st.busy=true; draw(); try{ await fn(); }catch(e){ toast("처리하지 못했어요"); } st.busy=false; st.aiWait=false; draw(); };
       st.refreshStatus=async()=>{ if(hasApi("organize_status")){ try{ st.status=await api().organize_status(); }catch(e){} } draw(); };
-      st.load=async()=>{ if(!hasApi("organize_scan")) return;                          /* 파일 목록 → 기본은 전체 선택 */
+      st.load=async(quiet)=>{ if(!hasApi("organize_scan")) return;                    /* 파일 목록 → 기본은 전체 선택 */
+        if(quiet && st.loading) return; st.loading=true;
         try{ const r=await api().organize_scan(w.config.folder||"");
-          if(r&&r.ok){ st.scan=r; st.err=""; st.sel=new Set(st.files().map(f=>f.name)); }
-          else { st.scan={items:[], folders:[]}; st.err=(r&&r.error)||"폴더를 읽지 못했어요"; } }catch(e){}
-        draw(); };
+          if(r&&r.ok){
+            const names=(r.items||[]).filter(i=>i.kind==="file").map(i=>i.name);
+            const sig=(r.folder||"")+"\n"+names.join("\n");
+            if(quiet && sig===st.sig && !st.err){ st.loading=false; return; }            /* 바뀐 게 없으면 다시 그리지 않음 */
+            const known=st.known||new Set(), keep=st.sel||new Set(), same=st.scan&&st.scan.folder===r.folder;
+            st.scan=r; st.err=""; st.sig=sig;
+            /* 새로 생긴 파일은 체크된 채로 추가, 이미 있던 파일은 사용자가 고른 그대로 */
+            st.sel=new Set(names.filter(n=>!same||!known.has(n)||keep.has(n)));
+            st.known=new Set(names); }
+          else { st.scan={items:[], folders:[]}; st.err=(r&&r.error)||"폴더를 읽지 못했어요"; st.sig=""; } }catch(e){}
+        st.loading=false;
+        if(!quiet || st.phase==="idle") draw(); };
+      /* 바탕화면(고른 폴더)에 파일이 생기거나 없어지면 목록에 바로 반영: 4초마다 + 창으로 돌아올 때 (정리 화면일 때만) */
+      st.poll=setInterval(()=>{ if(!document.body.contains(b)){ clearInterval(st.poll); window.removeEventListener("focus",st.onFocus); return; }
+        if(document.hidden||st.busy||st.phase!=="idle") return; st.load(true); }, 4000);
+      st.onFocus=()=>{ if(document.body.contains(b) && !st.busy && st.phase==="idle"){ st.load(true); if(this.canInto()&&w.config.dest&&hasApi("organize_tree")) st.loadTree(); } };
+      window.addEventListener("focus",st.onFocus);
       st.loadTree=async()=>{ const d=w.config.dest; st.tree=null; if(!d||!hasApi("organize_tree")){ draw(); return; }
         try{ const r=await api().organize_tree(d); if(r&&r.ok) st.tree=r.tree||[]; else { w.config.dest=""; persist(); } }catch(e){}   /* 못 읽으면 다시 고르게 */
         draw(); };
@@ -5859,7 +5874,9 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-10-06.4";
+const APP_VER="2026-10-13.3";
+/* 업데이트 안내 문구: 배포할 때 release_check.py 가 이 줄을 읽어 version.json 의 notes 로 넣음 (고칠 때마다 함께 바꿀 것) */
+const RELEASE_NOTES="파일 정리 위젯: 바탕화면에 파일이 생기거나 없어지면 목록에 바로 반영돼요. Claude 사용량 위젯: 로그인이 풀렸을 때 이유를 알려 주고, [연결하기]로 바로 다시 로그인할 수 있어요.";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`; vt.title="눌러서 새 버전 확인"; vt.style.cursor="pointer"; vt.onclick=()=>checkUpdate(true);
