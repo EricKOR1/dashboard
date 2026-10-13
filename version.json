@@ -1,11 +1,11 @@
 {
-  "ui_version": "2026-10-13.5",
+  "ui_version": "2026-10-13.6",
   "ui_url": "https://raw.githubusercontent.com/EricKOR1/dashboard/main/index.html",
-  "app_version": "1.5.23",
+  "app_version": "1.5.24",
   "app_url": "https://github.com/EricKOR1/dashboard/releases/latest/download/MyDashboard.zip",
   "page_url": "https://github.com/EricKOR1/dashboard/releases",
-  "notes": "파일 정리 ‘알아서 폴더 만들기’가 훨씬 빨라졌어요: 이 PC에서 파일 이름·내용이 비슷한 것끼리 바로 묶어 보여 주고, AI는 뒤에서 폴더 이름만 다듬어요. 이미 있는 폴더가 아니라 공통 주제의 새 폴더로 정리해요.",
-  "ui_sha256": "31a0d5bdf2e6ba9b42a147b0304f95a2151b31677f061d1752b46b5ec0cb98fc",
+  "notes": "새 기능 ‘품의 기안’: 쇼핑몰 장바구니 캡처를 넣으면 품목·배송비를 읽어 K-에듀파인용 품의명세서 엑셀을 만들고, 물품 구입·업무추진(협의회) 기안문을 복사해 붙여넣을 수 있게 만들어 줘요. ‘품의 기안’과 ‘파일 정리’는 이제 위젯 대신 화면 위쪽 버튼으로 열어 큰 창에서 써요 ([위젯 추가 → 상단 도구]에서 넣고 빼기). 보드에 있던 파일 정리 위젯은 설정 그대로 상단 버튼으로 옮겨져요.",
+  "ui_sha256": "49c15a551c086a32b8fb8266b2a066d4fc3c73e362f97eb769fac6d6c26d7f5e",
   "ai_relay": "https://script.google.com/macros/s/AKfycbyMowwC0FkVsS_gi2-n6tRhKQNBRfhoNrLh1ZOxPQwUWGRvtZtJ1I7S_3iDNcH5Q5Dz/exec",
-  "app_sha256": "7cb8b7b956310eeed238df98ba756e35e058fa728b49f1303e4bc11d5bd8674d"
+  "app_sha256": "ff4593b6a8ca5dd0c03c2c1c2d7f6f2b9600ae51dfb54a7230e69529b7ce0150"
 }
