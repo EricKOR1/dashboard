@@ -1,11 +1,11 @@
 {
-  "ui_version": "2026-10-06.4",
+  "ui_version": "2026-10-13.3",
   "ui_url": "https://raw.githubusercontent.com/EricKOR1/dashboard/main/index.html",
-  "app_version": "1.5.20",
+  "app_version": "1.5.21",
   "app_url": "https://github.com/EricKOR1/dashboard/releases/latest/download/MyDashboard.zip",
   "page_url": "https://github.com/EricKOR1/dashboard/releases",
-  "notes": "새 기능 📨 파일 주고받기: 위쪽 ‘파일’ 버튼으로 PC·폰끼리 파일을 보내고 받아요 (PC 2GB·폰 1GB까지, 7일 뒤 자동 삭제). 여러 PC가 폰 내용을 서로 지우던 문제 수정.",
-  "ui_sha256": "cb67977028ee18bda40f0eb95f4ea449ca8db891c65ad2b641cf21f7d6d48e6e",
+  "notes": "파일 정리 위젯: 바탕화면에 파일이 생기거나 없어지면 목록에 바로 반영돼요. Claude 사용량 위젯: 로그인이 풀렸을 때 이유를 알려 주고, [연결하기]로 바로 다시 로그인할 수 있어요.",
+  "ui_sha256": "5d5d3dde757f6e305b79e951d2c038c255dd4c0b41e965117383514d41edad26",
   "ai_relay": "https://script.google.com/macros/s/AKfycbyMowwC0FkVsS_gi2-n6tRhKQNBRfhoNrLh1ZOxPQwUWGRvtZtJ1I7S_3iDNcH5Q5Dz/exec",
-  "app_sha256": "e124f770cdbbdb232b3f450890937efbfb7f40c26bad903903e97a22fb7e31c2"
+  "app_sha256": "eaba440b0eb7776895bc15382037fd4d3e7e68a6558ccc427692c734b06dc19e"
 }
