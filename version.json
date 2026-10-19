@@ -1,11 +1,11 @@
 {
-  "ui_version": "2026-10-13.7",
+  "ui_version": "2026-10-19.3",
   "ui_url": "https://raw.githubusercontent.com/EricKOR1/dashboard/main/index.html",
   "app_version": "1.5.24",
   "app_url": "https://github.com/EricKOR1/dashboard/releases/latest/download/MyDashboard.zip",
   "page_url": "https://github.com/EricKOR1/dashboard/releases",
-  "notes": "‘품의 기안’과 ‘파일 정리’를 화면 위쪽 버튼으로 열어 큰 창에서 써요 ([위젯 추가 → 상단 도구]에서 넣고 빼기). 상단 도구 목록의 설명 글자가 세로로 깨져 보이던 문제를 고쳤어요.",
-  "ui_sha256": "105cc9eac280d1020891f84cb71961e46da28a80a0fd7c420f6e364cbcc682ff",
+  "notes": "품의 기안: 할인 전 값이 아니라 할인·쿠폰이 적용된 최종 가격으로 품목을 채워요 (장바구니 쿠폰은 최종 결제 금액에 맞춰 단가에 나눠 넣고, 되돌릴 수 있어요). 견적서 PDF를 그대로 넣어도 표의 모든 품목을 읽고, 부가세 별도 견적이면 10%를 한 번에 더할 수 있어요. 엑셀을 저장하면 파일 위치가 복사돼서 에듀파인 [파일 ⬆] 창에 Ctrl+V만 하면 돼요.",
+  "ui_sha256": "7766d01cc9fc15f84294fc32179b27cd974bb11f22c5e003521a53fe1feecb5b",
   "ai_relay": "https://script.google.com/macros/s/AKfycbyMowwC0FkVsS_gi2-n6tRhKQNBRfhoNrLh1ZOxPQwUWGRvtZtJ1I7S_3iDNcH5Q5Dz/exec",
   "app_sha256": "ff4593b6a8ca5dd0c03c2c1c2d7f6f2b9600ae51dfb54a7230e69529b7ce0150"
 }
