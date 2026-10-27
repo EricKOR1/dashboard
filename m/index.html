@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com https://api.open-meteo.com https://air-quality-api.open-meteo.com https://ko.wikipedia.org https://api.wikimedia.org https://api.dictionaryapi.dev https://api.mymemory.translated.net https://stdict.korean.go.kr; style-src 'self' 'unsafe-inline' https://accounts.google.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https://upload.wikimedia.org; frame-src https://accounts.google.com">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; connect-src 'self' https://open.neis.go.kr https://script.google.com https://script.googleusercontent.com https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com https://api.open-meteo.com https://air-quality-api.open-meteo.com https://ko.wikipedia.org https://api.wikimedia.org https://api.dictionaryapi.dev https://api.mymemory.translated.net https://stdict.korean.go.kr; style-src 'self' 'unsafe-inline' https://accounts.google.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https://upload.wikimedia.org; frame-src https://accounts.google.com">
 <meta name="theme-color" id="themeColor" content="#F3EFE6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="대시보드">
@@ -167,6 +167,7 @@
   .card .note{margin:8px 0 0; font-size:12.5px; color:var(--faint);}
   .srch{display:flex; gap:8px; margin:2px 0 8px;}
   .srch input{flex:1; min-width:0; height:44px;}
+  .srch .rst{flex:none; width:44px; padding:0; display:inline-flex; align-items:center; justify-content:center; color:var(--muted, #888);}
   .hit{display:flex; align-items:baseline; gap:8px; width:100%; min-height:46px; padding:8px 2px; border:none; border-top:1px solid var(--border);
     background:none; color:var(--text); text-align:left; font-size:15.5px;}
   .hit small{color:var(--muted); font-size:12.5px;}
@@ -205,6 +206,9 @@
   /* 급식·학사일정·뉴스·시세 */
   .meal{padding:8px 0; border-top:1px solid var(--border);} .meal b{font-size:13px; color:var(--accent-2);} .meal p{margin:3px 0; font-size:15px; line-height:1.6;} .meal small{color:var(--faint);}
   .ev{display:flex; gap:12px; padding:8px 0; border-top:1px solid var(--border); font-size:14.5px;} .evd{flex:none; min-width:62px; color:var(--muted); font-variant-numeric:tabular-nums;}
+  .mnav{display:flex; align-items:center; gap:6px; margin:0 0 6px;} .mnav b{min-width:96px; text-align:center; font-size:15.5px;}
+  .mnav .mnb{width:40px; height:36px; border-radius:10px; border:1px solid var(--border); background:var(--bg-soft); color:var(--text); font-size:20px; line-height:1;}
+  .mnav .mnt{margin-left:auto; min-height:32px; padding:0 12px; border-radius:999px; border:1px solid var(--border); background:var(--bg-soft); color:var(--text); font-size:13px;}
   .ev.now{font-weight:700;} .ev.now .evd{color:var(--accent-2);} .ev.past{opacity:.5;}
   .nw{display:block; padding:10px 0; border-top:1px solid var(--border); color:var(--text); text-decoration:none; font-size:14.5px; line-height:1.55;}
   .sq{display:grid; grid-template-columns:1fr auto; gap:0 10px; padding:9px 0; border-top:1px solid var(--border);}
@@ -650,8 +654,13 @@ function signedIn(){ return !!(S.tok || S.rt); }
 /* 중계소 주소: 같은 사이트의 version.json(ai_relay)에서, 못 읽으면 아래 기본값 */
 const RELAY_DEFAULT = "https://script.google.com/macros/s/AKfycbyMowwC0FkVsS_gi2-n6tRhKQNBRfhoNrLh1ZOxPQwUWGRvtZtJ1I7S_3iDNcH5Q5Dz/exec";
 let _relayP=null;
-function relayUrl(){ if(!_relayP) _relayP=(async()=>{ try{ const r=await fetch("../version.json",{cache:"no-store"}); const j=await r.json();
-    if(j && /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(j.ai_relay||"")) return j.ai_relay; }catch(e){} return RELAY_DEFAULT; })();
+const RELAY_RE=/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/;
+function relayUrl(){ if(!_relayP){
+    const fresh=(async()=>{ try{ const r=await fetch("../version.json",{cache:"no-store"}); const j=await r.json();
+      if(j && RELAY_RE.test(j.ai_relay||"")){ try{ localStorage.setItem("m.relay", j.ai_relay); }catch(e){} return j.ai_relay; } }catch(e){} return ""; })();
+    let mem=""; try{ mem=localStorage.getItem("m.relay")||""; }catch(e){}
+    _relayP = RELAY_RE.test(mem) ? Promise.resolve(mem) : fresh.then(u=>u||RELAY_DEFAULT);   /* 기억해 둔 주소로 바로 (새 주소는 뒤에서 받아 다음부터) */
+    if(RELAY_RE.test(mem)) fresh.then(u=>{ if(u&&u!==mem) _relayP=Promise.resolve(u); }); }
   return _relayP; }
 async function relay(body, ms){ const url=await relayUrl(); const ctl=typeof AbortController!=="undefined"?new AbortController():null; const t=ctl?setTimeout(()=>ctl.abort(), ms||20000):null;
   try{ const r=await fetch(url,{method:"POST", body:JSON.stringify(body), redirect:"follow", signal:ctl?ctl.signal:undefined}); return await r.json(); }
@@ -725,10 +734,13 @@ async function api(url, opts={}, again){
   if(!r.ok) throw new Error("HTTP "+r.status);
   return r;
 }
-async function findFile(){
-  const r = await api(`${API}/files?spaces=appDataFolder&pageSize=200&fields=files(id,name,modifiedTime)`);
-  const j = await r.json(); return (j.files||[]).find(f=>f.name===STATE_NAME) || null;
-}
+let _listP=null, _listAt=0;
+function listApp(fresh){                                     /* 앱 폴더 목록: 동시에·2초 안에 또 부르면 같은 결과를 씀 (요청 수 줄이기) */
+  if(_listP && !fresh && Date.now()-_listAt<2000) return _listP;
+  _listAt=Date.now();
+  _listP=api(`${API}/files?spaces=appDataFolder&pageSize=200&fields=files(id,name,modifiedTime)`).then(r=>r.json()).then(j=>j.files||[]);
+  _listP.catch(()=>{ _listP=null; }); return _listP; }
+async function findFile(fresh){ return (await listApp(fresh)).find(f=>f.name===STATE_NAME) || null; }
 async function fileMeta(id){ const r=await api(`${API}/files/${encodeURIComponent(id)}?fields=id,modifiedTime`); return r.json(); }
 async function download(id){ const r=await api(`${API}/files/${encodeURIComponent(id)}?alt=media`); return r.json(); }
 async function upload(id, data){                       // PC 프로그램과 같은 형식으로 저장
@@ -755,8 +767,8 @@ async function refresh(force){
   if(!signedIn() || S.flushing || S.refreshing) return;
   if(S.pending.length){ flush(); return; }                        /* 저장할 게 남아 있으면 먼저 저장 (저장하면 최신본으로 화면도 바뀜) */
   S.refreshing=true;
-  try{ await _refresh(force); }finally{ S.refreshing=false; }
-  loadSnaps(!!force);
+  const pr=_refresh(force); loadSnaps(!!force);                     /* 대시보드 내용과 PC 내용을 동시에 (드라이브 목록은 한 번만) */
+  try{ await pr; }finally{ S.refreshing=false; }
   if(S.data && !pickPref() && !S.pickShown){ S.pickShown=true; openPick(true); }   // 처음 연결: 폰에서 볼 항목 고르기
 }
 async function _refresh(force){
@@ -765,12 +777,14 @@ async function _refresh(force){
   if(S.arrange) return;                                                           // 배치 편집 중엔 건드리지 않음   // 메모·검색칸에 입력 중엔 건드리지 않음
   try{
     if(S.file && !force){ const m=await fileMeta(S.file.id); if(m.modifiedTime===S.file.modifiedTime){ setStatus("최신"); return; } }
-    setStatus("불러오는 중…");
-    const f = await findFile();
-    if(!f){ S.file=null; S.data=null; renderEmpty(); setStatus(""); return; }
+    setStatus(S.data?"확인 중…":"불러오는 중…");
+    const f = await findFile(!S.booted);
+    S.booted=true;
+    if(!f){ S.file=null; S.data=null; dataCache(null); renderEmpty(); setStatus(""); return; }
+    if(S.data && S.file && S.file.id===f.id && S.file.modifiedTime===f.modifiedTime){ setStatus("최신"); return; }   /* 기억해 둔 것과 같으면 받지 않음 */
     const d = clean(await download(f.id));
     if(!d) throw new Error("bad");
-    S.file={id:f.id, modifiedTime:f.modifiedTime}; S.data=d; $("#bar").hidden=false; safeRender(); setStatus("최신"); _burstUntil=Date.now()+60000;
+    S.file={id:f.id, modifiedTime:f.modifiedTime}; S.data=d; dataCache(S.data); $("#bar").hidden=false; safeRender(); setStatus("최신"); _burstUntil=Date.now()+60000;
   }catch(e){
     if(e instanceof AuthError){ needLogin(); return; }
     setStatus("연결 확인 필요", true);
@@ -791,7 +805,7 @@ async function flush(){
   try{
     setStatus("저장 중…");
     for(let k=0;k<3;k++){                                          /* 받고 올리는 사이 다른 기기가 올렸으면 다시 받아서 적용 (최대 3번) */
-      const f = await findFile();
+      const f = await findFile(true);
       if(!f) throw new Error("gone");
       const latest = clean(await download(f.id));
       if(!latest) throw new Error("bad");
@@ -801,7 +815,7 @@ async function flush(){
       latest.savedAt = Date.now();
       if(k<2){ const m=await fileMeta(f.id); if(m && m.modifiedTime && m.modifiedTime!==f.modifiedTime) continue; }
       const r = await upload(f.id, latest);
-      S.file={id:r.id||f.id, modifiedTime:r.modifiedTime}; S.data=latest; saved=true; break;
+      S.file={id:r.id||f.id, modifiedTime:r.modifiedTime}; S.data=latest; dataCache(S.data); saved=true; break;
     }
     setStatus("저장됨"); _burstUntil=Date.now()+60000;
   }catch(e){
@@ -1084,7 +1098,7 @@ async function loadSnaps(force){
   if(!signedIn() || (!force && Date.now()-S.snapAt<60000)) return;
   if(S.snapBusy) return; S.snapBusy=true;
   S.snapAt=Date.now(); const was=JSON.stringify([S.snapReady, S.snapErr]);
-  try{ const r=await api(`${API}/files?spaces=appDataFolder&pageSize=200&fields=files(id,name,modifiedTime)`); const j=await r.json(); let changed=false;
+  try{ const j={files:await listApp()}; let changed=false;
     for(const f of ["live","xl"]){ const it=(j.files||[]).find(x=>x.name===`snap_${f}.json`);
       if(!it){ if(S.snap[f]){ S.snap[f]=null; S.snapMt[f]=""; SnapDB.set(snapKey(f), null); changed=true; } S.snapReady[f]=true; continue; }   /* 드라이브에 정말 없음 */
       if(it.modifiedTime===S.snapMt[f] && S.snap[f]){ S.snapReady[f]=true; continue; }
@@ -1140,7 +1154,10 @@ function searchRow(b, u, ph, go, extra){
   if(extra) Object.keys(extra).forEach(k=>inp.setAttribute(k, extra[k]));
   const run=()=>{ u.q=inp.value.trim(); inp.blur(); go(); };
   inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); run(); } });
-  b.appendChild(h("div",{class:"srch"}, inp, h("button",{class:"mini go",text:"찾기",onclick:run}))); return inp;
+  const rst=h("button",{class:"mini rst", title:"검색 지우기", "aria-label":"검색 지우기", onclick:()=>{   /* ↺ 검색어·결과를 처음 상태로 (모드·탭은 그대로) */
+    inp.value=""; u.q=""; ["sel","list","page","res","err"].forEach(k=>{ u[k]=null; }); u.busy=false; render(); }});
+  rst.innerHTML='<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>';
+  b.appendChild(h("div",{class:"srch"}, inp, h("button",{class:"mini go",text:"찾기",onclick:run}), rst)); return inp;
 }
 function kv(k,v,href){ return h("div",{class:"kv"}, h("span",{text:k}), href?h("a",{href,text:v}):h("b",{text:v})); }
 const DRAW = {};
@@ -1286,10 +1303,34 @@ DRAW.meal=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&st
   (d.meals||[]).forEach(m=>b.appendChild(h("div",{class:"meal"}, h("b",{text:m.name||"식단"}), h("p",{text:(m.dishes||[]).join(" · ")}), m.cal?h("small",{text:m.cal}):null)));
   if(!isToday) b.appendChild(h("div",{class:"note",text:"PC가 아직 오늘 급식을 불러오지 않았어요."}));
 };
+/* 학사일정: ‹ › 로 달 넘기기. PC가 올린 기간(앞 3달~뒤 9달)은 바로, 그 밖은 NEIS에서 직접 (안 되면 안내) */
+const NEISM={};
+async function loadNeisMonth(key, d, ym){ const x=NEISM[key]={busy:true}; const y=+ym.slice(0,4), m=+ym.slice(4,6), last=new Date(y,m,0).getDate();
+  try{ const j=await (await fetch(`https://open.neis.go.kr/hub/SchoolSchedule?Type=json&pSize=300&ATPT_OFCDC_SC_CODE=${encodeURIComponent(d.atpt)}&SD_SCHUL_CODE=${encodeURIComponent(d.code)}&AA_FROM_YMD=${ym}01&AA_TO_YMD=${ym}${pad2(last)}`)).json();
+    const rows=(j.SchoolSchedule&&j.SchoolSchedule[1]&&j.SchoolSchedule[1].row)||[], seen={};
+    if(!rows.length && !(j.RESULT&&j.RESULT.CODE==="INFO-200")) throw new Error("no");
+    x.evs=[]; rows.forEach(r=>{ const n=String(r.EVENT_NM||"").trim(); if(!n||n==="토요휴업일") return; const k=r.AA_YMD+"|"+n; if(seen[k]) return; seen[k]=1; x.evs.push({d:r.AA_YMD, n}); });
+  }catch(e){ x.err=true; }
+  x.busy=false; if(S.data) renderSoft(); }
 DRAW.neis=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b,w); return; }
-  const d=sn.d, today=ymdNow(); b.appendChild(h("div",{class:"sub",text:`${d.school||""} · ${d.y}년 ${d.m}월`}));
-  if(!(d.events||[]).length){ empty(b,`${d.m}월 학사일정이 없어요.`); return; }
-  d.events.forEach(e=>{ const dt=new Date(+e.d.slice(0,4),+e.d.slice(4,6)-1,+e.d.slice(6,8));
+  const d=sn.d, today=ymdNow(), u=UI(w); u.moff=u.moff||0;
+  const n0=new Date(), base=new Date(n0.getFullYear(), n0.getMonth()+u.moff, 1), Y=base.getFullYear(), M=base.getMonth()+1, ym=`${Y}${pad2(M)}`;
+  const go=k=>{ u.moff=k; render(); };
+  b.appendChild(h("div",{class:"mnav"}, h("button",{class:"mnb", "aria-label":"이전 달", text:"‹", onclick:()=>go(u.moff-1)}),
+    h("b",{text:`${Y}년 ${M}월`}), h("button",{class:"mnb", "aria-label":"다음 달", text:"›", onclick:()=>go(u.moff+1)}),
+    u.moff?h("button",{class:"mnt", text:"이번 달", onclick:()=>go(0)}):null));
+  if(d.school) b.appendChild(h("div",{class:"sub",text:d.school}));
+  let evs=null;
+  if(Array.isArray(d.all) && d.from && ym>=d.from && ym<=d.to) evs=d.all.filter(e=>String(e.d).slice(0,6)===ym);
+  else if(`${d.y}${pad2(d.m)}`===ym) evs=d.events||[];
+  else if(d.atpt && d.code){ const key=d.code+":"+ym, x=NEISM[key];
+    if(!x){ loadNeisMonth(key,d,ym); empty(b,"불러오는 중…"); return; }
+    if(x.busy){ empty(b,"불러오는 중…"); return; }
+    if(x.err){ empty(b,`${M}월 일정은 폰에서 불러오지 못했어요. PC에서 확인해 주세요.`); return; }
+    evs=x.evs; }
+  else { empty(b,"다른 달은 PC 프로그램을 새 화면으로 업데이트하면 볼 수 있어요."); return; }
+  if(!evs.length){ empty(b,`${M}월 학사일정이 없어요.`); return; }
+  evs.forEach(e=>{ const dt=new Date(+e.d.slice(0,4),+e.d.slice(4,6)-1,+e.d.slice(6,8));
     b.appendChild(h("div",{class:"ev"+(e.d===today?" now":e.d<today?" past":"")}, h("span",{class:"evd",text:`${dt.getMonth()+1}/${dt.getDate()} ${DOW[dt.getDay()]}`}), h("span",{text:e.n}))); });
 };
 DRAW.news=(sec,w,title)=>{ const sn=snapOf(w); const b=cardBody(sec,title,sn&&stampEl(sn.at)); if(!sn){ noSnap(b,w); return; }
@@ -1639,11 +1680,17 @@ function showHello(err, busy){
       "학생 정보가 보일 수 있으니 폰 화면 잠금을 꼭 설정해 주세요.")));
 }
 function needLogin(){ setStatus(""); showHello("로그인 시간이 지났어요. 다시 계속해 주세요."); }
-function startMain(){
-  $("#bar").hidden=false;
-  $("#app").innerHTML=""; $("#app").appendChild(h("p",{class:"empty", text:"불러오는 중…"}));
-  loadSnapCache().then(()=>loadSnaps(true));          /* 기억해 둔 PC 내용 먼저 → 새 내용 확인 (위젯 목록과 함께) */
-  refresh(true);
+/* 마지막으로 받은 대시보드 내용을 이 폰에 기억 (다음에 켤 때 인터넷을 기다리지 않고 바로 보여 줌) */
+const dataKey=()=>"data:"+(S.email||"");
+function dataCache(d){ if(!S.email) return; SnapDB.set(dataKey(), d&&S.file?{file:S.file, data:d}:null); }
+async function startMain(){
+  $("#bar").hidden=false; S.booted=false;
+  if(!S.data){ $("#app").innerHTML=""; $("#app").appendChild(h("p",{class:"empty", text:"불러오는 중…"})); }
+  if(signedIn() && !S.tok) ensureTok().catch(()=>{});                  /* 출입증 새로 받기를 바로 시작 (화면 그리는 동안) */
+  const c=S.data?null:await Promise.race([SnapDB.get(dataKey()), new Promise(r=>setTimeout(()=>r(null),800))]);
+  if(c && c.data && c.file && !S.data){ const d=clean(c.data); if(d){ S.data=d; S.file=c.file; setStatus("확인 중…"); safeRender(); } }
+  loadSnapCache();                                                     /* 기억해 둔 PC 내용 → 위젯 칸 바로 채움 */
+  refresh(true);                                                       /* 그다음 드라이브와 맞춤 (목록은 한 번만 받아 같이 씀) */
 }
 
 
