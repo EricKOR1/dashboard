@@ -1,11 +1,11 @@
 {
-  "ui_version": "2026-10-19.3",
+  "ui_version": "2026-10-27.1",
   "ui_url": "https://raw.githubusercontent.com/EricKOR1/dashboard/main/index.html",
   "app_version": "1.5.24",
   "app_url": "https://github.com/EricKOR1/dashboard/releases/latest/download/MyDashboard.zip",
   "page_url": "https://github.com/EricKOR1/dashboard/releases",
-  "notes": "품의 기안: 할인 전 값이 아니라 할인·쿠폰이 적용된 최종 가격으로 품목을 채워요 (장바구니 쿠폰은 최종 결제 금액에 맞춰 단가에 나눠 넣고, 되돌릴 수 있어요). 견적서 PDF를 그대로 넣어도 표의 모든 품목을 읽고, 부가세 별도 견적이면 10%를 한 번에 더할 수 있어요. 엑셀을 저장하면 파일 위치가 복사돼서 에듀파인 [파일 ⬆] 창에 Ctrl+V만 하면 돼요.",
-  "ui_sha256": "7766d01cc9fc15f84294fc32179b27cd974bb11f22c5e003521a53fe1feecb5b",
+  "notes": "검색 칸이 있는 위젯(사전·백과사전·세계 국가정보·시간표·교사 연락처·학생 찾기·시세)에 ↺ 버튼을 넣었어요. 누르면 검색어와 결과가 처음 상태로 돌아가요. 폰에서 학사일정 달을 넘겨 볼 수 있게 PC가 앞 3달~뒤 9달 일정을 함께 올려요.",
+  "ui_sha256": "605d8c306826f9d847ba7d10363a687990886299fe63cbec1ebf52359f0f88cb",
   "ai_relay": "https://script.google.com/macros/s/AKfycbyMowwC0FkVsS_gi2-n6tRhKQNBRfhoNrLh1ZOxPQwUWGRvtZtJ1I7S_3iDNcH5Q5Dz/exec",
   "app_sha256": "ff4593b6a8ca5dd0c03c2c1c2d7f6f2b9600ae51dfb54a7230e69529b7ce0150"
 }
