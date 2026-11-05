@@ -772,13 +772,11 @@ async function refresh(force){
   if(S.data && !pickPref() && !S.pickShown){ S.pickShown=true; openPick(true); }   // 처음 연결: 폰에서 볼 항목 고르기
 }
 async function _refresh(force){
-  const ae=document.activeElement;
-  if(!force && ae && (ae.classList.contains("memo") || ae.tagName==="INPUT")) return;
-  if(S.arrange) return;                                                           // 배치 편집 중엔 건드리지 않음   // 메모·검색칸에 입력 중엔 건드리지 않음
+  if(!force && editingNow()) return;                                              // 지금 글을 쓰는 중(10초 안에 입력)이면 잠깐 미룸
+  if(S.arrange) return;                                                           // 배치 편집 중엔 건드리지 않음
   try{
-    if(S.file && !force){ const m=await fileMeta(S.file.id); if(m.modifiedTime===S.file.modifiedTime){ setStatus("최신"); return; } }
-    setStatus(S.data?"확인 중…":"불러오는 중…");
-    const f = await findFile(!S.booted);
+    if(!S.data) setStatus("불러오는 중…");
+    const f = await findFile(true);                         // 앱 폴더 목록 한 번으로 대시보드·PC 내용 둘 다 바뀌었는지 확인
     S.booted=true;
     if(!f){ S.file=null; S.data=null; dataCache(null); renderEmpty(); setStatus(""); return; }
     if(S.data && S.file && S.file.id===f.id && S.file.modifiedTime===f.modifiedTime){ setStatus("최신"); return; }   /* 기억해 둔 것과 같으면 받지 않음 */
@@ -829,14 +827,20 @@ async function flush(){
   if(saved) safeRender();
 }
 /* 다시 그리기: 입력 중이면 끝난 뒤에 (입력한 글자가 지워지지 않게), 그리다 오류가 나도 멈추지 않게 */
-function renderSoft(){ const a=document.activeElement;
-  if(a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && $("#app").contains(a)){ S.renderLater=true; return; }
-  safeRender(); }
-function safeRender(){ const a=document.activeElement;
-  if(a && a.tagName==="TEXTAREA" && a.classList.contains("memo") && $("#app").contains(a)){ S.renderLater=true; return; }   /* 메모를 쓰는 중 */
+/* 글을 쓰는 중인지: 입력칸에 커서가 있고 10초 안에 글자를 쳤을 때만.
+   (폰은 자판을 내려도 커서가 입력칸에 남아 있어서, 커서만 보고 미루면 PC에서 고친 내용이 계속 안 보였음) */
+document.addEventListener("input", e=>{ if(e.target && $("#app").contains(e.target) && e.target.type!=="checkbox") S.typedAt=Date.now(); }, true);
+function editingNow(){ const a=document.activeElement;
+  return !!a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.type!=="checkbox" && $("#app").contains(a) && Date.now()-(S.typedAt||0)<10000; }
+function laterCheck(){ clearTimeout(S.laterT);                                   /* 쓰기를 멈추면 미뤄 둔 새 내용을 보여 줌 */
+  S.laterT=setTimeout(()=>{ if(!S.renderLater) return; if(editingNow()||S.dragging){ laterCheck(); return; } S.renderLater=false; safeRender(); }, 3000); }
+function renderSoft(){ if(editingNow()){ S.renderLater=true; laterCheck(); return; } safeRender(); }
+function safeRender(){
+  if(editingNow()){ S.renderLater=true; laterCheck(); return; }                  /* 글을 쓰는 중 */
   try{ render(); }catch(e){ console.error(e); } }
 document.addEventListener("focusout",()=>setTimeout(()=>{ const a=document.activeElement;
   if(S.renderLater && !S.dragging && !(a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && $("#app").contains(a))){ S.renderLater=false; safeRender(); } },0));
+document.addEventListener("focusout",()=>{ if(signedIn()&&S.data) setTimeout(()=>refresh(false),300); });   /* 입력을 마치면 바로 한 번 확인 */
 function W(d, wid){ return (d.widgets||[]).find(w=>w.id===wid); }
 function cfg(w){ if(!w.config||typeof w.config!=="object") w.config={}; return w.config; }
 
@@ -1095,7 +1099,7 @@ async function loadSnapCache(){
   if(changed && S.data && !S.arrange) renderSoft();
 }
 async function loadSnaps(force){
-  if(!signedIn() || (!force && Date.now()-S.snapAt<60000)) return;
+  if(!signedIn() || (!force && Date.now()-S.snapAt<4000)) return;
   if(S.snapBusy) return; S.snapBusy=true;
   S.snapAt=Date.now(); const was=JSON.stringify([S.snapReady, S.snapErr]);
   try{ const j={files:await listApp()}; let changed=false;
