@@ -1,11 +1,11 @@
 {
-  "ui_version": "2026-11-05.1",
+  "ui_version": "2026-11-08.1",
   "ui_url": "https://raw.githubusercontent.com/EricKOR1/dashboard/main/index.html",
   "app_version": "1.5.24",
   "app_url": "https://github.com/EricKOR1/dashboard/releases/latest/download/MyDashboard.zip",
   "page_url": "https://github.com/EricKOR1/dashboard/releases",
-  "notes": "PC에서 고친 위젯 내용이 폰에 훨씬 빨리 보여요 (예전엔 최대 3분 → 이제 10초 안팎). 폰 앱을 켜 둔 채로 있어도 PC에서 바뀐 내용이 바로 반영돼요.",
-  "ui_sha256": "e802959535a2f4372c5d0210c02e33114e1dd6b5b723a700236c7f7ab5d228a4",
+  "notes": "창을 '이전 크기로' 줄였다가 다시 최대화하면 위젯이 한쪽에 모이던 문제를 고쳤어요 (창 크기가 바뀌어도 위젯 자리는 그대로 기억해요). [위젯 자동 정렬]은 이제 지금 배치를 기준으로 가까운 칸에 맞춰 깔끔하게 정돈해요 — 자리·순서·크기는 그대로예요.",
+  "ui_sha256": "f1759fbb005911b703542c576b686d7d5b5d8873347367d373e55fd98688cf5c",
   "ai_relay": "https://script.google.com/macros/s/AKfycbyMowwC0FkVsS_gi2-n6tRhKQNBRfhoNrLh1ZOxPQwUWGRvtZtJ1I7S_3iDNcH5Q5Dz/exec",
   "app_sha256": "ff4593b6a8ca5dd0c03c2c1c2d7f6f2b9600ae51dfb54a7230e69529b7ce0150"
 }
