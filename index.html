@@ -2444,7 +2444,7 @@
         <button class="btn sync autob" id="autoBtn" title="윈도우를 켤 때 My Dashboard도 자동으로 켜기" aria-pressed="false" hidden><span class="as-sw" aria-hidden="true"><i></i></span><span>자동 시작</span></button>
         <button class="btn sync" id="syncBtn" title="다른 컴퓨터와 내용 맞추기"><span class="sy-i">☁</span><span id="syncTxt">동기화</span></button>
         <button class="btn sync xferb" id="xferBtn" title="PC·폰끼리 파일 주고받기" hidden><span class="sy-i">📨</span><span>파일</span><i class="xf-badge" id="xferBadge" hidden></i></button>
-        <button class="btn icon" id="arrangeBtn" title="위젯 자동 정렬 (이 화면 폭에 맞춰 왼쪽 위부터 빈틈없이)">▦</button>
+        <button class="btn icon" id="arrangeBtn" title="위젯 자동 정렬 (지금 배치를 기준으로 가까운 칸에 맞춰 정돈)">▦</button>
         <button class="btn icon" id="themeBtn" title="화면 꾸미기">🎨</button>
         <button class="btn primary" id="addBtn">＋ 위젯 추가</button>
       </div>
@@ -4617,7 +4617,10 @@ function lay(w){
 function renderPositions(){ state.widgets.forEach(w=>{ const c=cardOf(w.id); if(c) applyPos(c,w); }); growBoard(); }
 function setMode(m){ if(mode===m) return; mode=m; renderPositions(); persist(); }
 function rdLay(o){ return mode==="max" ? (o.layoutMax||o.layout) : o.layout; }
-function applyPos(card,w){ const L=lay(w); card.style.left=L.x+"px"; card.style.top=L.y+"px"; card.style.width=L.w+"px"; card.style.height=L.h+"px"; card.style.zIndex=L.z||1; }
+/* 화면에 그릴 위치: 창이 좁아져 오른쪽 밖으로 나간 위젯은 '보일 때만' 안으로 당겨 그림 (저장된 위치는 그대로 → 창을 다시 키우면 제자리) */
+function shownX(L){ const W=boardW(); return (W>200 && L.x>W-80) ? Math.max(0, W-(L.w||300)) : L.x; }
+function adoptShown(card,L){ const x=parseFloat(card.style.left); if(isFinite(x) && x!==L.x) L.x=x; }   /* 옮기거나 크기를 바꾸기 시작하면 보이는 자리를 진짜 자리로 */
+function applyPos(card,w){ const L=lay(w); card.style.left=shownX(L)+"px"; card.style.top=L.y+"px"; card.style.width=L.w+"px"; card.style.height=L.h+"px"; card.style.zIndex=L.z||1; }
 function bringFront(card,w){ const L=lay(w); L.z=++maxZ; card.style.zIndex=L.z; }
 function growBoard(){ let max=320; state.widgets.forEach(w=>{ const L=rdLay(w); if(L) max=Math.max(max, L.y+L.h); }); board.style.height=(max+40)+"px"; }
 function overlap(a,b){ return !(a.x+a.w<=b.x||b.x+b.w<=a.x||a.y+a.h<=b.y||b.y+b.h<=a.y); }
@@ -4660,11 +4663,25 @@ function arrangeFit(order, both, done){
 }
 /* 화면에 보이는 순서 (위→아래, 왼쪽→오른쪽) */
 function byScreenPos(a,b){ const A=rdLay(a)||{x:0,y:0}, B=rdLay(b)||{x:0,y:0}; return (A.y-B.y)||(A.x-B.x); }
-/* [위젯 자동 정렬] 버튼: 지금 보이는 순서대로 다시 배열 (되돌리기 가능) */
+/* [위젯 자동 정렬] 버튼: 지금 배치를 기준으로 '정돈'만 함 (되돌리기 가능)
+   · 위젯마다 지금 있는 자리에서 가장 가까운 칸(열)에 맞춤 — 왼쪽에 있던 건 왼쪽, 오른쪽에 있던 건 오른쪽
+   · 넓게 쓰던 위젯은 그 폭에 가까운 칸 수(1칸·2칸…)로, 높이는 그대로
+   · 같은 칸 안에서는 위→아래 순서 그대로 위로 붙여 쌓음 (겹침·빈틈 없이, 간격 일정) */
+function tidyArrange(list){
+  const g=gridSpec(), unit=g.cw+ARR_GAP, colB=new Array(g.cols).fill(ARR_M);
+  const items=list.map(w=>{ const L=lay(w), x=shownX(L);
+    const span=Math.max(1, Math.min(g.cols, Math.round(((L.w||g.cw)+ARR_GAP)/unit)));
+    const col=Math.max(0, Math.min(g.cols-span, Math.round((x-ARR_M)/unit)));
+    return {L, x, y:L.y, span, col}; });
+  items.sort((a,b)=>(a.y-b.y)||(a.x-b.x));
+  items.forEach(it=>{ const cs=colB.slice(it.col, it.col+it.span), y=Math.max(...cs), h=Math.max(130, Math.round(it.L.h||240));
+    it.L.x=ARR_M+it.col*unit; it.L.y=y; it.L.w=it.span*g.cw+(it.span-1)*ARR_GAP; it.L.h=h;
+    for(let c=it.col;c<it.col+it.span;c++) colB[c]=y+h+ARR_GAP; });
+}
 function autoArrange(){
   const before=state.widgets.map(w=>[w, JSON.stringify(lay(w))]);
-  arrangeFit(state.widgets.slice().sort(byScreenPos), false, ()=>{ persist();
-  toastAction("위젯을 정렬했어요", "되돌리기", ()=>{ before.forEach(([w,j])=>Object.assign(lay(w), JSON.parse(j))); renderPositions(); persist(); toast("정렬 전으로 되돌렸어요"); }); });
+  tidyArrange(state.widgets); renderPositions(); persist();
+  toastAction("지금 배치 그대로 칸에 맞춰 정돈했어요", "되돌리기", ()=>{ before.forEach(([w,j])=>Object.assign(lay(w), JSON.parse(j))); renderPositions(); persist(); toast("정렬 전으로 되돌렸어요"); });
 }
 function findFreeSpot(wd,ht){ const bw=boardW()||1000; const step=24; for(let y=0;y<5000;y+=step){ for(let x=0;x+wd<=bw;x+=step){ const cand={x,y,w:wd,h:ht}; const hit=state.widgets.some(o=>{ const lo=rdLay(o); return lo&&overlap(cand,lo); }); if(!hit) return {x,y}; } } return {x:0,y:0}; }
 
@@ -4704,7 +4721,7 @@ function enableMove(card,head,w){
   head.addEventListener("pointerdown",e=>{
     if(e.target.closest(".hact")) return; e.preventDefault(); bringFront(card,w);
     const sTop=()=>window.pageYOffset||document.documentElement.scrollTop||0;
-    const L=lay(w); const sx=e.clientX, sy=e.clientY+sTop(), ox=L.x, oy=L.y;
+    const L=lay(w); adoptShown(card,L); const sx=e.clientX, sy=e.clientY+sTop(), ox=L.x, oy=L.y;
     card.classList.add("moving"); head.setPointerCapture(e.pointerId);
     let lastEv=e, autoT=null;
     const place=(cx,cy)=>{ let nx=snap(clamp(ox+(cx-sx),0,Math.max(0,boardW()-L.w))); let ny=snap(Math.max(0,oy+(cy-sy)));
@@ -4725,7 +4742,7 @@ function enableMove(card,head,w){
 function enableResize(card,rsz,w){
   rsz.addEventListener("pointerdown",e=>{
     e.preventDefault(); e.stopPropagation(); bringFront(card,w);
-    const L=lay(w); const sx=e.clientX, sy=e.clientY, ow=L.w, oh=L.h; card.classList.add("sizing"); rsz.setPointerCapture(e.pointerId);
+    const L=lay(w); adoptShown(card,L); const sx=e.clientX, sy=e.clientY, ow=L.w, oh=L.h; card.classList.add("sizing"); rsz.setPointerCapture(e.pointerId);
     const mv=ev=>{ let nw=snap(clamp(ow+(ev.clientX-sx),220,boardW()-L.x)); let nh=snap(Math.max(130,oh+(ev.clientY-sy))); L.w=nw; L.h=nh; card.style.width=nw+"px"; card.style.height=nh+"px"; growBoard(); };
     const up=()=>{ try{ rsz.releasePointerCapture(e.pointerId); }catch(_){} rsz.removeEventListener("pointermove",mv); rsz.removeEventListener("pointerup",up); rsz.removeEventListener("pointercancel",up); card.classList.remove("sizing"); growBoard(); persist(); };
     rsz.addEventListener("pointermove",mv); rsz.addEventListener("pointerup",up); rsz.addEventListener("pointercancel",up);
@@ -4832,11 +4849,9 @@ function runMountQueue(){
   else _bootPhase=false;
 }
 function renderAll(){ board.innerHTML=""; state.widgets.forEach(w=>{ const c=mountCard(w); if(c) board.appendChild(c); }); growBoard(); }
-function clampAll(){ const W=boardW(); let moved=false;
-  state.widgets.forEach(w=>{ const c=cardOf(w.id), L=lay(w);
-    if(L && W>200 && L.x>W-80){ L.x=Math.max(0, W-(L.w||300)); moved=true; }   /* 오른쪽 밖으로 나가 잡을 수 없는 위젯만 안으로 */
-    if(c) applyPos(c,w); });
-  growBoard(); if(moved) saveLocalOnly(); }
+/* 창 크기가 바뀔 때: 다시 그리기만 함. (예전엔 여기서 위치를 고쳐 저장해서, '이전 크기로' 순간에
+   최대화 배치가 좁은 창에 맞춰 망가졌음 → 다시 최대화하면 위젯이 한쪽에 모였던 원인) */
+function clampAll(){ state.widgets.forEach(w=>{ const c=cardOf(w.id); if(c) applyPos(c,w); }); growBoard(); }
 
 /* ===== 테마 / 시계 / 상단 ===== */
 /* 폰트는 실제로 고른 것만 그때 내려받습니다 (시작 속도 개선) */
@@ -6181,9 +6196,9 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-11-05.1";
+const APP_VER="2026-11-08.1";
 /* 업데이트 안내 문구: 배포할 때 release_check.py 가 이 줄을 읽어 version.json 의 notes 로 넣음 (고칠 때마다 함께 바꿀 것) */
-const RELEASE_NOTES="PC에서 고친 위젯 내용이 폰에 훨씬 빨리 보여요 (예전엔 최대 3분 → 이제 10초 안팎). 폰 앱을 켜 둔 채로 있어도 PC에서 바뀐 내용이 바로 반영돼요.";
+const RELEASE_NOTES="창을 '이전 크기로' 줄였다가 다시 최대화하면 위젯이 한쪽에 모이던 문제를 고쳤어요 (창 크기가 바뀌어도 위젯 자리는 그대로 기억해요). [위젯 자동 정렬]은 이제 지금 배치를 기준으로 가까운 칸에 맞춰 깔끔하게 정돈해요 — 자리·순서·크기는 그대로예요.";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`; vt.title="눌러서 새 버전 확인"; vt.style.cursor="pointer"; vt.onclick=()=>checkUpdate(true);
