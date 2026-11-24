@@ -2218,6 +2218,14 @@
   #updBar .ub-x{flex:none; font-size:11px; color:var(--faint); cursor:pointer; padding:2px 4px;}
   #updBar .ub-x:hover{color:var(--danger);}
   #noticeWrap{position:fixed; right:18px; bottom:18px; z-index:2400; display:flex; flex-direction:column; gap:9px; align-items:flex-end; pointer-events:none;}
+  /* 할 일: 오늘·밀린 일 묶음 */
+  .todo .tgrp{margin:4px 0 10px; border-radius:12px;}
+  .todo .tgrp-h{font-size:12px; font-weight:800; letter-spacing:.2px; padding:2px 6px 4px; color:var(--muted);} .todo .tgrp-h b{margin-left:2px;}
+  .todo .tgrp.g-today{background:var(--accent-soft); padding:6px 4px 4px; border:1px solid color-mix(in srgb, var(--accent) 45%, transparent);}
+  .todo .tgrp.g-today .tgrp-h{color:var(--accent);} .todo .tgrp.g-today .tx{font-weight:700;}
+  .todo .tgrp.g-late .tgrp-h{color:var(--danger);}
+  .todo .ti.is-today .tdate{background:var(--accent)!important; color:var(--card,#1c1500)!important; font-weight:800;}
+  .todo .ti.is-late .tdate{background:color-mix(in srgb, var(--danger) 16%, transparent)!important; color:var(--danger)!important; font-weight:700;}
   .notice{display:flex; align-items:flex-start; gap:10px; width:272px; padding:12px 13px; background:var(--card); border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:14px; box-shadow:var(--shadow-lift); opacity:0; transform:translateX(18px); transition:opacity .22s var(--ease), transform .22s var(--ease); pointer-events:auto;}
   .notice.on{opacity:1; transform:translateX(0);}
   .notice .nt-i{font-size:16px; line-height:1.2; flex:none;}
@@ -3111,10 +3119,13 @@ const WIDGETS = {
         dt.onclick=e=>{ e.stopPropagation(); const cur=new Date(+it.date.slice(0,4),+it.date.slice(4,6)-1,+it.date.slice(6,8));
           openCalendar(dt, cur, picked=>{ it.date=ymd(picked); persist(); if(w.config.tab==="cal") this.drawCal(b,w); else this.drawList(b,w); toast("날짜 변경됨"); }); };
         $(".tw",row).insertBefore(dt, $(".tx",row)); }
+      if(!it.done&&it.date){ const td=ymd(new Date()), dt=$(".tdate",row);        /* 오늘 / 지난 일 표시 */
+        if(it.date===td){ row.classList.add("is-today"); if(dt) dt.textContent="오늘"; }
+        else if(it.date<td){ row.classList.add("is-late"); if(dt){ const a=new Date(+it.date.slice(0,4),+it.date.slice(4,6)-1,+it.date.slice(6,8)), n=new Date(); n.setHours(0,0,0,0); dt.textContent=`${Math.round((n-a)/86400000)}일 지남`; } } }
       const redraw=()=>{ if(w.config.tab==="cal") this.drawCal(b,w); else this.drawList(b,w); };
       const flip=(x)=>{ const a=w.config.items, i=a.indexOf(x); if(i<0) return;
         if(!x.done){ let prev=null; for(let k=i-1;k>=0;k--){ if(!a[k].done){ prev=a[k].id; break; } } x._prevId=prev; x.done=true; w.config.showDone=false; a.splice(i,1); a.push(x); }
-        else { x.done=false; a.splice(i,1); let at; if(x._prevId){ const pi=a.findIndex(y=>y.id===x._prevId && !y.done); at = pi>=0 ? pi+1 : a.findIndex(y=>y.done); } else { at=0; } if(at<0) at=a.length; a.splice(at,0,x); x._prevId=null; }
+        else { x.done=false; notifUndismiss("todo:"+x.id); a.splice(i,1); let at; if(x._prevId){ const pi=a.findIndex(y=>y.id===x._prevId && !y.done); at = pi>=0 ? pi+1 : a.findIndex(y=>y.done); } else { at=0; } if(at<0) at=a.length; a.splice(at,0,x); x._prevId=null; }
         persist(); redraw(); };
       const toggle=()=>flip(it);
       const startEdit=()=>{ const ed=el("input"); ed.className="tedit"; ed.value=it.text; ed.style.width="100%"; ed.style.fontWeight="400"; ed.onpointerdown=e=>e.stopPropagation(); tx.replaceWith(ed); ed.focus(); ed.select(); let fin=false; const done2=(save)=>{ if(fin)return; fin=true; if(save){ const v=ed.value.trim(); if(v) it.text=v; } persist(); redraw(); }; ed.addEventListener("keydown",e=>{ if(e.key==="Enter"){done2(true);} else if(e.key==="Escape"){done2(false);} }); ed.addEventListener("blur",()=>done2(true)); };
@@ -3127,14 +3138,18 @@ const WIDGETS = {
       tx.addEventListener("dblclick",()=>{ if(ctimer){ clearTimeout(ctimer); ctimer=null; } startEdit(); });
       if(w._editAfter===it.id){ w._editAfter=null; setTimeout(()=>{ if(tx.isConnected) startEdit(); },0); }
       return row; },
-    drawList(b,w){ const body=$("[data-body]",b); body.innerHTML=""; body.appendChild(this.addRow(b,w));
+    drawList(b,w){ setTimeout(syncTodoNotices,0); const body=$("[data-body]",b); body.innerHTML=""; body.appendChild(this.addRow(b,w));
       const list=el("div","list"); body.appendChild(list); const items=w.config.items;
       if(!items.length){ list.innerHTML=`<div class="empty">아직 할 일이 없어요. 날짜를 고르고 입력해 보세요.</div>`; return; }
       const active=todoByDate(items.filter(i=>!i.done)), done=items.filter(i=>i.done);   /* 날짜순 자동 정렬 */
-      active.forEach(it=>list.appendChild(this.make(b,w,it,true,true)));
+      const td=ymd(new Date());                                                  /* 오늘 → 밀린 일 → 다가오는 일로 묶어 보여 줌 */
+      [["오늘","g-today",it=>it.date===td],["밀린 일","g-late",it=>it.date&&it.date<td],["다가오는 일","g-next",it=>!it.date||it.date>td]].forEach(([label,gc,fn])=>{
+        const rs=active.filter(fn); if(!rs.length) return;
+        const box=el("div","tgrp "+gc); box.appendChild(el("div","tgrp-h",`${label} <b>${rs.length}</b>`));
+        rs.forEach(it=>box.appendChild(this.make(b,w,it,true,true))); list.appendChild(box); });
       if(done.length){ const open=!!w.config.showDone; const hdr=el("div","donehdr"+(open?" open":"")); hdr.innerHTML=`<span class="chev">▸</span> 완료됨 ${done.length}`; hdr.onclick=()=>{ w.config.showDone=!w.config.showDone; persist(); this.drawList(b,w); }; list.appendChild(hdr); if(open){ done.forEach(it=>list.appendChild(this.make(b,w,it,true,true))); } }
     },
-    drawCal(b,w){ const body=$("[data-body]",b); const todayStr=ymd(new Date());
+    drawCal(b,w){ setTimeout(syncTodoNotices,0); const body=$("[data-body]",b); const todayStr=ymd(new Date());
       if(!w.config.sel || w.config.selSetOn!==todayStr){ w.config.sel=todayStr; w.config.moff=0; w.config.selSetOn=todayStr; }
       const base=new Date(); base.setDate(1); base.setMonth(base.getMonth()+(w.config.moff||0));
       const y=base.getFullYear(), m=base.getMonth(), dim=new Date(y,m+1,0).getDate(), startDow=new Date(y,m,1).getDay();
@@ -6085,8 +6100,8 @@ function showNotices(items){
   if(!items.length) return;
   let wrap=document.getElementById("noticeWrap");
   if(!wrap){ wrap=document.createElement("div"); wrap.id="noticeWrap"; document.body.appendChild(wrap); }
-  items.slice(0,6).forEach((n,i)=>{
-    const card=el("div","notice");
+  items.filter(n=>!wrap.querySelector(`.notice[data-key="${CSS.escape(n.key)}"]`)).slice(0,6).forEach((n,i)=>{   /* 이미 떠 있는 알림은 또 띄우지 않음 */
+    const card=el("div","notice"); card.dataset.key=n.key;
     card.innerHTML=`<div class="nt-i">${n.icon}</div><div class="nt-b"><div class="nt-f"></div><div class="nt-t"></div></div><div class="nt-x">✕</div>`;
     $(".nt-f",card).textContent=n.from+" · 오늘";
     $(".nt-t",card).textContent=n.text;
@@ -6096,7 +6111,25 @@ function showNotices(items){
     setTimeout(()=>card.classList.add("on"), 80+i*110);
   });
 }
+/* 할 일 알림을 목록과 맞춤: 완료(또는 삭제·날짜 변경)하면 알림을 내리고, 다시 할 일로 돌리면 다시 띄움 */
+let _noticesRan=false;
+function notifUndismiss(key){ try{ const d=notifDismissed(); if(key in d){ delete d[key]; localStorage.setItem("dash.notif",JSON.stringify(d)); } }catch(e){} }
+function syncTodoNotices(){
+  if(!_noticesRan) return;                                           /* 켤 때 첫 알림 전에는 건드리지 않음 */
+  const today=ymd(new Date()), want={};
+  state.widgets.forEach(w=>{ if(w.type!=="todo"||!w.config||!Array.isArray(w.config.items)) return;
+    const title=w.title||WIDGETS.todo.title;
+    w.config.items.filter(i=>!i.done&&i.date===today).forEach(i=>{ want["todo:"+i.id]={key:"todo:"+i.id, icon:"✓", from:title||"할 일", text:i.text}; }); });
+  const wrap=document.getElementById("noticeWrap");
+  if(wrap) wrap.querySelectorAll('.notice[data-key^="todo:"]').forEach(c=>{
+    const n=want[c.dataset.key];
+    if(!n){ c.classList.remove("on"); setTimeout(()=>c.remove(),200); }   /* 완료됨으로 → 알림 내림 (닫은 걸로 기록하지 않음) */
+    else { const t=$(".nt-t",c); if(t&&t.textContent!==n.text) t.textContent=n.text; } });
+  const dis=notifDismissed();
+  showNotices(Object.values(want).filter(n=>dis[n.key]!==today));
+}
 async function runNotices(){
+  _noticesRan=true;
   try{
     const done=notifDismissed(), today=ymd(new Date());
     const all=await collectNotices();
@@ -6196,9 +6229,9 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-11-08.1";
+const APP_VER="2026-11-24.1";
 /* 업데이트 안내 문구: 배포할 때 release_check.py 가 이 줄을 읽어 version.json 의 notes 로 넣음 (고칠 때마다 함께 바꿀 것) */
-const RELEASE_NOTES="창을 '이전 크기로' 줄였다가 다시 최대화하면 위젯이 한쪽에 모이던 문제를 고쳤어요 (창 크기가 바뀌어도 위젯 자리는 그대로 기억해요). [위젯 자동 정렬]은 이제 지금 배치를 기준으로 가까운 칸에 맞춰 깔끔하게 정돈해요 — 자리·순서·크기는 그대로예요.";
+const RELEASE_NOTES="할 일 위젯: 오늘 할 일을 맨 위 상자에 모아 강조하고, 날짜가 지난 일은 '밀린 일'로 빨갛게(○일 지남), 나머지는 '다가오는 일'로 나눠 보여 줘요. 할 일을 완료하면 오른쪽 아래 오늘 알림도 같이 사라지고, 다시 할 일로 돌리면 알림이 다시 떠요.";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`; vt.title="눌러서 새 버전 확인"; vt.style.cursor="pointer"; vt.onclick=()=>checkUpdate(true);
