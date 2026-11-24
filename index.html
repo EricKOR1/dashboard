@@ -2697,6 +2697,25 @@ function orgRuleToFrame(items, frame){
 }
 const orgSafe=n=>String(n||"").replace(/[\\/:*?"<>|\u0000-\u001f]/g,"").trim().replace(/[. ]+$/,"").slice(0,60);
 /* 할 일 날짜순: 날짜 빠른 순(지난 할 일이 맨 위) → 같은 날은 먼저 추가한 순 → 날짜 없는 할 일은 맨 아래 */
+/* 할 일 글자 속 날짜 읽기: "7/3", "7/3(금)", "7월 3일", "7.3(금)" → "YYYYMMDD" (없으면 "")
+   · '2/3학년'·'3/4쪽'처럼 숫자 뒤에 단위가 붙으면 날짜로 보지 않음
+   · 연도는 오늘에서 가까운 쪽(앞뒤 6개월 안)으로 — 11월에 '1/5'라고 쓰면 내년 1월 5일 */
+function todoTextDate(text){
+  const t=String(text||""); let m=null;
+  const pats=[/(?:^|[\s(\[~,])(\d{1,2})\s*\/\s*(\d{1,2})(?!\d)(?!\s*(?:학년|반|교시|차시|쪽|페이지|명|개|번|권|점|%|분|장|회|부|건|대))/,
+              /(?:^|[^\d])(\d{1,2})\s*월\s*(\d{1,2})\s*일/,
+              /(?:^|[\s(\[~,])(\d{1,2})\.\s?(\d{1,2})\.?\s*\([월화수목금토일]\)/];
+  for(const re of pats){ m=t.match(re); if(m) break; }
+  if(!m) return "";
+  const M=+m[1], D=+m[2]; if(M<1||M>12||D<1||D>31) return "";
+  const now=new Date(); now.setHours(0,0,0,0);
+  let best=null;
+  [now.getFullYear()-1, now.getFullYear(), now.getFullYear()+1].forEach(y=>{ const d=new Date(y,M-1,D); if(d.getMonth()!==M-1) return;
+    const diff=Math.abs(d-now); if(!best||diff<best.diff) best={d,diff}; });
+  return best?ymd(best.d):"";
+}
+/* 글자에 날짜가 있으면 그 날짜로 (날짜표를 직접 눌러 바꾼 항목은 그대로) */
+function todoApplyTextDate(it){ if(!it||it.manualDate) return false; const d=todoTextDate(it.text); if(d&&d!==it.date){ it.date=d; return true; } return false; }
 function todoByDate(arr){
   return arr.map((it,i)=>[it,i]).sort((a,b)=>{ const x=a[0].date||"99999999", y=b[0].date||"99999999"; return x<y?-1:x>y?1:a[1]-b[1]; }).map(v=>v[0]);
 }
@@ -3097,6 +3116,7 @@ const WIDGETS = {
   todo:{ title:"할 일", icon:"✓", desc:"날짜별 할 일. 목록·달력 모드. 날짜순으로 자동 정렬.",
     defaultCfg:()=>({items:[],tab:"list",sel:null,moff:0}),
     mount(b,w){ b.classList.add("todo"); if(!w.config.tab) w.config.tab="list";
+      if(Array.isArray(w.config.items)){ let ch=false; w.config.items.forEach(it=>{ if(todoApplyTextDate(it)) ch=true; }); if(ch) setTimeout(persist,0); }   /* 예전에 적은 '7/3' 같은 날짜도 반영 */
       b.innerHTML=`<div class="ttabs" data-tabs><button data-t="list">목록</button><button data-t="cal">달력</button></div><div class="tbody" data-body></div>`;
       [...b.querySelectorAll("[data-t]")].forEach(btn=>{ btn.className=(w.config.tab===btn.dataset.t?"on":""); btn.onclick=()=>{ w.config.tab=btn.dataset.t; persist(); this.mount(b,w); }; });
       if(w.config.tab==="cal") this.drawCal(b,w); else this.drawList(b,w); },
@@ -3107,7 +3127,8 @@ const WIDGETS = {
       di.value = fixedDate || (ld && Date.now()-ld.at<600000 ? ld.v : isoOf(ymd(new Date())));   /* 방금(10분 안) 고른 날짜는 그대로 */
       const add=()=>{ const t=inp.value.trim(); if(!t) return; if(!di.value){ toast("날짜를 선택하세요"); di.focus(); return; }
         if(!fixedDate) _todoLast.set(w.id,{v:di.value, at:Date.now()});
-        w.config.items.push({id:uid(),text:t,done:false,date:di.value.replace(/-/g,"")}); inp.value=""; persist(); if(w.config.tab==="cal") this.drawCal(b,w); else this.drawList(b,w);
+        const nit={id:uid(),text:t,done:false,date:di.value.replace(/-/g,"")}; const hadTD=todoApplyTextDate(nit);
+        w.config.items.push(nit); inp.value=""; if(hadTD) toast(`글에 적힌 날짜(${+nit.date.slice(4,6)}/${+nit.date.slice(6,8)})로 넣었어요`); persist(); if(w.config.tab==="cal") this.drawCal(b,w); else this.drawList(b,w);
         const ni=b.querySelector(".t-add [data-in]"); if(ni) ni.focus(); };                 /* 이어서 입력 */
       inp.addEventListener("keydown",e=>{ if(e.key==="Enter") add(); });
       return wrap; },
@@ -3117,7 +3138,7 @@ const WIDGETS = {
       if(showDate&&it.date){ const dt=el("div","tdate"); const dow=["일","월","화","수","목","금","토"][new Date(+it.date.slice(0,4),+it.date.slice(4,6)-1,+it.date.slice(6,8)).getDay()]; dt.textContent=`${+it.date.slice(4,6)}/${+it.date.slice(6,8)}(${dow})`; dt.title="클릭하면 날짜 변경";
         dt.onpointerdown=e=>e.stopPropagation();
         dt.onclick=e=>{ e.stopPropagation(); const cur=new Date(+it.date.slice(0,4),+it.date.slice(4,6)-1,+it.date.slice(6,8));
-          openCalendar(dt, cur, picked=>{ it.date=ymd(picked); persist(); if(w.config.tab==="cal") this.drawCal(b,w); else this.drawList(b,w); toast("날짜 변경됨"); }); };
+          openCalendar(dt, cur, picked=>{ it.date=ymd(picked); it.manualDate=true; persist(); if(w.config.tab==="cal") this.drawCal(b,w); else this.drawList(b,w); toast("날짜 변경됨"); }); };
         $(".tw",row).insertBefore(dt, $(".tx",row)); }
       if(!it.done&&it.date){ const td=ymd(new Date()), dt=$(".tdate",row);        /* 오늘 / 지난 일 표시 */
         if(it.date===td){ row.classList.add("is-today"); if(dt) dt.textContent="오늘"; }
@@ -3128,7 +3149,7 @@ const WIDGETS = {
         else { x.done=false; notifUndismiss("todo:"+x.id); a.splice(i,1); let at; if(x._prevId){ const pi=a.findIndex(y=>y.id===x._prevId && !y.done); at = pi>=0 ? pi+1 : a.findIndex(y=>y.done); } else { at=0; } if(at<0) at=a.length; a.splice(at,0,x); x._prevId=null; }
         persist(); redraw(); };
       const toggle=()=>flip(it);
-      const startEdit=()=>{ const ed=el("input"); ed.className="tedit"; ed.value=it.text; ed.style.width="100%"; ed.style.fontWeight="400"; ed.onpointerdown=e=>e.stopPropagation(); tx.replaceWith(ed); ed.focus(); ed.select(); let fin=false; const done2=(save)=>{ if(fin)return; fin=true; if(save){ const v=ed.value.trim(); if(v) it.text=v; } persist(); redraw(); }; ed.addEventListener("keydown",e=>{ if(e.key==="Enter"){done2(true);} else if(e.key==="Escape"){done2(false);} }); ed.addEventListener("blur",()=>done2(true)); };
+      const startEdit=()=>{ const ed=el("input"); ed.className="tedit"; ed.value=it.text; ed.style.width="100%"; ed.style.fontWeight="400"; ed.onpointerdown=e=>e.stopPropagation(); tx.replaceWith(ed); ed.focus(); ed.select(); let fin=false; const done2=(save)=>{ if(fin)return; fin=true; if(save){ const v=ed.value.trim(); if(v){ it.text=v; todoApplyTextDate(it); } } persist(); redraw(); }; ed.addEventListener("keydown",e=>{ if(e.key==="Enter"){done2(true);} else if(e.key==="Escape"){done2(false);} }); ed.addEventListener("blur",()=>done2(true)); };
       $(".box",row).onclick=toggle; $(".x",row).onclick=()=>{ w.config.items=w.config.items.filter(x=>x.id!==it.id); persist(); redraw(); };
       let ctimer=null;
       tx.addEventListener("click",()=>{
@@ -3141,7 +3162,7 @@ const WIDGETS = {
     drawList(b,w){ setTimeout(syncTodoNotices,0); const body=$("[data-body]",b); body.innerHTML=""; body.appendChild(this.addRow(b,w));
       const list=el("div","list"); body.appendChild(list); const items=w.config.items;
       if(!items.length){ list.innerHTML=`<div class="empty">아직 할 일이 없어요. 날짜를 고르고 입력해 보세요.</div>`; return; }
-      const active=todoByDate(items.filter(i=>!i.done)), done=items.filter(i=>i.done);   /* 날짜순 자동 정렬 */
+      const active=todoByDate(items.filter(i=>!i.done)), done=items.map((it,i)=>[it,i]).filter(v=>v[0].done).sort((a,b)=>{ const x=a[0].date||"", y=b[0].date||""; return x<y?1:x>y?-1:b[1]-a[1]; }).map(v=>v[0]);   /* 할 일은 날짜순, 완료됨은 최신 날짜가 위로 */
       const td=ymd(new Date());                                                  /* 오늘 → 밀린 일 → 다가오는 일로 묶어 보여 줌 */
       [["오늘","g-today",it=>it.date===td],["밀린 일","g-late",it=>it.date&&it.date<td],["다가오는 일","g-next",it=>!it.date||it.date>td]].forEach(([label,gc,fn])=>{
         const rs=active.filter(fn); if(!rs.length) return;
@@ -6229,9 +6250,9 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-11-24.1";
+const APP_VER="2026-11-24.3";
 /* 업데이트 안내 문구: 배포할 때 release_check.py 가 이 줄을 읽어 version.json 의 notes 로 넣음 (고칠 때마다 함께 바꿀 것) */
-const RELEASE_NOTES="할 일 위젯: 오늘 할 일을 맨 위 상자에 모아 강조하고, 날짜가 지난 일은 '밀린 일'로 빨갛게(○일 지남), 나머지는 '다가오는 일'로 나눠 보여 줘요. 할 일을 완료하면 오른쪽 아래 오늘 알림도 같이 사라지고, 다시 할 일로 돌리면 알림이 다시 떠요.";
+const RELEASE_NOTES="할 일 위젯: 오늘 할 일을 맨 위 상자에 모아 강조하고, 지난 일은 '밀린 일'(○일 지남), 나머지는 '다가오는 일'로 나눠 보여 줘요. 글에 '7/3'·'7월 3일'처럼 날짜를 적으면 그 날짜로 알아서 순서대로 놓여요. 완료됨 목록은 최신 날짜가 위에 와요. 할 일을 완료하면 오늘 알림도 같이 사라지고, 다시 돌리면 알림이 다시 떠요.";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`; vt.title="눌러서 새 버전 확인"; vt.style.cursor="pointer"; vt.onclick=()=>checkUpdate(true);
