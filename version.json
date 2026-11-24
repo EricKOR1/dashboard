@@ -1,11 +1,11 @@
 {
-  "ui_version": "2026-11-24.1",
+  "ui_version": "2026-11-24.3",
   "ui_url": "https://raw.githubusercontent.com/EricKOR1/dashboard/main/index.html",
   "app_version": "1.5.24",
   "app_url": "https://github.com/EricKOR1/dashboard/releases/latest/download/MyDashboard.zip",
   "page_url": "https://github.com/EricKOR1/dashboard/releases",
-  "notes": "할 일 위젯: 오늘 할 일을 맨 위 상자에 모아 강조하고, 날짜가 지난 일은 '밀린 일'로 빨갛게(○일 지남), 나머지는 '다가오는 일'로 나눠 보여 줘요. 할 일을 완료하면 오른쪽 아래 오늘 알림도 같이 사라지고, 다시 할 일로 돌리면 알림이 다시 떠요.",
-  "ui_sha256": "6e2c4c3e59ad67380c057d4a955c923b85c8ca3806a49003ffc9216b0d2fe279",
+  "notes": "할 일 위젯: 오늘 할 일을 맨 위 상자에 모아 강조하고, 지난 일은 '밀린 일'(○일 지남), 나머지는 '다가오는 일'로 나눠 보여 줘요. 글에 '7/3'·'7월 3일'처럼 날짜를 적으면 그 날짜로 알아서 순서대로 놓여요. 완료됨 목록은 최신 날짜가 위에 와요. 할 일을 완료하면 오늘 알림도 같이 사라지고, 다시 돌리면 알림이 다시 떠요.",
+  "ui_sha256": "a1d50faa86962b2cb022a5946f3c5209c3e80b9313cc4cf56a579d2c6bc58026",
   "ai_relay": "https://script.google.com/macros/s/AKfycbyMowwC0FkVsS_gi2-n6tRhKQNBRfhoNrLh1ZOxPQwUWGRvtZtJ1I7S_3iDNcH5Q5Dz/exec",
   "app_sha256": "ff4593b6a8ca5dd0c03c2c1c2d7f6f2b9600ae51dfb54a7230e69529b7ce0150"
 }
