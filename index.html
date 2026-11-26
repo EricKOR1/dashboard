@@ -6250,9 +6250,9 @@ function showUpdateBar(r){
   setTimeout(()=>bar.classList.add("on"), 60);
 }
 
-const APP_VER="2026-11-24.3";
+const APP_VER="2026-11-26.1";
 /* 업데이트 안내 문구: 배포할 때 release_check.py 가 이 줄을 읽어 version.json 의 notes 로 넣음 (고칠 때마다 함께 바꿀 것) */
-const RELEASE_NOTES="할 일 위젯: 오늘 할 일을 맨 위 상자에 모아 강조하고, 지난 일은 '밀린 일'(○일 지남), 나머지는 '다가오는 일'로 나눠 보여 줘요. 글에 '7/3'·'7월 3일'처럼 날짜를 적으면 그 날짜로 알아서 순서대로 놓여요. 완료됨 목록은 최신 날짜가 위에 와요. 할 일을 완료하면 오늘 알림도 같이 사라지고, 다시 돌리면 알림이 다시 떠요.";
+const RELEASE_NOTES="프로그램을 켰을 때 가끔 위젯 없이 빈 화면만 보이던 문제를 고쳤어요. 한 번 더블클릭으로 바로 켜지게 했고(이미 켜지는 중이면 그 창을 기다렸다가 앞으로), 창을 닫으면 프로그램이 바로 완전히 꺼져요. 업데이트 파일은 늘 새로 받아요.";
 let _palTab="basic";
 function buildPalette(){ const p=$("#palette"); p.innerHTML=""; const vt=$("#verTag");
   if(vt){ vt.textContent=`화면 ${APP_VER} · 위젯 ${Object.keys(WIDGETS).length}개`; vt.title="눌러서 새 버전 확인"; vt.style.cursor="pointer"; vt.onclick=()=>checkUpdate(true);
@@ -6346,9 +6346,20 @@ async function boot(){
   const _mb=$("#winMax"); if(_mb){ _mb.textContent=isMax?"❐":"▢"; _mb.title=isMax?"이전 크기로":"최대화"; }
   applyTheme(); updateTopbar(); _bootPhase=true; renderAll(); requestAnimationFrame(()=>runMountQueue());
   _ready=true; if(Tools.migrate()){ renderAll(); persist(); } Tools.init(); Usage.start(); setTimeout(runNotices,1500); setTimeout(()=>Sync.init(),1800); setTimeout(()=>Xfer.init(),2000); setTimeout(()=>AutoStart.init(),2200); setTimeout(()=>checkUpdate(false),2500);
-  if(!window._updT) window._updT=setInterval(()=>{ if(!document.getElementById("updBar")) checkUpdate(false); }, 2*3600e3); }   /* 켜 둔 채로 지내도 2시간마다 새 버전 확인 */
-window.addEventListener("pywebviewready",()=>{ document.body.classList.add("app"); boot(); });
-window.addEventListener("DOMContentLoaded",()=>{ updateTopbar(); setTimeout(()=>{ if(!window.pywebview) boot(); },1500); });
+  if(!window._updT) window._updT=setInterval(()=>{ if(!document.getElementById("updBar")) checkUpdate(false); }, 2*3600e3);
+  if(hasApi("ui_ready")) try{ window.pywebview.api.ui_ready(APP_VER); }catch(e){} }   /* 프로그램에 '화면 다 그렸어요' 알림 (안 오면 프로그램이 화면을 다시 불러옴) */
+/* 시작: 프로그램 연결 신호(pywebviewready)를 기다림.
+   PC가 느려 화면 파일을 읽는 동안 그 신호가 먼저 지나가 버리면 아무것도 안 그려진 빈 화면으로 멈췄음
+   → 신호를 놓쳐도 연결이 보이면 바로 시작 (0.1초마다 확인) */
+function startApp(){ if(hasApi("load_state")) document.body.classList.add("app");
+  boot().catch(e=>{ booted=false; try{ console.error(e); }catch(_){} setTimeout(startApp,1500); }); }   /* 시작하다 실패하면 잠시 뒤 다시 */
+window.addEventListener("pywebviewready",startApp);
+window.addEventListener("DOMContentLoaded",()=>{ updateTopbar(); const t0=Date.now();
+  const poll=()=>{ if(bootedWithApi) return;
+    if(hasApi("load_state")){ startApp(); return; }
+    if(Date.now()-t0>1500 && !window.pywebview && !booted){ boot(); }                 /* 프로그램 밖(브라우저)에서 열었을 때 */
+    if(Date.now()-t0<20000) setTimeout(poll,100); };
+  poll(); });
 </script>
 </body>
 </html>
